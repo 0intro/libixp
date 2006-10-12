@@ -59,6 +59,10 @@ install: all
 	@mkdir -p ${DESTDIR}${PREFIX}/bin
 	@cp -f ixpc ${DESTDIR}${PREFIX}/bin
 	@chmod 755 ${DESTDIR}${PREFIX}/bin/ixpc
+	@echo installing manual page to ${DESTDIR}${MANPREFIX}/man1
+	@mkdir -p ${DESTDIR}${MANPREFIX}/man1
+	@sed 's/VERSION/${VERSION}/g' < ixpc.1 > ${DESTDIR}${MANPREFIX}/man1/ixpc.1
+	@chmod 644 ${DESTDIR}${MANPREFIX}/man1/ixpc.1
 
 uninstall:
 	@echo removing header file from ${DESTDIR}${PREFIX}/include
@@ -67,5 +71,7 @@ uninstall:
 	@rm -f ${DESTDIR}${PREFIX}/lib/libixp.a
 	@echo removing ipx client from ${DESTDIR}${PREFIX}/bin
 	@rm -f ${DESTDIR}${PREFIX}/bin/ixpc
+	@echo removing manual page from ${DESTDIR}${MANPREFIX}/man1
+	@rm -f ${DESTDIR}${MANPREFIX}/man1/ixpc.1
 
 .PHONY: all options clean dist install uninstall
