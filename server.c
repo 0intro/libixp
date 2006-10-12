@@ -1,8 +1,7 @@
-/*
- * (C)opyright MMIV-MMVI Anselm R. Garbe <garbeam at gmail dot com>
+/* (C)opyright MMIV-MMVI Anselm R. Garbe <garbeam at gmail dot com>
  * See LICENSE file for license details.
  */
-
+#include "ixp.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -13,8 +12,6 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
-
-#include "ixp.h"
 
 static unsigned char *msg[IXP_MAX_MSG];
 
@@ -34,8 +31,7 @@ ixp_server_open_conn(IXPServer *s, int fd, void *aux,
 }
 
 void
-ixp_server_close_conn(IXPConn *c)
-{
+ixp_server_close_conn(IXPConn *c) {
 	IXPServer *s = c->srv;
 	IXPConn **tc;
 	for(tc=&s->conn; *tc && *tc != c; tc=&(*tc)->next);
@@ -51,8 +47,7 @@ ixp_server_close_conn(IXPConn *c)
 }
 
 static void
-prepare_select(IXPServer *s)
-{
+prepare_select(IXPServer *s) {
 	IXPConn **c;
 	FD_ZERO(&s->rd);
 	for(c=&s->conn; *c; *c && (c=&(*c)->next)) {
@@ -64,8 +59,7 @@ prepare_select(IXPServer *s)
 }
 
 static void
-handle_conns(IXPServer *s)
-{
+handle_conns(IXPServer *s) {
 	IXPConn *c, *n;
 	for((c=s->conn) && (n=c->next); c; (c=n) && (n=c->next))
 		if(FD_ISSET(c->fd, &s->rd) && c->read)
@@ -73,15 +67,13 @@ handle_conns(IXPServer *s)
 }
 
 char *
-ixp_server_loop(IXPServer *s)
-{
+ixp_server_loop(IXPServer *s) {
 	int r;
 	s->running = 1;
 
 	/* main loop */
 	while(s->running) {
 		prepare_select(s);
-
 		r = select(s->maxfd + 1, &s->rd, 0, 0, 0);
 		if(r == -1 && errno == EINTR)
 			continue;
@@ -106,8 +98,7 @@ ixp_server_receive_fcall(IXPConn *c, Fcall *fcall)
 }
 
 int
-ixp_server_respond_fcall(IXPConn *c, Fcall *fcall)
-{
+ixp_server_respond_fcall(IXPConn *c, Fcall *fcall) {
 	char *errstr;
 	unsigned int msize = ixp_fcall2msg(msg, fcall, IXP_MAX_MSG);
 	if(c->closed)
@@ -120,8 +111,7 @@ ixp_server_respond_fcall(IXPConn *c, Fcall *fcall)
 }
 
 void
-ixp_server_close(IXPServer *s)
-{
+ixp_server_close(IXPServer *s) {
 	IXPConn *c, *next;
 	for(c=s->conn; c; c=next) {
 		next=c->next;

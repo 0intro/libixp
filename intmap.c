@@ -1,7 +1,7 @@
 /* This file is derived from src/lib9p/intmap.c from plan9port */
 /* See LICENCE.p9p for terms of use */
-#include <stdlib.h>
 #include "ixp.h"
+#include <stdlib.h>
 #define USED(v) if(v){}else{}
 
 struct Intlist {
@@ -12,27 +12,23 @@ struct Intlist {
 };
 
 static unsigned long
-hashid(Intmap *map, unsigned long id)
-{
+hashid(Intmap *map, unsigned long id) {
 	return id%map->nhash;
 }
 
 static void
-nop(void *v)
-{
+nop(void *v) {
 	USED(v);
 }
 
 void
-initmap(Intmap *m, unsigned long nhash, void *hash)
-{
+initmap(Intmap *m, unsigned long nhash, void *hash) {
 	m->nhash = nhash;
 	m->hash = hash;
 }
 
 static Intlist**
-llookup(Intmap *map, unsigned long id)
-{
+llookup(Intmap *map, unsigned long id) {
 	Intlist **lf;
 
 	for(lf=&map->hash[hashid(map, id)]; *lf; lf=&(*lf)->link)
@@ -42,8 +38,7 @@ llookup(Intmap *map, unsigned long id)
 }
 
 void
-freemap(Intmap *map, void (*destroy)(void*))
-{
+freemap(Intmap *map, void (*destroy)(void*)) {
 	int i;
 	Intlist *p, *nlink;
 
@@ -58,8 +53,7 @@ freemap(Intmap *map, void (*destroy)(void*))
 	}
 }
 void
-execmap(Intmap *map, void (*run)(void*))
-{
+execmap(Intmap *map, void (*run)(void*)) {
 	int i;
 	Intlist *p, *nlink;
 
@@ -71,9 +65,8 @@ execmap(Intmap *map, void (*run)(void*))
 	}
 }
 
-void*
-lookupkey(Intmap *map, unsigned long id)
-{
+void *
+lookupkey(Intmap *map, unsigned long id) {
 	Intlist *f;
 	void *v;
 
@@ -84,9 +77,8 @@ lookupkey(Intmap *map, unsigned long id)
 	return v;
 }
 
-void*
-insertkey(Intmap *map, unsigned long id, void *v)
-{
+void *
+insertkey(Intmap *map, unsigned long id, void *v) {
 	Intlist *f;
 	void *ov;
 	unsigned long h;
@@ -108,8 +100,7 @@ insertkey(Intmap *map, unsigned long id, void *v)
 }
 
 int
-caninsertkey(Intmap *map, unsigned long id, void *v)
-{
+caninsertkey(Intmap *map, unsigned long id, void *v) {
 	Intlist *f;
 	int rv;
 	unsigned long h;
@@ -129,8 +120,7 @@ caninsertkey(Intmap *map, unsigned long id, void *v)
 }
 
 void*
-deletekey(Intmap *map, unsigned long id)
-{
+deletekey(Intmap *map, unsigned long id) {
 	Intlist **lf, *f;
 	void *ov;
 

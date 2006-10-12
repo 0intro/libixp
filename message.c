@@ -1,25 +1,21 @@
-/*
- * (C)opyright MMIV-MMVI Anselm R. Garbe <garbeam at gmail dot com>
+/* (C)opyright MMIV-MMVI Anselm R. Garbe <garbeam at gmail dot com>
  * See LICENSE file for license details.
  */
-
+#include "ixp.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "ixp.h"
 
 #define IXP_QIDSZ (sizeof(unsigned char) + sizeof(unsigned int)\
 		+ sizeof(unsigned long long))
 
 static unsigned short
-sizeof_string(const char *s)
-{
+sizeof_string(const char *s) {
 	return sizeof(unsigned short) + strlen(s);
 }
 
 unsigned short
-ixp_sizeof_stat(Stat * stat)
-{
+ixp_sizeof_stat(Stat * stat) {
 	return IXP_QIDSZ
 		+ 2 * sizeof(unsigned short)
 		+ 4 * sizeof(unsigned int)
@@ -31,8 +27,7 @@ ixp_sizeof_stat(Stat * stat)
 }
 
 unsigned int
-ixp_fcall2msg(void *msg, Fcall *fcall, unsigned int msglen)
-{
+ixp_fcall2msg(void *msg, Fcall *fcall, unsigned int msglen) {
 	unsigned int i = sizeof(unsigned char) +
 		sizeof(unsigned short) + sizeof(unsigned int);
 	int msize = msglen - i;
@@ -127,18 +122,15 @@ ixp_fcall2msg(void *msg, Fcall *fcall, unsigned int msglen)
 		ixp_pack_data(&p, &msize, fcall->stat, fcall->nstat);
 		break;
 	}
-
 	if(msize < 0)
 		return 0;
-
 	msize = msglen - msize;
 	ixp_pack_prefix(msg, msize, fcall->type, fcall->tag);
 	return msize;
 }
 
 unsigned int
-ixp_msg2fcall(Fcall *fcall, void *msg, unsigned int msglen)
-{
+ixp_msg2fcall(Fcall *fcall, void *msg, unsigned int msglen) {
 	int msize;
 	unsigned int i, tsize;
 	unsigned short len;
@@ -236,7 +228,6 @@ ixp_msg2fcall(Fcall *fcall, void *msg, unsigned int msglen)
 		ixp_unpack_data(&p, &msize, &fcall->stat, len);
 		break;
 	}
-
 	if(msize > 0)
 		return tsize;
 	return 0;

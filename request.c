@@ -1,13 +1,11 @@
-/*
- * (C)opyright MMVI Kris Maglione <fbsdaemon at gmail dot com>
+/* (C)opyright MMVI Kris Maglione <fbsdaemon at gmail dot com>
  * See LICENSE file for license details.
  */
-
+#include "ixp.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
-#include "ixp.h"
 
 static void ixp_handle_req(P9Req *r);
 
@@ -71,8 +69,7 @@ destroyfid(P9Conn *pc, unsigned long fid) {
 }
 
 void
-ixp_server_handle_fcall(IXPConn *c)
-{
+ixp_server_handle_fcall(IXPConn *c) {
 	Fcall fcall = {0};
 	P9Conn *pc = c->aux;
 	P9Req *req;
@@ -83,25 +80,20 @@ ixp_server_handle_fcall(IXPConn *c)
 		goto Fail;
 	if(!(msize = ixp_msg2fcall(&fcall, pc->buf, IXP_MAX_MSG)))
 		goto Fail;
-
 	req = ixp_emallocz(sizeof(P9Req));
 	req->conn = pc;
 	req->ifcall = fcall;
 	pc->conn = c;
-
 	if(lookupkey(&pc->tagmap, fcall.tag))
 		return respond(req, Eduptag);
-
 	insertkey(&pc->tagmap, fcall.tag, req);
 	return ixp_handle_req(req);
-
 Fail:
 	ixp_server_close_conn(c);
 }
 
 static void
-ixp_handle_req(P9Req *r)
-{
+ixp_handle_req(P9Req *r) {
 	P9Conn *pc = r->conn;
 	P9Srv *srv = pc->srv;
 
@@ -282,7 +274,6 @@ respond(P9Req *r, char *error) {
 		break;
 	/* Still to be implemented: flush, wstat, auth */
 	}
-
 	r->ofcall.tag = r->ifcall.tag;
 	if(!error)
 		r->ofcall.type = r->ifcall.type + 1;
@@ -290,10 +281,8 @@ respond(P9Req *r, char *error) {
 		r->ofcall.type = RERROR;
 		r->ofcall.ename = error;
 	}
-
 	if(pc->conn)
 		ixp_server_respond_fcall(pc->conn, &r->ofcall);
-
 	switch(r->ofcall.type) {
 	case RSTAT:
 		free(r->ofcall.stat);
@@ -302,10 +291,8 @@ respond(P9Req *r, char *error) {
 		free(r->ofcall.data);
 		break;
 	}
-
 	deletekey(&pc->tagmap, r->ifcall.tag);;
 	free(r);
-
 	if(!pc->conn && pc->ref == 0)
 		free_p9conn(pc);
 }
@@ -318,7 +305,6 @@ ixp_void_request(void *t) {
 
 	r = t;
 	pc = r->conn;
-
 	tr = ixp_emallocz(sizeof(P9Req));
 	tr->conn = pc;
 	tr->ifcall.type = TFLUSH;
@@ -336,7 +322,6 @@ ixp_void_fid(void *t) {
 
 	f = t;
 	pc = f->conn;
-
 	tr = ixp_emallocz(sizeof(P9Req));
 	tr->fid = f;
 	tr->conn = pc;
@@ -382,13 +367,10 @@ serve_9pcon(IXPConn *c) {
 
 	P9Conn *pc = ixp_emallocz(sizeof(P9Conn));
 	pc->srv = c->aux;
-
 	/* XXX */
 	pc->msize = 1024;
 	pc->buf = ixp_emallocz(pc->msize);
-
 	initmap(&pc->tagmap, TAG_BUCKETS, &pc->taghash);
 	initmap(&pc->fidmap, FID_BUCKETS, &pc->fidhash);
-
 	ixp_server_open_conn(c->srv, fd, pc, ixp_server_handle_fcall, ixp_cleanup_conn);
 }

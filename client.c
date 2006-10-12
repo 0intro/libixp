@@ -1,8 +1,7 @@
-/*
- * (C)opyright MMIV-MMVI Anselm R. Garbe <garbeam at gmail dot com>
+/* (C)opyright MMIV-MMVI Anselm R. Garbe <garbeam at gmail dot com>
  * See LICENSE file for license details.
  */
-
+#include "ixp.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,11 +9,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "ixp.h"
-
 int
-ixp_client_do_fcall(IXPClient *c)
-{
+ixp_client_do_fcall(IXPClient *c) {
 	static unsigned char msg[IXP_MAX_MSG];
 	unsigned int msize = ixp_fcall2msg(msg, &c->ifcall, IXP_MAX_MSG);
 
@@ -31,19 +27,15 @@ ixp_client_do_fcall(IXPClient *c)
 		c->errstr = c->ofcall.ename;
 		return -1;
 	}
-
 	return 0;
 }
 
 int
-ixp_client_dial(IXPClient *c, char *sockfile, unsigned int rootfid)
-{
-
+ixp_client_dial(IXPClient *c, char *sockfile, unsigned int rootfid) {
 	if((c->fd = ixp_connect_sock(sockfile)) < 0) {
 		c->errstr = "cannot connect server";
 		return -1;
 	}
-
 	c->ifcall.type = TVERSION;
 	c->ifcall.tag = IXP_NOTAG;
 	c->ifcall.msize = IXP_MAX_MSG;
@@ -61,7 +53,6 @@ ixp_client_dial(IXPClient *c, char *sockfile, unsigned int rootfid)
 	}
 	free(c->ofcall.version);
 	c->root_fid = rootfid;
-
 	c->ifcall.type = TATTACH;
 	c->ifcall.tag = IXP_NOTAG;
 	c->ifcall.fid = c->root_fid;
@@ -74,20 +65,16 @@ ixp_client_dial(IXPClient *c, char *sockfile, unsigned int rootfid)
 		return -1;
 	}
 	c->root_qid = c->ofcall.qid;
-
 	return 0;
 }
 
 int
-ixp_client_remove(IXPClient *c, unsigned int newfid, char *filepath)
-{
-
+ixp_client_remove(IXPClient *c, unsigned int newfid, char *filepath) {
 	if(ixp_client_walk(c, newfid, filepath) == -1)
 		return -1;
 	c->ifcall.type = TREMOVE;
 	c->ifcall.tag = IXP_NOTAG;
 	c->ifcall.fid = newfid;
-
 	return ixp_client_do_fcall(c);
 }
 
@@ -105,8 +92,7 @@ ixp_client_create(IXPClient *c, unsigned int dirfid, char *name,
 }
 
 int
-ixp_client_walk(IXPClient *c, unsigned int newfid, char *filepath)
-{
+ixp_client_walk(IXPClient *c, unsigned int newfid, char *filepath) {
 	unsigned int i;
 	char *wname[IXP_MAX_WELEM];
 
@@ -124,12 +110,9 @@ ixp_client_walk(IXPClient *c, unsigned int newfid, char *filepath)
 }
 
 int
-ixp_client_stat(IXPClient *c, unsigned int newfid, char *filepath)
-{
-
+ixp_client_stat(IXPClient *c, unsigned int newfid, char *filepath) {
 	if(ixp_client_walk(c, newfid, filepath) == -1)
 		return -1;
-
 	c->ifcall.type = TSTAT;
 	c->ifcall.tag = IXP_NOTAG;
 	c->ifcall.fid = newfid;
@@ -137,9 +120,7 @@ ixp_client_stat(IXPClient *c, unsigned int newfid, char *filepath)
 }
 
 int
-ixp_client_open(IXPClient *c, unsigned int newfid, unsigned char mode)
-{
-
+ixp_client_open(IXPClient *c, unsigned int newfid, unsigned char mode) {
 	c->ifcall.type = TOPEN;
 	c->ifcall.tag = IXP_NOTAG;
 	c->ifcall.fid = newfid;
@@ -151,7 +132,6 @@ int
 ixp_client_walkopen(IXPClient *c, unsigned int newfid, char *filepath,
 		unsigned char mode)
 {
-
 	if(ixp_client_walk(c, newfid, filepath) == -1)
 		return -1;
 	return ixp_client_open(c, newfid, mode);
@@ -172,7 +152,6 @@ ixp_client_read(IXPClient *c, unsigned int fid, unsigned long long offset,
 		return -1;
 	memcpy(result, c->ofcall.data, c->ofcall.count);
 	free(c->ofcall.data);
-
 	return c->ofcall.count;
 }
 
@@ -181,12 +160,10 @@ ixp_client_write(IXPClient *c, unsigned int fid,
 		unsigned long long offset, unsigned int count,
 		unsigned char *data)
 {
-
 	if(count > c->ofcall.iounit) {
 		c->errstr = "iounit exceeded";
 		return -1;
 	}
-
 	c->ifcall.type = TWRITE;
 	c->ifcall.tag = IXP_NOTAG;
 	c->ifcall.fid = fid;
@@ -195,14 +172,11 @@ ixp_client_write(IXPClient *c, unsigned int fid,
 	c->ifcall.data = (void *)data;
 	if(ixp_client_do_fcall(c) == -1)
 		return -1;
-
 	return c->ofcall.count;
 }
 
 int
-ixp_client_close(IXPClient *c, unsigned int fid)
-{
-
+ixp_client_close(IXPClient *c, unsigned int fid) {
 	c->ifcall.type = TCLUNK;
 	c->ifcall.tag = IXP_NOTAG;
 	c->ifcall.fid = fid;
@@ -210,8 +184,7 @@ ixp_client_close(IXPClient *c, unsigned int fid)
 }
 
 void
-ixp_client_hangup(IXPClient *c)
-{
+ixp_client_hangup(IXPClient *c) {
 	/* session finished, now shutdown */
 	if(c->fd) {
 		shutdown(c->fd, SHUT_RDWR);

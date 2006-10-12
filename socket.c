@@ -1,8 +1,7 @@
-/*
- * (C)opyright MMIV-MMVI Anselm R. Garbe <garbeam at gmail dot com>
+/* (C)opyright MMIV-MMVI Anselm R. Garbe <garbeam at gmail dot com>
  * See LICENSE file for license details.
  */
-
+#include "ixp.h"
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,11 +14,8 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-#include "ixp.h"
-
 static int
-connect_unix_sock(char *address)
-{
+connect_unix_sock(char *address) {
 	int fd = 0;
 	struct sockaddr_un addr = { 0 };
 	socklen_t su_len;
@@ -28,7 +24,6 @@ connect_unix_sock(char *address)
 	addr.sun_family = AF_UNIX;
 	strncpy(addr.sun_path, address, sizeof(addr.sun_path));
 	su_len = sizeof(struct sockaddr) + strlen(addr.sun_path);
-
 	if((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
 		return -1;
 	if(connect(fd, (struct sockaddr *) &addr, su_len)) {
@@ -39,8 +34,7 @@ connect_unix_sock(char *address)
 }
 
 static int
-connect_inet_sock(char *host)
-{
+connect_inet_sock(char *host) {
 	int fd = 0;
 	struct sockaddr_in addr = { 0 };
 	struct hostent *hp;
@@ -53,7 +47,6 @@ connect_inet_sock(char *host)
 	port++;
 	if(sscanf(port, "%d", &prt) != 1)
 		return -1;
-
 	/* init */
 	if((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 		return -1;
@@ -61,7 +54,6 @@ connect_inet_sock(char *host)
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(prt);
 	bcopy(hp->h_addr, &addr.sin_addr, hp->h_length);
-
 	if(connect(fd, (struct sockaddr *) &addr, sizeof(struct sockaddr_in))) {
 		close(fd);
 		return -1;
@@ -70,14 +62,12 @@ connect_inet_sock(char *host)
 }
 
 int
-ixp_connect_sock(char *address)
-{
+ixp_connect_sock(char *address) {
 	char *p;
 	
 	if((p = strchr(address, '!'))) {
 		*p = 0;
 		p++;
-
 		if(!strncmp(address, "unix", 5))
 			return connect_unix_sock(p);
 		else if(!strncmp(address, "tcp", 4))
@@ -87,8 +77,7 @@ ixp_connect_sock(char *address)
 }
 
 static int
-create_inet_sock(char *host, char **errstr)
-{
+create_inet_sock(char *host, char **errstr) {
 	int fd;
 	struct sockaddr_in addr = { 0 };
 	struct hostent *hp;
@@ -112,7 +101,6 @@ create_inet_sock(char *host, char **errstr)
 	}
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(prt);
-
 	if(!strncmp(host, "*", 2))
 		addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	else if((hp = gethostbyname(host)))
@@ -121,13 +109,11 @@ create_inet_sock(char *host, char **errstr)
 		*errstr = "cannot translate hostname to an address";
 		return -1;
 	}
-
 	if(bind(fd, (struct sockaddr *) &addr, sizeof(struct sockaddr_in)) < 0) {
 		*errstr = "cannot bind socket";
 		close(fd);
 		return -1;
 	}
-
 	if(listen(fd, IXP_MAX_CACHE) < 0) {
 		*errstr = "cannot listen on socket";
 		close(fd);
@@ -137,8 +123,7 @@ create_inet_sock(char *host, char **errstr)
 }
 
 static int
-create_unix_sock(char *file, char **errstr)
-{
+create_unix_sock(char *file, char **errstr) {
 	int fd;
 	int yes = 1;
 	struct sockaddr_un addr = { 0 };
@@ -158,7 +143,6 @@ create_unix_sock(char *file, char **errstr)
 	addr.sun_family = AF_UNIX;
 	strncpy(addr.sun_path, file, sizeof(addr.sun_path));
 	su_len = sizeof(struct sockaddr) + strlen(addr.sun_path);
-
 	unlink(file); /* remove old socket, if any */
 	if(bind(fd, (struct sockaddr *) &addr, su_len) < 0) {
 		*errstr = "cannot bind socket";
@@ -166,7 +150,6 @@ create_unix_sock(char *file, char **errstr)
 		return -1;
 	}
 	chmod(file, S_IRWXU);
-
 	if(listen(fd, IXP_MAX_CACHE) < 0) {
 		*errstr = "cannot listen on socket";
 		close(fd);
@@ -176,8 +159,7 @@ create_unix_sock(char *file, char **errstr)
 }
 
 int
-ixp_create_sock(char *address, char **errstr)
-{
+ixp_create_sock(char *address, char **errstr) {
 	char *p = strchr(address, '!');
 	char *addr, *type;
 
@@ -186,10 +168,8 @@ ixp_create_sock(char *address, char **errstr)
 		return -1;
 	}
 	*p = 0;
-
 	addr = &p[1];
 	type = address; /* unix, inet */
-
 	if(!strncmp(type, "unix", 5))
 		return create_unix_sock(addr, errstr);
 	else if(!strncmp(type, "tcp", 4))

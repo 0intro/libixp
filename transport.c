@@ -1,8 +1,7 @@
-/*
- * (C)opyright MMIV-MMVI Anselm R. Garbe <garbeam at gmail dot com>
+/* (C)opyright MMIV-MMVI Anselm R. Garbe <garbeam at gmail dot com>
  * See LICENSE file for license details.
  */
-
+#include "ixp.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -13,11 +12,8 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-#include "ixp.h"
-
 unsigned int
-ixp_send_message(int fd, void *msg, unsigned int msize, char **errstr)
-{
+ixp_send_message(int fd, void *msg, unsigned int msize, char **errstr) {
 	unsigned int num = 0;
 	int r;
 
@@ -36,8 +32,7 @@ ixp_send_message(int fd, void *msg, unsigned int msize, char **errstr)
 }
 
 static unsigned int
-ixp_recv_data(int fd, void *msg, unsigned int msize, char **errstr)
-{
+ixp_recv_data(int fd, void *msg, unsigned int msize, char **errstr) {
 	unsigned int num = 0;
 	int r = 0;
 
@@ -56,8 +51,7 @@ ixp_recv_data(int fd, void *msg, unsigned int msize, char **errstr)
 }
 
 unsigned int
-ixp_recv_message(int fd, void *msg, unsigned int msglen, char **errstr)
-{
+ixp_recv_message(int fd, void *msg, unsigned int msglen, char **errstr) {
 	unsigned int msize;
 
 	/* receive header */
@@ -71,7 +65,7 @@ ixp_recv_message(int fd, void *msg, unsigned int msglen, char **errstr)
 	}
 	/* receive message */
 	if(ixp_recv_data(fd, msg, msize - sizeof(unsigned int), errstr)
-       != msize - sizeof(unsigned int))
+		!= msize - sizeof(unsigned int))
 		return 0;
 	return msize;
 }
