@@ -9,6 +9,31 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+static unsigned int
+tokenize(char **result, unsigned int reslen, char *str, char delim) {
+	char *p, *n;
+	unsigned int i = 0;
+
+	if(!str)
+		return 0;
+	for(n = str; *n == delim; n++);
+	p = n;
+	for(i = 0; *n != 0;) {
+		if(i == reslen)
+			return i;
+		if(*n == delim) {
+			*n = 0;
+			if(strlen(p))
+				result[i++] = p;
+			p = ++n;
+		} else
+			n++;
+	}
+	if((i < reslen) && (p < n) && strlen(p))
+		result[i++] = p;
+	return i;	/* number of tokens */
+}
+
 int
 ixp_client_do_fcall(IXPClient *c) {
 	static unsigned char msg[IXP_MAX_MSG];
@@ -101,8 +126,7 @@ ixp_client_walk(IXPClient *c, unsigned int newfid, char *filepath) {
 	c->ifcall.newfid = newfid;
 	if(filepath) {
 		c->ifcall.name = filepath;
-		c->ifcall.nwname =
-			cext_tokenize(wname, IXP_MAX_WELEM, c->ifcall.name, '/');
+		c->ifcall.nwname = tokenize(wname, IXP_MAX_WELEM, c->ifcall.name, '/');
 		for(i = 0; i < c->ifcall.nwname; i++)
 			c->ifcall.wname[i] = wname[i];
 	}

@@ -37,6 +37,15 @@ ixp_eprint(const char *errstr, ...) {
 	exit(EXIT_FAILURE);
 }
 
+void *
+ixp_erealloc(void *ptr, unsigned int size) {
+	void *res = realloc(ptr, size);
+
+	if(!res)
+		ixp_eprint("fatal: could not malloc() %u bytes\n", size);
+	return res;
+}
+
 char *
 ixp_estrdup(const char *str) {
 	void *res = strdup(str);

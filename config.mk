@@ -8,7 +8,7 @@ PREFIX = /usr/local
 
 # includes and libs
 INCS = -I. -I/usr/include
-LIBS = -L/usr/lib -lc
+LIBS = -L/usr/lib -lc -L.
 
 # flags
 CFLAGS = -Os ${INCS} -DVERSION=\"${VERSION}\"

@@ -371,4 +371,5 @@ extern unsigned int ixp_recv_message(int fd, void *msg, unsigned int msglen, cha
 extern void * ixp_emalloc(unsigned int size);
 extern void * ixp_emallocz(unsigned int size);
 extern void  ixp_eprint(const char *errstr, ...);
+extern void * ixp_erealloc(void *ptr, unsigned int size);
 extern char * ixp_estrdup(const char *str);
