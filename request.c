@@ -2,6 +2,7 @@
  * See LICENSE file for license details.
  */
 #include "ixp.h"
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -212,10 +213,10 @@ respond(P9Req *r, char *error) {
 	switch(r->ifcall.type) {
 	default:
 		if(!error)
-			cext_assert(!"Respond called on unsupported fcall type");
+			assert(!"Respond called on unsupported fcall type");
 		break;
 	case TVERSION:
-		cext_assert(!error);
+		assert(!error);
 		free(r->ifcall.version);
 		pc->msize = (r->ofcall.msize < IXP_MAX_MSG) ? r->ofcall.msize : IXP_MAX_MSG;
 		free(pc->buf);

@@ -2,6 +2,7 @@
  * See LICENSE file for license details.
  */
 #include "ixp.h"
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -35,7 +36,7 @@ ixp_server_close_conn(IXPConn *c) {
 	IXPServer *s = c->srv;
 	IXPConn **tc;
 	for(tc=&s->conn; *tc && *tc != c; tc=&(*tc)->next);
-	cext_assert(*tc == c);
+	assert(*tc == c);
 	*tc = c->next;
 	c->closed = 1;
 	if(c->close)
