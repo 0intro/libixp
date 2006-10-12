@@ -1,6 +1,6 @@
-/*
- *(C)opyright MMIV-MMVI Anselm R. Garbe <garbeam at gmail dot com>
- *See LICENSE file for license details.
+/* (C)opyright MMIV-MMVI Anselm R. Garbe <garbeam at gmail dot com>
+ * (C)opyright MMVI Kris Maglione <fbsdaemon at gmail dot com>
+ * See LICENSE file for license details.
  */
 
 #include <sys/types.h>
