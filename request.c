@@ -85,10 +85,13 @@ ixp_server_handle_fcall(IXPConn *c) {
 	req->conn = pc;
 	req->ifcall = fcall;
 	pc->conn = c;
-	if(lookupkey(&pc->tagmap, fcall.tag))
-		return respond(req, Eduptag);
+	if(lookupkey(&pc->tagmap, fcall.tag)) {
+		respond(req, Eduptag);
+		return;
+	}
 	insertkey(&pc->tagmap, fcall.tag, req);
-	return ixp_handle_req(req);
+	ixp_handle_req(req);
+	return;
 Fail:
 	ixp_server_close_conn(c);
 }
@@ -115,92 +118,146 @@ ixp_handle_req(P9Req *r) {
 		respond(r, NULL);
 		break;
 	case TATTACH:
-		if(!(r->fid = createfid(&pc->fidmap, r->ifcall.fid, pc)))
-			return respond(r, Edupfid);
+		if(!(r->fid = createfid(&pc->fidmap, r->ifcall.fid, pc))) {
+			respond(r, Edupfid);
+			return;
+		}
 		/* attach is a required function */
 		srv->attach(r);
 		break;
 	case TCLUNK:
-		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.fid)))
-			return respond(r, Enofid);
-		if(!srv->clunk)
-			return respond(r, NULL);
+		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.fid))) {
+			respond(r, Enofid);
+			return;
+		}
+		if(!srv->clunk) {
+			respond(r, NULL);
+			return;
+		}
 		srv->clunk(r);
 		break;
 	case TFLUSH:
-		if(!(r->oldreq = lookupkey(&pc->tagmap, r->ifcall.oldtag)))
-			return respond(r, Enotag);
-		if(!srv->flush)
-			return respond(r, Enofunc);
+		if(!(r->oldreq = lookupkey(&pc->tagmap, r->ifcall.oldtag))) {
+			respond(r, Enotag);
+			return;
+		}
+		if(!srv->flush) {
+			respond(r, Enofunc);
+			return;
+		}
 		srv->flush(r);
 		break;
 	case TCREATE:
-		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.fid)))
-			return respond(r, Enofid);
-		if(r->fid->omode != -1)
-			return respond(r, Ebotch);
-		if(!(r->fid->qid.type&P9QTDIR))
-			return respond(r, Enotdir);
-		if(!pc->srv->create)
-			return respond(r, Enofunc);
+		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.fid))) {
+			respond(r, Enofid);
+			return;
+		}
+		if(r->fid->omode != -1) {
+			respond(r, Ebotch);
+			return;
+		}
+		if(!(r->fid->qid.type&P9QTDIR)) {
+			respond(r, Enotdir);
+			return;
+		}
+		if(!pc->srv->create) {
+			respond(r, Enofunc);
+			return;
+		}
 		pc->srv->create(r);
 		break;
 	case TOPEN:
-		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.fid)))
-			return respond(r, Enofid);
-		if((r->fid->qid.type&P9QTDIR) && (r->ifcall.mode|P9ORCLOSE) != (P9OREAD|P9ORCLOSE))
-			return respond(r, Eisdir);
+		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.fid))) {
+			respond(r, Enofid);
+			return;
+		}
+		if((r->fid->qid.type&P9QTDIR) && (r->ifcall.mode|P9ORCLOSE) != (P9OREAD|P9ORCLOSE)) {
+			respond(r, Eisdir);
+			return;
+		}
 		r->ofcall.qid = r->fid->qid;
-		if(!pc->srv->open)
-			return respond(r, Enofunc);
+		if(!pc->srv->open) {
+			respond(r, Enofunc);
+			return;
+		}
 		pc->srv->open(r);
 		break;
 	case TREAD:
-		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.fid)))
-			return respond(r, Enofid);
-		if(r->fid->omode == -1 || r->fid->omode == P9OWRITE)
-			return respond(r, Ebotch);
-		if(!pc->srv->read)
-			return respond(r, Enofunc);
+		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.fid))) {
+			respond(r, Enofid);
+			return;
+		}
+		if(r->fid->omode == -1 || r->fid->omode == P9OWRITE) {
+			respond(r, Ebotch);
+			return;
+		}
+		if(!pc->srv->read) {
+			respond(r, Enofunc);
+			return;
+		}
 		pc->srv->read(r);
 		break;
 	case TREMOVE:
-		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.fid)))
-			return respond(r, Enofid);
-		if(!pc->srv->remove)
-			return respond(r, Enofunc);
+		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.fid))) {
+			respond(r, Enofid);
+			return;
+		}
+		if(!pc->srv->remove) {
+			respond(r, Enofunc);
+			return;
+		}
 		pc->srv->remove(r);
 		break;
 	case TSTAT:
-		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.fid)))
-			return respond(r, Enofid);
-		if(!pc->srv->stat)
-			return respond(r, Enofunc);
+		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.fid))) {
+			respond(r, Enofid);
+			return;
+		}
+		if(!pc->srv->stat) {
+			respond(r, Enofunc);
+			return;
+		}
 		pc->srv->stat(r);
 		break;
 	case TWALK:
-		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.fid)))
-			return respond(r, Enofid);
-		if(r->fid->omode != -1)
-			return respond(r, "cannot walk from an open fid");
-		if(r->ifcall.nwname && !(r->fid->qid.type&P9QTDIR))
-			return respond(r, Enotdir);
+		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.fid))) {
+			respond(r, Enofid);
+			return;
+		}
+		if(r->fid->omode != -1) {
+			respond(r, "cannot walk from an open fid");
+			return;
+		}
+		if(r->ifcall.nwname && !(r->fid->qid.type&P9QTDIR)) {
+			respond(r, Enotdir);
+			return;
+		}
 		if((r->ifcall.fid != r->ifcall.newfid)) {
-			if(!(r->newfid = createfid(&pc->fidmap, r->ifcall.newfid, pc)))
-				return respond(r, Edupfid);
+			if(!(r->newfid = createfid(&pc->fidmap, r->ifcall.newfid, pc))) {
+				respond(r, Edupfid);
+				return;
+			}
 		}else
 			r->newfid = r->fid;
-		if(!pc->srv->walk)
-			return respond(r, Enofunc);
+		if(!pc->srv->walk) {
+			respond(r, Enofunc);
+			return;
+		}
 		pc->srv->walk(r);
 		break;
 	case TWRITE:
-		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.fid)))
-			return respond(r, Enofid);
-		if((r->fid->omode&3) != P9OWRITE && (r->fid->omode&3) != P9ORDWR)
-			return respond(r, "write on fid not opened for writing");
-		if(!pc->srv->write)
-			return respond(r, Enofunc);
+		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.fid))) {
+			respond(r, Enofid);
+			return;
+		}
+		if((r->fid->omode&3) != P9OWRITE && (r->fid->omode&3) != P9ORDWR) {
+			respond(r, "write on fid not opened for writing");
+			return;
+		}
+		if(!pc->srv->write) {
+			respond(r, Enofunc);
+			return;
+		}
 		pc->srv->write(r);
 		break;
 	/* Still to be implemented: flush, wstat, auth */
