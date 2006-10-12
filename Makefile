@@ -41,13 +41,19 @@ dist: clean
 	@rm -rf libixp-${VERSION}
 
 install: all
+	@echo installing header to ${DESTDIR}${PREFIX}/include
+	@mkdir -p ${DESTDIR}${PREFIX}/include
+	@cp -f ixp.h ${DESTDIR}${PREFIX}/include
+	@chmod 644 ${DESTDIR}${PREFIX}/include/ixp.h
 	@echo installing library to ${DESTDIR}${PREFIX}/lib
 	@mkdir -p ${DESTDIR}${PREFIX}/lib
 	@cp -f ssid ${DESTDIR}${PREFIX}/lib
 	@chmod 644 ${DESTDIR}${PREFIX}/lib/libixp.a
 
 uninstall:
-	@echo removing libraray file from ${DESTDIR}${PREFIX}/lib
+	@echo removing header file from ${DESTDIR}${PREFIX}/include
+	@rm -f ${DESTDIR}${PREFIX}/include/ixp.h
+	@echo removing library file from ${DESTDIR}${PREFIX}/lib
 	@rm -f ${DESTDIR}${PREFIX}/lib/libixp.a
 
 .PHONY: all options clean dist install uninstall
