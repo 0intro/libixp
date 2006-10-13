@@ -235,7 +235,7 @@ main(int argc, char *argv[]) {
 
 	/* command line args */
 	if(argc < 2)
-		ixp_eprint("usage: ixpc [-a <address>] [-v] create | read | ls [-l] | remove | write <file>\n");
+		goto Usage;
 	for(i = 1; i < argc; i++)
 		if(!strncmp(argv[i], "-v", 3)) {
 			fputs("ixpc-"VERSION", (C)opyright MMIV-MMVI Anselm R. Garbe\n", stdout);
@@ -247,7 +247,7 @@ main(int argc, char *argv[]) {
 	file = argv[argc - 1];
 	if((details = !strncmp(cmd, "-l", 3))) {
 		if(argc < 3 || strncmp(argv[argc - 3], "ls", 3))
-			ixp_eprint("usage: ixpc [-a <address>] [-v] create | read | ls [-l] | remove | write <file>\n");
+			goto Usage;
 		cmd = argv[argc - 3];
 	}
 	if(!address)
@@ -264,8 +264,10 @@ main(int argc, char *argv[]) {
 		ret = xremove(file);
 	else if(!strncmp(cmd, "write", 6))
 		ret = xwrite(file, IXP_OWRITE);
-	else
+	else {
+Usage:
 		ixp_eprint("usage: ixpc [-a <address>] [-v] create | read | ls [-l] | remove | write <file>\n");
+	}
 	/* close socket */
 	ixp_client_hangup(&c);
 	return ret;
