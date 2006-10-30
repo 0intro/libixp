@@ -17,6 +17,12 @@ LDFLAGS = ${LIBS}
 #CFLAGS = -g -Wall -O2 ${INCS} -DVERSION=\"${VERSION}\"
 #LDFLAGS = -g ${LIBS}
 
+# Solaris
+#CFLAGS = -fast ${INCS} -DVERSION=\"${VERSION}\"
+#LDFLAGS = ${LIBS}
+#LIBS += -lsocket -lnsl
+#CFLAGS += -xtarget=ultra
+
 # compiler and linker
 AR = ar cr
 CC = cc
