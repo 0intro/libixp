@@ -13,11 +13,11 @@ static IXPClient c = { 0 };
 
 static void
 write_data(unsigned int fid) {
-	void *data = ixp_emallocz(c.ofcall.iounit);
+	void *data = ixp_emallocz(c.ofcall.data.ropen.iounit);
 	unsigned long long offset = 0;
 	unsigned int len = 0;
 
-	while((len = read(0, data, c.ofcall.iounit)) > 0) {
+	while((len = read(0, data, c.ofcall.data.ropen.iounit)) > 0) {
 		if(ixp_client_write(&c, fid, offset, len, data) != len) {
 			fprintf(stderr, "ixpc: cannot write file: %s\n", c.errstr);
 			break;
@@ -49,7 +49,7 @@ xcreate(char *file) {
 		fprintf(stderr, "ixpc: cannot create file '%s': %s\n", p, c.errstr);
 		return -1;
 	}
-	if(!(c.ofcall.qid.type&P9DMDIR))
+	if(!(c.ofcall.data.rcreate.qid.type&P9DMDIR))
 		write_data(fid);
 	return ixp_client_close(&c, fid);
 }
@@ -168,7 +168,7 @@ xdir(char *file, int details) {
 		fprintf(stderr, "ixpc: cannot stat file '%s': %s\n", file, c.errstr);
 		return -1;
 	}
-	buf = c.ofcall.stat;
+	buf = c.ofcall.data.rstat.stat;
 	ixp_unpack_stat(&buf, NULL, s);
 	if(!(s->mode & IXP_DMDIR)) {
 		print_stat(s, details);

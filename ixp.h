@@ -159,54 +159,54 @@ typedef struct Fcall {
 	unsigned char type;
 	unsigned short tag;
 	unsigned int fid;
-//	union {
-//		struct { /* Tversion, Rversion */
+	union {
+		struct { /* Tversion, Rversion */
 			unsigned int msize;
 			char	*version;
-//		};
-//		struct { /* Tflush */
+		} tversion, rversion;
+		struct { /* Tflush */
 			unsigned short oldtag;
-//		};
-//		struct { /* Rerror */
+		} tflush;
+		struct { /* Rerror */
 			char *ename;
-//		};
-//		struct { /* Ropen, Rcreate */
+		} rerror;
+		struct { /* Ropen, Rcreate */
 			Qid qid; /* +Rattach */
 			unsigned int iounit;
-//		};
-//		struct { /* Rauth */
+		} ropen, rcreate, rattach;
+		struct { /* Rauth */
 			Qid aqid;
-//		};
-//		struct { /* Tauth, Tattach */
+		} rauth;
+		struct { /* Tauth, Tattach */
 			unsigned int	afid;
 			char		*uname;
 			char		*aname;
-//		};
-//		struct { /* Tcreate */
+		} tauth, tattach;
+		struct { /* Tcreate */
 			unsigned int	perm;
 			char		*name;
 			unsigned char	mode; /* +Topen */
-//		};
-//		struct { /* Twalk */
+		} tcreate, topen;
+		struct { /* Twalk */
 			unsigned int	newfid;
 			unsigned short	nwname;
 			char	*wname[IXP_MAX_WELEM];
-//		};
-//		struct { /* Rwalk */
+		} twalk;
+		struct { /* Rwalk */
 			unsigned short	nwqid;
 			Qid	wqid[IXP_MAX_WELEM];
-//		};
-//		struct { /* Twrite */
+		} rwalk;
+		struct { /* Twrite */
 			unsigned long long	offset; /* +Tread */
 			/* +Rread */
 			unsigned int	count; /* +Tread */
 			char		*data;
-//		};
-//		struct { /* Twstat, Rstat */
+		} twrite, tread, rread, rwrite;
+		struct { /* Twstat, Rstat */
 			unsigned short	nstat;
 			unsigned char	*stat;
-//		};
-//	};
+		} twstat, rstat;
+	} data;
 } Fcall;
 
 typedef struct IXPServer IXPServer;
