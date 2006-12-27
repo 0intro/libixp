@@ -50,23 +50,27 @@ See
 below.
 .TP
 .B create
-Creates file or directory but does not write any data. If the file exists,
+Creates file or directory. If the file exists,
 nothing is done.
 .TP
+.B ls
+Lists files and directories.
+.TP
 .B read
-Reads file or directory contents
+Reads file or directory contents.
 .TP
 .B remove
-Removes file or directory tree
+Removes file or directory tree.
 .SH ENVIRONMENT
 .TP
 IXP_ADDRESS
 See above.
 .SH EXAMPLES
 .TP
-.B ixpc read /
-This prints the root directory of the wmii filesystem. For more information
-about the contents of this filesystem, see
+.B ixpc ls /
+This prints the root directory of the wmii filesystem, if IXP_ADDRESS is set
+to the address of wmii. For more information about the contents of this
+filesystem, see
 .BR wmiiwm (1).
 .TP
 .B echo -n quit | ixpc write /ctl
