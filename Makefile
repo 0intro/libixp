@@ -41,7 +41,7 @@ clean:
 dist: clean
 	@echo creating dist tarball
 	@mkdir -p libixp-${VERSION}
-	@cp -R LICENSE LICENSE.p9p Makefile README config.mk ixp.h ${SRC} ${SRCIXPC} libixp-${VERSION}
+	@cp -R LICENSE LICENSE.p9p Makefile README config.mk ixp.h ixpc.1 ${SRC} ${SRCIXPC} libixp-${VERSION}
 	@tar -cf libixp-${VERSION}.tar libixp-${VERSION}
 	@gzip libixp-${VERSION}.tar
 	@rm -rf libixp-${VERSION}
