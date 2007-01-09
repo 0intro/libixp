@@ -1,5 +1,5 @@
 # libixp - simple 9P client-/server-library
-#   (C)opyright MMIV-MMVI Anselm R. Garbe
+#   (C)opyright MMIV-MMVII Anselm R. Garbe
 
 include config.mk
 
@@ -9,13 +9,14 @@ SRCIXPC = ixpc.c
 OBJ = ${SRC:.c=.o}
 OBJIXPC = ${SRCIXPC:.c=.o}
 
-all: options libixp.a ixpc
+all: options libixp.a libixp.so ixpc
 
 options:
 	@echo libixp build options:
 	@echo "CFLAGS   = ${CFLAGS}"
 	@echo "LDFLAGS  = ${LDFLAGS}"
 	@echo "CC       = ${CC}"
+	@echo "SOFLAGS  = ${SOFLAGS}"
 	@echo "LD       = ${LD}"
 
 .c.o:
@@ -29,6 +30,10 @@ libixp.a: ${OBJ}
 	@${AR} $@ ${OBJ}
 	@${RANLIB} $@
 
+libixp.so: ${OBJ}
+	@echo CC $@
+	@${CC} ${SOFLAGS} -o $@ ${OBJ}
+
 ixpc: ${OBJIXPC}
 	@echo LD $@
 	@${LD} -o $@ ${OBJIXPC} ${LDFLAGS} -lixp
@@ -36,7 +41,7 @@ ixpc: ${OBJIXPC}
 
 clean:
 	@echo cleaning
-	@rm -f ixpc libixp.a ${OBJ} ${OBJIXPC} libixp-${VERSION}.tar.gz
+	@rm -f ixpc libixp.a libixp.so ${OBJ} ${OBJIXPC} libixp-${VERSION}.tar.gz
 
 dist: clean
 	@echo creating dist tarball
@@ -55,6 +60,9 @@ install: all
 	@mkdir -p ${DESTDIR}${PREFIX}/lib
 	@cp -f libixp.a ${DESTDIR}${PREFIX}/lib
 	@chmod 644 ${DESTDIR}${PREFIX}/lib/libixp.a
+	@cp -f libixp.so ${DESTDIR}${PREFIX}/lib/libixp.so.${VERSION}
+	@chmod 755 ${DESTDIR}${PREFIX}/lib/libixp.so.${VERSION}
+	@ln -s libixp.so.${VERSION} ${DESTDIR}${PREFIX}/lib/libixp.so
 	@echo installing ixpc to ${DESTDIR}${PREFIX}/bin
 	@mkdir -p ${DESTDIR}${PREFIX}/bin
 	@cp -f ixpc ${DESTDIR}${PREFIX}/bin
@@ -67,8 +75,12 @@ install: all
 uninstall:
 	@echo removing header file from ${DESTDIR}${PREFIX}/include
 	@rm -f ${DESTDIR}${PREFIX}/include/ixp.h
+
 	@echo removing library file from ${DESTDIR}${PREFIX}/lib
 	@rm -f ${DESTDIR}${PREFIX}/lib/libixp.a
+	@echo removing shared object file from ${DESTDIR}${PREFIX}/lib
+	@rm -f ${DESTDIR}${PREFIX}/lib/libixp.so
+	@rm -f ${DESTDIR}${PREFIX}/lib/libixp.so.${VERSION}
 	@echo removing ipx client from ${DESTDIR}${PREFIX}/bin
 	@rm -f ${DESTDIR}${PREFIX}/bin/ixpc
 	@echo removing manual page from ${DESTDIR}${MANPREFIX}/man1
