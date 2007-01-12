@@ -31,8 +31,8 @@ libixp.a: ${OBJ}
 	@${RANLIB} $@
 
 libixp.so: ${OBJ}
-	@echo CC $@
-	@${CC} ${SOFLAGS} -o $@ ${OBJ}
+	@echo LD $@
+	@${LD} ${SOFLAGS} -o $@ ${OBJ}
 
 ixpc: ${OBJIXPC}
 	@echo LD $@

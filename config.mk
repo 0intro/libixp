@@ -20,7 +20,8 @@ SOFLAGS = -fPIC -shared
 
 # Solaris
 #CFLAGS = -fast ${INCS} -DVERSION=\"${VERSION}\"
-#LDFLAGS = ${LIBS}
+#LDFLAGS = ${LIBS} -R${PREFIX}/lib
+#SOFLAGS = -G
 #LIBS += -lsocket -lnsl
 #CFLAGS += -xtarget=ultra
 
