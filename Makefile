@@ -9,7 +9,8 @@ SRCIXPC = ixpc.c
 OBJ = ${SRC:.c=.o}
 OBJIXPC = ${SRCIXPC:.c=.o}
 
-all: options libixp.a libixp.so ixpc
+#all: options libixp.a libixp.so ixpc
+all: options libixp.a ixpc
 
 options:
 	@echo libixp build options:
@@ -79,8 +80,8 @@ uninstall:
 	@echo removing library file from ${DESTDIR}${PREFIX}/lib
 	@rm -f ${DESTDIR}${PREFIX}/lib/libixp.a
 	@echo removing shared object file from ${DESTDIR}${PREFIX}/lib
-	@rm -f ${DESTDIR}${PREFIX}/lib/libixp.so
-	@rm -f ${DESTDIR}${PREFIX}/lib/libixp.so.${VERSION}
+#	@rm -f ${DESTDIR}${PREFIX}/lib/libixp.so
+#	@rm -f ${DESTDIR}${PREFIX}/lib/libixp.so.${VERSION}
 	@echo removing ipx client from ${DESTDIR}${PREFIX}/bin
 	@rm -f ${DESTDIR}${PREFIX}/bin/ixpc
 	@echo removing manual page from ${DESTDIR}${MANPREFIX}/man1
