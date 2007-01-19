@@ -60,9 +60,9 @@ install: all
 	@mkdir -p ${DESTDIR}${PREFIX}/lib
 	@cp -f libixp.a ${DESTDIR}${PREFIX}/lib
 	@chmod 644 ${DESTDIR}${PREFIX}/lib/libixp.a
-	@cp -f libixp.so ${DESTDIR}${PREFIX}/lib/libixp.so.${VERSION}
-	@chmod 755 ${DESTDIR}${PREFIX}/lib/libixp.so.${VERSION}
-	@ln -s libixp.so.${VERSION} ${DESTDIR}${PREFIX}/lib/libixp.so
+#	@cp -f libixp.so ${DESTDIR}${PREFIX}/lib/libixp.so.${VERSION}
+#	@chmod 755 ${DESTDIR}${PREFIX}/lib/libixp.so.${VERSION}
+#	@ln -s libixp.so.${VERSION} ${DESTDIR}${PREFIX}/lib/libixp.so
 	@echo installing ixpc to ${DESTDIR}${PREFIX}/bin
 	@mkdir -p ${DESTDIR}${PREFIX}/bin
 	@cp -f ixpc ${DESTDIR}${PREFIX}/bin
