@@ -163,50 +163,50 @@ typedef struct Fcall {
 		struct { /* Tversion, Rversion */
 			unsigned int msize;
 			char	*version;
-		} tversion, rversion;
+		};
 		struct { /* Tflush */
 			unsigned short oldtag;
-		} tflush;
+		};
 		struct { /* Rerror */
 			char *ename;
-		} rerror;
+		};
 		struct { /* Ropen, Rcreate */
 			Qid qid; /* +Rattach */
 			unsigned int iounit;
-		} ropen, rcreate, rattach;
+		};
 		struct { /* Rauth */
 			Qid aqid;
-		} rauth;
+		};
 		struct { /* Tauth, Tattach */
 			unsigned int	afid;
 			char		*uname;
 			char		*aname;
-		} tauth, tattach;
+		};
 		struct { /* Tcreate */
 			unsigned int	perm;
 			char		*name;
 			unsigned char	mode; /* +Topen */
-		} tcreate, topen;
+		};
 		struct { /* Twalk */
 			unsigned int	newfid;
 			unsigned short	nwname;
 			char	*wname[IXP_MAX_WELEM];
-		} twalk;
+		};
 		struct { /* Rwalk */
 			unsigned short	nwqid;
 			Qid	wqid[IXP_MAX_WELEM];
-		} rwalk;
+		};
 		struct { /* Twrite */
 			unsigned long long	offset; /* +Tread */
 			/* +Rread */
 			unsigned int	count; /* +Tread */
 			char		*data;
-		} twrite, tread, rread, rwrite;
+		};
 		struct { /* Twstat, Rstat */
 			unsigned short	nstat;
 			unsigned char	*stat;
-		} twstat, rstat;
-	} data;
+		};
+	};
 } Fcall;
 
 typedef struct IXPServer IXPServer;

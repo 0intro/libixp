@@ -106,15 +106,15 @@ ixp_handle_req(P9Req *r) {
 		respond(r, Enofunc);
 		break;
 	case TVERSION:
-		if(!strncmp(r->ifcall.data.tversion.version, "9P", 3)) {
-			r->ofcall.data.rversion.version = "9P";
+		if(!strncmp(r->ifcall.version, "9P", 3)) {
+			r->ofcall.version = "9P";
 		}else
-		if(!strncmp(r->ifcall.data.tversion.version, "9P2000", 7)) {
-			r->ofcall.data.rversion.version = "9P2000";
+		if(!strncmp(r->ifcall.version, "9P2000", 7)) {
+			r->ofcall.version = "9P2000";
 		}else{
-			r->ofcall.data.rversion.version = "unknown";
+			r->ofcall.version = "unknown";
 		}
-		r->ofcall.data.rversion.msize = r->ifcall.data.tversion.msize;
+		r->ofcall.msize = r->ifcall.msize;
 		respond(r, NULL);
 		break;
 	case TATTACH:
@@ -137,7 +137,7 @@ ixp_handle_req(P9Req *r) {
 		srv->clunk(r);
 		break;
 	case TFLUSH:
-		if(!(r->oldreq = lookupkey(&pc->tagmap, r->ifcall.data.tflush.oldtag))) {
+		if(!(r->oldreq = lookupkey(&pc->tagmap, r->ifcall.oldtag))) {
 			respond(r, Enotag);
 			return;
 		}
@@ -171,11 +171,11 @@ ixp_handle_req(P9Req *r) {
 			respond(r, Enofid);
 			return;
 		}
-		if((r->fid->qid.type&P9QTDIR) && (r->ifcall.data.topen.mode|P9ORCLOSE) != (P9OREAD|P9ORCLOSE)) {
+		if((r->fid->qid.type&P9QTDIR) && (r->ifcall.mode|P9ORCLOSE) != (P9OREAD|P9ORCLOSE)) {
 			respond(r, Eisdir);
 			return;
 		}
-		r->ofcall.data.ropen.qid = r->fid->qid;
+		r->ofcall.qid = r->fid->qid;
 		if(!pc->srv->open) {
 			respond(r, Enofunc);
 			return;
@@ -228,12 +228,12 @@ ixp_handle_req(P9Req *r) {
 			respond(r, "cannot walk from an open fid");
 			return;
 		}
-		if(r->ifcall.data.twalk.nwname && !(r->fid->qid.type&P9QTDIR)) {
+		if(r->ifcall.nwname && !(r->fid->qid.type&P9QTDIR)) {
 			respond(r, Enotdir);
 			return;
 		}
-		if((r->ifcall.fid != r->ifcall.data.twalk.newfid)) {
-			if(!(r->newfid = createfid(&pc->fidmap, r->ifcall.data.twalk.newfid, pc))) {
+		if((r->ifcall.fid != r->ifcall.newfid)) {
+			if(!(r->newfid = createfid(&pc->fidmap, r->ifcall.newfid, pc))) {
 				respond(r, Edupfid);
 				return;
 			}
@@ -274,42 +274,42 @@ respond(P9Req *r, char *error) {
 		break;
 	case TVERSION:
 		assert(!error);
-		free(r->ifcall.data.tversion.version);
-		pc->msize = (r->ofcall.data.rversion.msize < IXP_MAX_MSG) ? r->ofcall.data.rversion.msize : IXP_MAX_MSG;
+		free(r->ifcall.version);
+		pc->msize = (r->ofcall.msize < IXP_MAX_MSG) ? r->ofcall.msize : IXP_MAX_MSG;
 		free(pc->buf);
-		pc->buf = ixp_emallocz(r->ofcall.data.rversion.msize);
+		pc->buf = ixp_emallocz(r->ofcall.msize);
 		break;
 	case TATTACH:
 		if(error)
 			destroyfid(pc, r->fid->fid);
-		free(r->ifcall.data.tattach.uname);
-		free(r->ifcall.data.tattach.aname);
+		free(r->ifcall.uname);
+		free(r->ifcall.aname);
 		break;
 	case TOPEN:
 	case TCREATE:
 		if(!error) {
-			r->fid->omode = r->ifcall.data.topen.mode;
-			r->fid->qid = r->ofcall.data.ropen.qid;
+			r->fid->omode = r->ifcall.mode;
+			r->fid->qid = r->ofcall.qid;
 		}
-		free(r->ifcall.data.topen.name);
-		r->ofcall.data.ropen.iounit = pc->msize - sizeof(unsigned long);
+		free(r->ifcall.name);
+		r->ofcall.iounit = pc->msize - sizeof(unsigned long);
 		break;
 	case TWALK:
-		if(error || r->ofcall.data.rwalk.nwqid < r->ifcall.data.twalk.nwname) {
-			if(r->ifcall.fid != r->ifcall.data.twalk.newfid && r->newfid)
+		if(error || r->ofcall.nwqid < r->ifcall.nwname) {
+			if(r->ifcall.fid != r->ifcall.newfid && r->newfid)
 				destroyfid(pc, r->newfid->fid);
-			if(!error && r->ofcall.data.rwalk.nwqid == 0)
+			if(!error && r->ofcall.nwqid == 0)
 				error = Enofile;
 		}else{
-			if(r->ofcall.data.rwalk.nwqid == 0)
+			if(r->ofcall.nwqid == 0)
 				r->newfid->qid = r->fid->qid;
 			else
-				r->newfid->qid = r->ofcall.data.rwalk.wqid[r->ofcall.data.rwalk.nwqid-1];
+				r->newfid->qid = r->ofcall.wqid[r->ofcall.nwqid-1];
 		}
-		free(*r->ifcall.data.twalk.wname);
+		free(*r->ifcall.wname);
 		break;
 	case TWRITE:
-		free(r->ifcall.data.twrite.data);
+		free(r->ifcall.data);
 		break;
 	case TREMOVE:
 		if(r->fid)
@@ -322,7 +322,7 @@ respond(P9Req *r, char *error) {
 			pc->ref--;
 		break;
 	case TFLUSH:
-		if((r->oldreq = lookupkey(&pc->tagmap, r->ifcall.data.tflush.oldtag)))
+		if((r->oldreq = lookupkey(&pc->tagmap, r->ifcall.oldtag)))
 			respond(r->oldreq, Einterrupted);
 		if(!pc->conn && r->ifcall.tag == IXP_NOTAG)
 			pc->ref--;
@@ -337,16 +337,16 @@ respond(P9Req *r, char *error) {
 		r->ofcall.type = r->ifcall.type + 1;
 	else {
 		r->ofcall.type = RERROR;
-		r->ofcall.data.rerror.ename = error;
+		r->ofcall.ename = error;
 	}
 	if(pc->conn)
 		ixp_server_respond_fcall(pc->conn, &r->ofcall);
 	switch(r->ofcall.type) {
 	case RSTAT:
-		free(r->ofcall.data.rstat.stat);
+		free(r->ofcall.stat);
 		break;
 	case RREAD:
-		free(r->ofcall.data.rread.data);
+		free(r->ofcall.data);
 		break;
 	}
 	deletekey(&pc->tagmap, r->ifcall.tag);;
@@ -367,7 +367,7 @@ ixp_void_request(void *t) {
 	tr->conn = pc;
 	tr->ifcall.type = TFLUSH;
 	tr->ifcall.tag = IXP_NOTAG;
-	tr->ifcall.data.tflush.oldtag = r->ifcall.tag;
+	tr->ifcall.oldtag = r->ifcall.tag;
 	ixp_handle_req(tr);
 }
 

@@ -24,7 +24,7 @@ ixp_client_do_fcall(IXPClient *c) {
 		return -1;
 	}
 	if(c->ofcall.type == RERROR) {
-		c->errstr = c->ofcall.data.rerror.ename;
+		c->errstr = c->ofcall.ename;
 		return -1;
 	}
 	return 0;
@@ -38,33 +38,33 @@ ixp_client_dial(IXPClient *c, char *sockfile, unsigned int rootfid) {
 	}
 	c->ifcall.type = TVERSION;
 	c->ifcall.tag = IXP_NOTAG;
-	c->ifcall.data.tversion.msize = IXP_MAX_MSG;
-	c->ifcall.data.tversion.version = IXP_VERSION;
+	c->ifcall.msize = IXP_MAX_MSG;
+	c->ifcall.version = IXP_VERSION;
 	if(ixp_client_do_fcall(c) == -1) {
 		fprintf(stderr, "error: %s\n", c->errstr);
 		ixp_client_hangup(c);
 		return -1;
 	}
-	if(strncmp(c->ofcall.data.rversion.version, IXP_VERSION, strlen(IXP_VERSION))) {
+	if(strncmp(c->ofcall.version, IXP_VERSION, strlen(IXP_VERSION))) {
 		fprintf(stderr, "error: %s\n", c->errstr);
 		c->errstr = "9P versions differ";
 		ixp_client_hangup(c);
 		return -1;	/* we cannot handle this version */
 	}
-	free(c->ofcall.data.rversion.version);
+	free(c->ofcall.version);
 	c->root_fid = rootfid;
 	c->ifcall.type = TATTACH;
 	c->ifcall.tag = IXP_NOTAG;
 	c->ifcall.fid = c->root_fid;
-	c->ifcall.data.tauth.afid = IXP_NOFID;
-	c->ifcall.data.tauth.uname = getenv("USER");
-	c->ifcall.data.tauth.aname = "";
+	c->ifcall.afid = IXP_NOFID;
+	c->ifcall.uname = getenv("USER");
+	c->ifcall.aname = "";
 	if(ixp_client_do_fcall(c) == -1) {
 		fprintf(stderr, "error: %s\n", c->errstr);
 		ixp_client_hangup(c);
 		return -1;
 	}
-	c->root_qid = c->ofcall.data.rattach.qid;
+	c->root_qid = c->ofcall.qid;
 	return 0;
 }
 
@@ -85,9 +85,9 @@ ixp_client_create(IXPClient *c, unsigned int dirfid, char *name,
 	c->ifcall.type = TCREATE;
 	c->ifcall.tag = IXP_NOTAG;
 	c->ifcall.fid = dirfid;
-	c->ifcall.data.tcreate.name = name;
-	c->ifcall.data.tcreate.perm = perm;
-	c->ifcall.data.tcreate.mode = mode;
+	c->ifcall.name = name;
+	c->ifcall.perm = perm;
+	c->ifcall.mode = mode;
 	return ixp_client_do_fcall(c);
 }
 
@@ -98,12 +98,12 @@ ixp_client_walk(IXPClient *c, unsigned int newfid, char *filepath) {
 
 	c->ifcall.type = TWALK;
 	c->ifcall.fid = c->root_fid;
-	c->ifcall.data.twalk.newfid = newfid;
+	c->ifcall.newfid = newfid;
 	if(filepath) {
 		// c->ifcall.name = filepath; // tcreate overlaps with twalk !!!
-		c->ifcall.data.twalk.nwname = ixp_tokenize(wname, IXP_MAX_WELEM, filepath, '/'); // was "c->ifcall.name"
-		for(i = 0; i < c->ifcall.data.twalk.nwname; i++)
-			c->ifcall.data.twalk.wname[i] = wname[i];
+		c->ifcall.nwname = ixp_tokenize(wname, IXP_MAX_WELEM, filepath, '/'); // was "c->ifcall.name"
+		for(i = 0; i < c->ifcall.nwname; i++)
+			c->ifcall.wname[i] = wname[i];
 	}
 	return ixp_client_do_fcall(c);
 }
@@ -123,7 +123,7 @@ ixp_client_open(IXPClient *c, unsigned int newfid, unsigned char mode) {
 	c->ifcall.type = TOPEN;
 	c->ifcall.tag = IXP_NOTAG;
 	c->ifcall.fid = newfid;
-	c->ifcall.data.topen.mode = mode;
+	c->ifcall.mode = mode;
 	return ixp_client_do_fcall(c);
 }
 
@@ -140,18 +140,18 @@ int
 ixp_client_read(IXPClient *c, unsigned int fid, unsigned long long offset,
 		void *result, unsigned int res_len)
 {
-	unsigned int bytes = c->ofcall.data.rattach.iounit;
+	unsigned int bytes = c->ofcall.iounit;
 
 	c->ifcall.type = TREAD;
 	c->ifcall.tag = IXP_NOTAG;
 	c->ifcall.fid = fid;
-	c->ifcall.data.tread.offset = offset;
-	c->ifcall.data.tread.count = res_len < bytes ? res_len : bytes;
+	c->ifcall.offset = offset;
+	c->ifcall.count = res_len < bytes ? res_len : bytes;
 	if(ixp_client_do_fcall(c) == -1)
 		return -1;
-	memcpy(result, c->ofcall.data.rread.data, c->ofcall.data.rread.count);
-	free(c->ofcall.data.rread.data);
-	return c->ofcall.data.rread.count;
+	memcpy(result, c->ofcall.data, c->ofcall.count);
+	free(c->ofcall.data);
+	return c->ofcall.count;
 }
 
 int
@@ -159,19 +159,19 @@ ixp_client_write(IXPClient *c, unsigned int fid,
 		unsigned long long offset, unsigned int count,
 		unsigned char *data)
 {
-	if(count > c->ofcall.data.rattach.iounit) {
+	if(count > c->ofcall.iounit) {
 		c->errstr = "iounit exceeded";
 		return -1;
 	}
 	c->ifcall.type = TWRITE;
 	c->ifcall.tag = IXP_NOTAG;
 	c->ifcall.fid = fid;
-	c->ifcall.data.twrite.offset = offset;
-	c->ifcall.data.twrite.count = count;
-	c->ifcall.data.twrite.data = (void *)data;
+	c->ifcall.offset = offset;
+	c->ifcall.count = count;
+	c->ifcall.data = (void *)data;
 	if(ixp_client_do_fcall(c) == -1)
 		return -1;
-	return c->ofcall.data.rwrite.count;
+	return c->ofcall.count;
 }
 
 int
