@@ -24,7 +24,7 @@ SOFLAGS = -fPIC -shared
 #SOFLAGS = -G
 #LIBS += -lsocket -lnsl
 #CFLAGS += -xtarget=ultra
-#NO_ANON_STRUCTS = TRUE
+#FCALL_H_VERSION= .nounion
 
 # compiler and linker
 AR = ar cr

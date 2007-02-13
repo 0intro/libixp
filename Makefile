@@ -26,12 +26,8 @@ options:
 
 ${OBJ}: config.mk ixp.h ixp_fcall.h
 
-ixp_fcall.h: fcall.h.union fcall.h.nounion config.mk
-.ifndef NO_ANON_STRUCTS
-	@cat fcall.h.union > ixp_fcall.h
-.else
-	@cat fcall.h.nounion > ixp_fcall.h
-.endif
+ixp_fcall.h: fcall.h fcall.h.nounion config.mk
+	@cat fcall.h${FCALL_H_VERSION} > ixp_fcall.h
 
 libixp.a: ${OBJ}
 	@echo AR $@
