@@ -24,7 +24,14 @@ options:
 	@echo CC $<
 	@${CC} -c ${CFLAGS} $<
 
-${OBJ}: config.mk ixp.h
+${OBJ}: config.mk ixp.h ixp_fcall.h
+
+ixp_fcall.h: fcall.h.union fcall.h.nounion config.mk
+.ifndef NO_ANON_STRUCTS
+	@cat fcall.h.union > ixp_fcall.h
+.else
+	@cat fcall.h.nounion > ixp_fcall.h
+.endif
 
 libixp.a: ${OBJ}
 	@echo AR $@
@@ -47,7 +54,7 @@ clean:
 dist: clean
 	@echo creating dist tarball
 	@mkdir -p libixp-${VERSION}
-	@cp -R LICENSE LICENSE.p9p Makefile README config.mk ixp.h ixpc.1 ${SRC} ${SRCIXPC} libixp-${VERSION}
+	@cp -R LICENSE LICENSE.p9p Makefile README config.mk ixp.h fcall.h.union fcall.h.nounion ixpc.1 ${SRC} ${SRCIXPC} libixp-${VERSION}
 	@tar -cf libixp-${VERSION}.tar libixp-${VERSION}
 	@gzip libixp-${VERSION}.tar
 	@rm -rf libixp-${VERSION}
@@ -57,6 +64,8 @@ install: all
 	@mkdir -p ${DESTDIR}${PREFIX}/include
 	@cp -f ixp.h ${DESTDIR}${PREFIX}/include
 	@chmod 644 ${DESTDIR}${PREFIX}/include/ixp.h
+	@cp -f ixp_fcall.h ${DESTDIR}${PREFIX}/include
+	@chmod 644 ${DESTDIR}${PREFIX}/include/ixp_fcall.h
 	@echo installing library to ${DESTDIR}${PREFIX}/lib
 	@mkdir -p ${DESTDIR}${PREFIX}/lib
 	@cp -f libixp.a ${DESTDIR}${PREFIX}/lib
@@ -76,6 +85,7 @@ install: all
 uninstall:
 	@echo removing header file from ${DESTDIR}${PREFIX}/include
 	@rm -f ${DESTDIR}${PREFIX}/include/ixp.h
+	@rm -f ${DESTDIR}${PREFIX}/include/ixp_fcall.h
 
 	@echo removing library file from ${DESTDIR}${PREFIX}/lib
 	@rm -f ${DESTDIR}${PREFIX}/lib/libixp.a
