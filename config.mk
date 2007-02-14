@@ -12,7 +12,7 @@ INCS = -I. -I/usr/include
 LIBS = -L/usr/lib -lc -L.
 
 # flags
-CFLAGS = -Os ${INCS} -DVERSION=\"${VERSION}\"
+CFLAGS = -g ${INCS} -DVERSION=\"${VERSION}\"
 LDFLAGS = ${LIBS}
 SOFLAGS = -fPIC -shared
 #CFLAGS = -g -Wall -O2 ${INCS} -DVERSION=\"${VERSION}\"

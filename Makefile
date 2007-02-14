@@ -41,7 +41,6 @@ libixp.so: ${OBJ}
 ixpc: ${OBJIXPC}
 	@echo LD $@
 	@${LD} -o $@ ${OBJIXPC} ${LDFLAGS} -lixp
-	@strip $@
 
 clean:
 	@echo cleaning
