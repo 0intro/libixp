@@ -321,3 +321,4 @@ extern void  ixp_eprint(const char *errstr, ...);
 extern void * ixp_erealloc(void *ptr, unsigned int size);
 extern char * ixp_estrdup(const char *str);
 extern unsigned int ixp_tokenize(char **result, unsigned int reslen, char *str, char delim);
+extern unsigned int ixp_strlcat(char *dst, const char *src, unsigned int siz);
