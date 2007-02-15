@@ -10,6 +10,7 @@
 #include <time.h>
 
 static IXPClient c = { 0 };
+static char buffer[1024] = { 0 };
 
 static void
 write_data(unsigned int fid) {
@@ -63,6 +64,19 @@ xwrite(char *file, unsigned char mode) {
 		return -1;
 	}
 	write_data(fid);
+	return ixp_client_close(&c, fid);
+}
+
+static int
+xawrite(char *file, unsigned char mode) {
+	/* open */
+	unsigned int fid = c.root_fid << 2;
+	if(ixp_client_walkopen(&c, fid, file, mode) == -1) {
+		fprintf(stderr, "ixpc: cannot open file '%s': %s\n", file, c.errstr);
+		return -1;
+	}
+	if(ixp_client_write(&c, fid, 0, strlen(buffer), buffer) != strlen(buffer))
+		fprintf(stderr, "ixpc: cannot write file: %s\n", c.errstr);
 	return ixp_client_close(&c, fid);
 }
 
@@ -236,15 +250,15 @@ main(int argc, char *argv[]) {
 	/* command line args */
 	if(argc < 2)
 		goto Usage;
-	for(i = 1; i < argc; i++)
+	for(i = 1; i < argc && argv[i][0] == '-'; i++)
 		if(!strncmp(argv[i], "-v", 3)) {
 			fputs("ixpc-"VERSION", (C)opyright MMIV-MMVI Anselm R. Garbe\n", stdout);
 			exit(EXIT_SUCCESS);
 		}
 		else if(!strncmp(argv[i], "-a", 3))
 			address = argv[++i];
-	cmd = argv[argc - 2];
-	file = argv[argc - 1];
+	cmd = argv[i++];
+	file = argv[i++];
 	if((details = !strncmp(cmd, "-l", 3))) {
 		if(argc < 3 || strncmp(argv[argc - 3], "ls", 3))
 			goto Usage;
@@ -264,9 +278,14 @@ main(int argc, char *argv[]) {
 		ret = xremove(file);
 	else if(!strncmp(cmd, "write", 6))
 		ret = xwrite(file, IXP_OWRITE);
-	else {
+	else if(!strncmp(cmd, "xwrite", 7)) {
+		while(i < argc)
+			if(strlcat(buffer, argv[i++], 1024) > 1023)
+				break;
+		xawrite(file, IXP_OWRITE);
+	}else {
 Usage:
-		ixp_eprint("usage: ixpc [-a <address>] [-v] create | read | ls [-l] | remove | write <file>\n");
+		ixp_eprint("usage: ixpc [-a <address>] [-v] create | read | ls [-l] | remove | xwrite | write <file>\n");
 	}
 	/* close socket */
 	ixp_client_hangup(&c);
