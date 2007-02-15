@@ -280,7 +280,7 @@ main(int argc, char *argv[]) {
 		ret = xwrite(file, IXP_OWRITE);
 	else if(!strncmp(cmd, "xwrite", 7)) {
 		while(i < argc)
-			if(strlcat(buffer, argv[i++], 1024) > 1023)
+			if(ixp_strlcat(buffer, argv[i++], 1024) > 1023)
 				break;
 		xawrite(file, IXP_OWRITE);
 	}else {
