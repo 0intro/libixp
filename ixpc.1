@@ -40,7 +40,7 @@ Prints version information to stdout, then exits.
 The syntax of the actions is as follows:
 .TP
 .B write
-Writes the supplied data from stdin to
+Writes the supplied data from the standard input to
 .IR file,
 overwriting any previous data.  The data to be written is arbitrary
 and only gains meaning (and restrictions) when it is interpreted by
@@ -48,6 +48,10 @@ and only gains meaning (and restrictions) when it is interpreted by
 See
 .B EXAMPLES
 below.
+.TP
+.B xwrite
+The same as write, but the data is taken from subsequent arguments,
+rather than the standard input.
 .TP
 .B create
 Creates file or directory. If the file exists,
@@ -73,14 +77,15 @@ to the address of wmii. For more information about the contents of this
 filesystem, see
 .BR wmiiwm (1).
 .TP
-.B echo -n quit | ixpc write /ctl
+.B ixpc xwrite /ctl quit
 Write 'quit' to the main control file of the wmii filesystem, effectively
 leaving wmii.
 .TP
-.B echo -n view 2 | ixpc write /ctl
-Bring into view all clients tagged '2'. To learn about clients and
-tags, see
-.BR wmii (1).
+.B ixpc write /keys \< keys.txt
+Replace the contents of
+.I /keys
+with the contents of
+.I keys.txt
 .SH SEE ALSO
 .BR wmii (1)
 

@@ -290,7 +290,7 @@ main(int argc, char *argv[]) {
 		xawrite(file, IXP_OWRITE);
 	}else {
 Usage:
-		ixp_eprint("usage: ixpc [-a <address>] create | read | ls [-l] | remove | write <file>\n"
+		ixp_eprint("usage: ixpc [-a <address>] {create | read | ls [-l] | remove | write} <file>\n"
 		           "       ixpc [-a <address>] xwrite <file> <data>\n"
 		           "       ixpc -v\n");
 	}
