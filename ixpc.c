@@ -257,13 +257,15 @@ main(int argc, char *argv[]) {
 		}
 		else if(!strncmp(argv[i], "-a", 3))
 			address = argv[++i];
+	if(i + 2 > argc)
+		goto Usage;
 	cmd = argv[i++];
-	file = argv[i++];
-	if((details = !strncmp(cmd, "-l", 3))) {
-		if(argc < 3 || strncmp(argv[argc - 3], "ls", 3))
+	if(!strcmp(argv[i], "-l")) {
+		details = 1;
+		if(++i >= argc || strcmp(cmd, "ls"))
 			goto Usage;
-		cmd = argv[argc - 3];
 	}
+	file = argv[i++];
 	if(!address)
 		ixp_eprint("ixpc: error: $IXP_ADDRESS not set\n");
 	if(ixp_client_dial(&c, address, getpid()) == -1)
