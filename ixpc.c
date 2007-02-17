@@ -281,13 +281,14 @@ main(int argc, char *argv[]) {
 	else if(!strncmp(cmd, "write", 6))
 		ret = xwrite(file, IXP_OWRITE);
 	else if(!strncmp(cmd, "xwrite", 7)) {
-		ixp_strlcat(buffer, argv[i++], 1023);
+		if(i < argc)
+			ixp_strlcat(buffer, argv[i++], 1023);
 		while(i < argc) {
 			ixp_strlcat(buffer, " ", 1024);
 			if(ixp_strlcat(buffer, argv[i++], 1024) > 1023)
 				break;
 		}
-		xawrite(file, IXP_OWRITE);
+		ret = xawrite(file, IXP_OWRITE);
 	}else {
 Usage:
 		ixp_eprint("usage: ixpc [-a <address>] {create | read | ls [-l] | remove | write} <file>\n"
