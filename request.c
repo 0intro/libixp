@@ -13,16 +13,16 @@ static void ixp_handle_req(P9Req *r);
 /* We use string literals rather than arrays here because
  * they're allocated in a readonly section */
 static char
-	*Eduptag = "tag in use",
-	*Edupfid = "fid in use",
-	*Enofunc = "function not implemented",
-	*Ebotch = "9P protocol botch",
-	*Enofile = "file does not exist",
-	*Enofid = "fid does not exist",
-	*Enotag = "tag does not exist",
-	*Enotdir = "not a directory",
-	*Einterrupted = "interrupted",
-	*Eisdir = "cannot perform operation on a directory";
+	Eduptag[] = "tag in use",
+	Edupfid[] = "fid in use",
+	Enofunc[] = "function not implemented",
+	Ebotch[] = "9P protocol botch",
+	Enofile[] = "file does not exist",
+	Enofid[] = "fid does not exist",
+	Enotag[] = "tag does not exist",
+	Enotdir[] = "not a directory",
+	Einterrupted[] = "interrupted",
+	Eisdir[] = "cannot perform operation on a directory";
 
 enum {	TAG_BUCKETS = 64,
 	FID_BUCKETS = 64 };
@@ -47,7 +47,9 @@ free_p9conn(P9Conn *pc) {
 
 static void *
 createfid(Intmap *map, int fid, P9Conn *pc) {
-	Fid *f = ixp_emallocz(sizeof(Fid));
+	Fid *f;
+	pc->ref++;
+	f = ixp_emallocz(sizeof(Fid));
 	f->fid = fid;
 	f->omode = -1;
 	f->map = map;
@@ -65,6 +67,7 @@ destroyfid(P9Conn *pc, unsigned long fid) {
 		return 0;
 	if(pc->srv->freefid)
 		pc->srv->freefid(f);
+	pc->ref--;
 	free(f);
 	return 1;
 }
@@ -84,6 +87,7 @@ ixp_server_handle_fcall(IXPConn *c) {
 	req = ixp_emallocz(sizeof(P9Req));
 	req->conn = pc;
 	req->ifcall = fcall;
+	pc->ref++;
 	pc->conn = c;
 	if(lookupkey(&pc->tagmap, fcall.tag)) {
 		respond(req, Eduptag);
@@ -318,14 +322,10 @@ respond(P9Req *r, char *error) {
 	case TCLUNK:
 		if(r->fid)
 			destroyfid(pc, r->fid->fid);
-		if(!pc->conn && r->ifcall.tag == IXP_NOTAG)
-			pc->ref--;
 		break;
 	case TFLUSH:
 		if((r->oldreq = lookupkey(&pc->tagmap, r->ifcall.oldtag)))
 			respond(r->oldreq, Einterrupted);
-		if(!pc->conn && r->ifcall.tag == IXP_NOTAG)
-			pc->ref--;
 		break;
 	case TREAD:
 	case TSTAT:
@@ -351,6 +351,7 @@ respond(P9Req *r, char *error) {
 	}
 	deletekey(&pc->tagmap, r->ifcall.tag);;
 	free(r);
+	pc->ref--;
 	if(!pc->conn && pc->ref == 0)
 		free_p9conn(pc);
 }
@@ -363,6 +364,7 @@ ixp_void_request(void *t) {
 
 	r = t;
 	pc = r->conn;
+	pc->ref++;
 	tr = ixp_emallocz(sizeof(P9Req));
 	tr->conn = pc;
 	tr->ifcall.type = TFLUSH;
@@ -380,6 +382,7 @@ ixp_void_fid(void *t) {
 
 	f = t;
 	pc = f->conn;
+	pc->ref++;
 	tr = ixp_emallocz(sizeof(P9Req));
 	tr->fid = f;
 	tr->conn = pc;
@@ -405,9 +408,7 @@ static void
 ixp_cleanup_conn(IXPConn *c) {
 	P9Conn *pc = c->aux;
 	pc->conn = NULL;
-	pc->ref = 1;
-	execmap(&pc->tagmap, ixp_p9conn_incref);
-	execmap(&pc->fidmap, ixp_p9conn_incref);
+	pc->ref++;
 	if(pc->ref > 1) {
 		execmap(&pc->tagmap, ixp_void_request);
 		execmap(&pc->fidmap, ixp_void_fid);
