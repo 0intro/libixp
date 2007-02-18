@@ -339,6 +339,7 @@ respond(P9Req *r, char *error) {
 		r->ofcall.type = RERROR;
 		r->ofcall.ename = error;
 	}
+	deletekey(&pc->tagmap, r->ifcall.tag);;
 	if(pc->conn)
 		ixp_server_respond_fcall(pc->conn, &r->ofcall);
 	switch(r->ofcall.type) {
@@ -349,7 +350,6 @@ respond(P9Req *r, char *error) {
 		free(r->ofcall.data);
 		break;
 	}
-	deletekey(&pc->tagmap, r->ifcall.tag);;
 	free(r);
 	pc->ref--;
 	if(!pc->conn && pc->ref == 0)
