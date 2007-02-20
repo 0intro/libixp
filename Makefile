@@ -49,7 +49,7 @@ clean:
 dist: clean
 	@echo creating dist tarball
 	@mkdir -p libixp-${VERSION}
-	@cp -R LICENSE LICENSE.p9p Makefile README config.mk ixp.h fcall.h.union fcall.h.nounion ixpc.1 ${SRC} ${SRCIXPC} libixp-${VERSION}
+	@cp -R LICENSE LICENSE.p9p Makefile README config.mk ixp.h fcall.h fcall.h.nounion ixpc.1 ${SRC} ${SRCIXPC} libixp-${VERSION}
 	@tar -cf libixp-${VERSION}.tar libixp-${VERSION}
 	@gzip libixp-${VERSION}.tar
 	@rm -rf libixp-${VERSION}
