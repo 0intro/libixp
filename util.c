@@ -80,8 +80,6 @@ ixp_tokenize(char **result, unsigned int reslen, char *str, char delim) {
 	return i;	/* number of tokens */
 }
 
-/*      $OpenBSD: strlcat.c,v 1.2 1999/06/17 16:28:58 millert Exp $     */
-
 /*
  * Copyright (c) 1998 Todd C. Miller <Todd.Miller@courtesan.com>
  * All rights reserved.

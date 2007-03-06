@@ -5,10 +5,10 @@ libixp is an extremly simple 9P stand-alone library.
 
 Installation
 ------------
-Edit config.mk to match your local setup. ssid is installed into
+Edit config.mk to match your local setup. libixp is installed into
 /usr/local by default.
 
-Afterwards enter the following command to build and install ssid
+Afterwards enter the following command to build and install libixp
 (if necessary as root):
 
     $ make clean install
