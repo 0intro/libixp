@@ -61,18 +61,6 @@ enum {	TVERSION = 100,
 	RWSTAT,
 };
 
-/* borrowed from libc.h of Plan 9 */
-enum {	IXP_DMDIR = 0x80000000,		/* mode bit for directories */
-	IXP_DMAPPEND = 0x40000000,	/* mode bit for append only files */
-	IXP_DMEXCL = 0x20000000,	/* mode bit for exclusive use files */
-	IXP_DMMOUNT = 0x10000000,	/* mode bit for mounted channel */
-	IXP_DMAUTH = 0x08000000,	/* mode bit for authentication file */
-	IXP_DMTMP = 0x04000000,		/* mode bit for non-backed-up file */
-	IXP_DMREAD = 0x4<<6,		/* mode bit for read permission */
-	IXP_DMWRITE = 0x2<<6,		/* mode bit for write permission */
-	IXP_DMEXEC = 0x1<<6		/* mode bit for execute permission */
-};
-
 /* modes */
 enum {	IXP_OREAD = 0x00,
 	IXP_OWRITE = 0x01,

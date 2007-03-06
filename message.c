@@ -28,10 +28,13 @@ ixp_sizeof_stat(Stat * stat) {
 
 uint
 ixp_fcall2msg(void *msg, Fcall *fcall, uint msglen) {
-	uint i = sizeof(uchar) +
-		sizeof(ushort) + sizeof(uint);
-	int msize = msglen - i;
-	uchar *p = (uchar*)msg + i;
+	int msize;
+	uint i;
+	uchar *p;
+
+	i = sizeof(uchar) + sizeof(ushort) + sizeof(uint);
+	msize = msglen - i;
+	p = (uchar*)msg + i;
 
 	switch (fcall->type) {
 	case TVERSION:
@@ -134,7 +137,9 @@ ixp_msg2fcall(Fcall *fcall, void *msg, uint msglen) {
 	int msize;
 	uint i, tsize;
 	ushort len;
-	uchar *p = msg;
+	uchar *p;
+
+	p = msg;
 	ixp_unpack_prefix(&p, (uint *)&msize, &fcall->type, &fcall->tag);
 	tsize = msize;
 

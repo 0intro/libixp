@@ -46,7 +46,7 @@ xcreate(char *file) {
 		return -1;
 	}
 	p++;
-	if(ixp_client_create(&c, fid, p, IXP_DMWRITE, IXP_OWRITE) == -1) {
+	if(ixp_client_create(&c, fid, p, P9DMWRITE, P9OWRITE) == -1) {
 		fprintf(stderr, "ixpc: cannot create file '%s': %s\n", p, c.errstr);
 		return -1;
 	}
@@ -75,7 +75,7 @@ xawrite(char *file, uchar mode) {
 		fprintf(stderr, "ixpc: cannot open file '%s': %s\n", file, c.errstr);
 		return -1;
 	}
-	if(ixp_client_write(&c, fid, 0, strlen(buffer), buffer) != strlen(buffer))
+	if(ixp_client_write(&c, fid, 0, strlen(buffer), (uchar*)buffer) != strlen(buffer))
 		fprintf(stderr, "ixpc: cannot write file: %s\n", c.errstr);
 	return ixp_client_close(&c, fid);
 }
@@ -106,7 +106,7 @@ static char *
 str_of_mode(uint mode) {
 	static char buf[16];
 
-	if(mode & IXP_DMDIR)
+	if(mode & P9DMDIR)
 		buf[0]='d';
 	else
 		buf[0]='-';
@@ -135,7 +135,7 @@ print_stat(Stat *s, int details) {
 		fprintf(stdout, "%s %s %s %5llu %s %s\n", str_of_mode(s->mode),
 				s->uid, s->gid, s->length, str_of_time(s->mtime), s->name);
 	else {
-		if(s->mode & IXP_DMDIR)
+		if(s->mode & P9DMDIR)
 			fprintf(stdout, "%s/\n", s->name);
 		else
 			fprintf(stdout, "%s\n", s->name);
@@ -184,19 +184,19 @@ xdir(char *file, int details) {
 	}
 	buf = c.ofcall.stat;
 	ixp_unpack_stat(&buf, NULL, s);
-	if(!(s->mode & IXP_DMDIR)) {
+	if(!(s->mode & P9DMDIR)) {
 		print_stat(s, details);
 		fflush(stdout);
 		return 0;
 	}
 	/* directory */
-	if(ixp_client_open(&c, fid, IXP_OREAD) == -1) {
+	if(ixp_client_open(&c, fid, P9OREAD) == -1) {
 		fprintf(stderr, "ixpc: cannot open directory '%s': %s\n", file, c.errstr);
 		return -1;
 	}
 	while((count = ixp_client_read(&c, fid, offset, result, IXP_MAX_MSG)) > 0) {
 		data = ixp_erealloc(data, offset + count);
-		memcpy(data + offset, result, count);
+		memcpy((uchar*)data + offset, result, count);
 		offset += count;
 	}
 	if(count == -1) {
@@ -215,7 +215,7 @@ xread(char *file) {
 	static uchar result[IXP_MAX_MSG];
 	uvlong offset = 0;
 
-	if(ixp_client_walkopen(&c, fid, file, IXP_OREAD) == -1) {
+	if(ixp_client_walkopen(&c, fid, file, P9OREAD) == -1) {
 		fprintf(stderr, "ixpc: cannot open file '%s': %s\n", file, c.errstr);
 		return -1;
 	}
@@ -279,7 +279,7 @@ main(int argc, char *argv[]) {
 	else if(!strncmp(cmd, "remove", 7))
 		ret = xremove(file);
 	else if(!strncmp(cmd, "write", 6))
-		ret = xwrite(file, IXP_OWRITE);
+		ret = xwrite(file, P9OWRITE);
 	else if(!strncmp(cmd, "xwrite", 7)) {
 		if(i < argc)
 			ixp_strlcat(buffer, argv[i++], 1023);
@@ -288,7 +288,7 @@ main(int argc, char *argv[]) {
 			if(ixp_strlcat(buffer, argv[i++], 1024) > 1023)
 				break;
 		}
-		ret = xawrite(file, IXP_OWRITE);
+		ret = xawrite(file, P9OWRITE);
 	}else {
 Usage:
 		ixp_eprint("usage: ixpc [-a <address>] {create | read | ls [-l] | remove | write} <file>\n"

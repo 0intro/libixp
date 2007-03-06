@@ -90,7 +90,7 @@ create_inet_sock(char *host, char **errstr) {
 	}
 	*port = 0;
 	port++;
-	if(sscanf(port, "%d", &prt) != 1) {
+	if(sscanf(port, "%u", &prt) != 1) {
 		*errstr = "invalid port number";
 		return -1;
 	}

@@ -19,7 +19,7 @@ ixp_send_message(int fd, void *msg, uint msize, char **errstr) {
 
 	/* send message */
 	while(num < msize) {
-		r = write(fd, msg + num, msize - num);
+		r = write(fd, (uchar*)msg + num, msize - num);
 		if(r == -1 && errno == EINTR)
 			continue;
 		if(r < 1) {
@@ -38,7 +38,7 @@ ixp_recv_data(int fd, void *msg, uint msize, char **errstr) {
 
 	/* receive data */
 	while(num < msize) {
-		r = read(fd, msg + num, msize - num);
+		r = read(fd, (uchar*)msg + num, msize - num);
 		if(r == -1 && errno == EINTR)
 			continue;
 		if(r < 1) {
