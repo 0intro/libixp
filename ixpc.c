@@ -13,10 +13,10 @@ static IXPClient c = { 0 };
 static char buffer[1024] = { 0 };
 
 static void
-write_data(unsigned int fid) {
+write_data(uint fid) {
 	void *data = ixp_emallocz(c.ofcall.iounit);
-	unsigned long long offset = 0;
-	unsigned int len = 0;
+	uvlong offset = 0;
+	uint len = 0;
 
 	while((len = read(0, data, c.ofcall.iounit)) > 0) {
 		if(ixp_client_write(&c, fid, offset, len, data) != len) {
@@ -33,7 +33,7 @@ write_data(unsigned int fid) {
 
 static int
 xcreate(char *file) {
-	unsigned int fid;
+	uint fid;
 	char *p = strrchr(file, '/');
 
 	if(!p)
@@ -56,9 +56,9 @@ xcreate(char *file) {
 }
 
 static int
-xwrite(char *file, unsigned char mode) {
+xwrite(char *file, uchar mode) {
 	/* open */
-	unsigned int fid = c.root_fid << 2;
+	uint fid = c.root_fid << 2;
 	if(ixp_client_walkopen(&c, fid, file, mode) == -1) {
 		fprintf(stderr, "ixpc: cannot open file '%s': %s\n", file, c.errstr);
 		return -1;
@@ -68,9 +68,9 @@ xwrite(char *file, unsigned char mode) {
 }
 
 static int
-xawrite(char *file, unsigned char mode) {
+xawrite(char *file, uchar mode) {
 	/* open */
-	unsigned int fid = c.root_fid << 2;
+	uint fid = c.root_fid << 2;
 	if(ixp_client_walkopen(&c, fid, file, mode) == -1) {
 		fprintf(stderr, "ixpc: cannot open file '%s': %s\n", file, c.errstr);
 		return -1;
@@ -103,7 +103,7 @@ setrwx(long m, char *s) {
 }
 
 static char *
-str_of_mode(unsigned int mode) {
+str_of_mode(uint mode) {
 	static char buf[16];
 
 	if(mode & IXP_DMDIR)
@@ -119,7 +119,7 @@ str_of_mode(unsigned int mode) {
 }
 
 static char *
-str_of_time(unsigned int val) {
+str_of_time(uint val) {
 	static char buf[32];
 	time_t t = (time_t)(int)val;
 	char *tstr = ctime(&t);
@@ -143,9 +143,9 @@ print_stat(Stat *s, int details) {
 }
 
 static void
-xls(void *result, unsigned int msize, int details) {
-	unsigned int n = 0, i = 0;
-	unsigned char *p = result;
+xls(void *result, uint msize, int details) {
+	uint n = 0, i = 0;
+	uchar *p = result;
 	Stat *dir;
 	static Stat stat;
 
@@ -153,13 +153,13 @@ xls(void *result, unsigned int msize, int details) {
 		ixp_unpack_stat(&p, NULL, &stat);
 		n++;
 	}
-	while(p - (unsigned char*)result < msize);
+	while(p - (uchar*)result < msize);
 	dir = (Stat *)ixp_emallocz(sizeof(Stat) * n);
 	p = result;
 	do {
 		ixp_unpack_stat(&p, NULL, &dir[i++]);
 	}
-	while(p - (unsigned char*)result < msize);
+	while(p - (uchar*)result < msize);
 	qsort(dir, n, sizeof(Stat), comp_stat);
 	for(i = 0; i < n; i++)
 		print_stat(&dir[i], details);
@@ -169,14 +169,14 @@ xls(void *result, unsigned int msize, int details) {
 
 static int
 xdir(char *file, int details) {
-	unsigned int fid = c.root_fid << 2;
+	uint fid = c.root_fid << 2;
 	/* XXX: buffer overflow */
 	Stat *s = ixp_emallocz(sizeof(Stat));
-	unsigned char *buf;
+	uchar *buf;
 	int count;
-	static unsigned char result[IXP_MAX_MSG];
+	static uchar result[IXP_MAX_MSG];
 	void *data = NULL;
-	unsigned long long offset = 0;
+	uvlong offset = 0;
 
 	if(ixp_client_stat(&c, fid, file) == -1) {
 		fprintf(stderr, "ixpc: cannot stat file '%s': %s\n", file, c.errstr);
@@ -210,10 +210,10 @@ xdir(char *file, int details) {
 
 static int
 xread(char *file) {
-	unsigned int fid = c.root_fid << 2;
+	uint fid = c.root_fid << 2;
 	int count;
-	static unsigned char result[IXP_MAX_MSG];
-	unsigned long long offset = 0;
+	static uchar result[IXP_MAX_MSG];
+	uvlong offset = 0;
 
 	if(ixp_client_walkopen(&c, fid, file, IXP_OREAD) == -1) {
 		fprintf(stderr, "ixpc: cannot open file '%s': %s\n", file, c.errstr);
@@ -232,7 +232,7 @@ xread(char *file) {
 
 static int
 xremove(char *file) {
-	unsigned int fid;
+	uint fid;
 
 	fid = c.root_fid << 2;
 	if(ixp_client_remove(&c, fid, file) == -1) {

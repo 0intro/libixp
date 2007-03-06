@@ -11,8 +11,8 @@
 
 int
 ixp_client_do_fcall(IXPClient *c) {
-	static unsigned char msg[IXP_MAX_MSG];
-	unsigned int msize = ixp_fcall2msg(msg, &c->ifcall, IXP_MAX_MSG);
+	static uchar msg[IXP_MAX_MSG];
+	uint msize = ixp_fcall2msg(msg, &c->ifcall, IXP_MAX_MSG);
 
 	c->errstr = 0;
 	if(ixp_send_message(c->fd, msg, msize, &c->errstr) != msize)
@@ -31,7 +31,7 @@ ixp_client_do_fcall(IXPClient *c) {
 }
 
 int
-ixp_client_dial(IXPClient *c, char *sockfile, unsigned int rootfid) {
+ixp_client_dial(IXPClient *c, char *sockfile, uint rootfid) {
 	if((c->fd = ixp_connect_sock(sockfile)) < 0) {
 		c->errstr = "cannot connect server";
 		return -1;
@@ -69,7 +69,7 @@ ixp_client_dial(IXPClient *c, char *sockfile, unsigned int rootfid) {
 }
 
 int
-ixp_client_remove(IXPClient *c, unsigned int newfid, char *filepath) {
+ixp_client_remove(IXPClient *c, uint newfid, char *filepath) {
 	if(ixp_client_walk(c, newfid, filepath) == -1)
 		return -1;
 	c->ifcall.type = TREMOVE;
@@ -79,8 +79,8 @@ ixp_client_remove(IXPClient *c, unsigned int newfid, char *filepath) {
 }
 
 int
-ixp_client_create(IXPClient *c, unsigned int dirfid, char *name,
-		unsigned int perm, unsigned char mode)
+ixp_client_create(IXPClient *c, uint dirfid, char *name,
+		uint perm, uchar mode)
 {
 	c->ifcall.type = TCREATE;
 	c->ifcall.tag = IXP_NOTAG;
@@ -92,8 +92,8 @@ ixp_client_create(IXPClient *c, unsigned int dirfid, char *name,
 }
 
 int
-ixp_client_walk(IXPClient *c, unsigned int newfid, char *filepath) {
-	unsigned int i;
+ixp_client_walk(IXPClient *c, uint newfid, char *filepath) {
+	uint i;
 	char *wname[IXP_MAX_WELEM];
 
 	c->ifcall.type = TWALK;
@@ -109,7 +109,7 @@ ixp_client_walk(IXPClient *c, unsigned int newfid, char *filepath) {
 }
 
 int
-ixp_client_stat(IXPClient *c, unsigned int newfid, char *filepath) {
+ixp_client_stat(IXPClient *c, uint newfid, char *filepath) {
 	if(ixp_client_walk(c, newfid, filepath) == -1)
 		return -1;
 	c->ifcall.type = TSTAT;
@@ -119,7 +119,7 @@ ixp_client_stat(IXPClient *c, unsigned int newfid, char *filepath) {
 }
 
 int
-ixp_client_open(IXPClient *c, unsigned int newfid, unsigned char mode) {
+ixp_client_open(IXPClient *c, uint newfid, uchar mode) {
 	c->ifcall.type = TOPEN;
 	c->ifcall.tag = IXP_NOTAG;
 	c->ifcall.fid = newfid;
@@ -128,8 +128,8 @@ ixp_client_open(IXPClient *c, unsigned int newfid, unsigned char mode) {
 }
 
 int
-ixp_client_walkopen(IXPClient *c, unsigned int newfid, char *filepath,
-		unsigned char mode)
+ixp_client_walkopen(IXPClient *c, uint newfid, char *filepath,
+		uchar mode)
 {
 	if(ixp_client_walk(c, newfid, filepath) == -1)
 		return -1;
@@ -137,10 +137,10 @@ ixp_client_walkopen(IXPClient *c, unsigned int newfid, char *filepath,
 }
 
 int
-ixp_client_read(IXPClient *c, unsigned int fid, unsigned long long offset,
-		void *result, unsigned int res_len)
+ixp_client_read(IXPClient *c, uint fid, uvlong offset,
+		void *result, uint res_len)
 {
-	unsigned int bytes = c->ofcall.iounit;
+	uint bytes = c->ofcall.iounit;
 
 	c->ifcall.type = TREAD;
 	c->ifcall.tag = IXP_NOTAG;
@@ -155,9 +155,9 @@ ixp_client_read(IXPClient *c, unsigned int fid, unsigned long long offset,
 }
 
 int
-ixp_client_write(IXPClient *c, unsigned int fid,
-		unsigned long long offset, unsigned int count,
-		unsigned char *data)
+ixp_client_write(IXPClient *c, uint fid,
+		uvlong offset, uint count,
+		uchar *data)
 {
 	if(count > c->ofcall.iounit) {
 		c->errstr = "iounit exceeded";
@@ -175,7 +175,7 @@ ixp_client_write(IXPClient *c, unsigned int fid,
 }
 
 int
-ixp_client_close(IXPClient *c, unsigned int fid) {
+ixp_client_close(IXPClient *c, uint fid) {
 	c->ifcall.type = TCLUNK;
 	c->ifcall.tag = IXP_NOTAG;
 	c->ifcall.fid = fid;

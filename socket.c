@@ -39,13 +39,13 @@ connect_inet_sock(char *host) {
 	struct sockaddr_in addr = { 0 };
 	struct hostent *hp;
 	char *port = strrchr(host, '!');
-	unsigned int prt;
+	uint prt;
 
 	if(!port)
 		return -1;
 	*port = 0;
 	port++;
-	if(sscanf(port, "%d", &prt) != 1)
+	if(sscanf(port, "%u", &prt) != 1)
 		return -1;
 	/* init */
 	if((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
@@ -82,7 +82,7 @@ create_inet_sock(char *host, char **errstr) {
 	struct sockaddr_in addr = { 0 };
 	struct hostent *hp;
 	char *port = strrchr(host, '!');
-	unsigned int prt;
+	uint prt;
 
 	if(!port) {
 		*errstr = "no port provided in address";

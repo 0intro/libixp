@@ -34,9 +34,9 @@ struct P9Conn {
 	void	*fidhash[FID_BUCKETS];
 	P9Srv	*srv;
 	IXPConn	*conn;
-	unsigned int	msize;
-	unsigned char	*buf;
-	unsigned int ref;
+	uint	msize;
+	uchar	*buf;
+	uint ref;
 };
 
 static void
@@ -61,7 +61,7 @@ createfid(Intmap *map, int fid, P9Conn *pc) {
 }
 
 static int
-destroyfid(P9Conn *pc, unsigned long fid) {
+destroyfid(P9Conn *pc, ulong fid) {
 	Fid *f;
 	if(!(f = deletekey(&pc->fidmap, fid)))
 		return 0;
@@ -77,7 +77,7 @@ ixp_server_handle_fcall(IXPConn *c) {
 	Fcall fcall = {0};
 	P9Conn *pc = c->aux;
 	P9Req *req;
-	unsigned int msize;
+	uint msize;
 	char *errstr = NULL;
 
 	if(!(msize = ixp_recv_message(c->fd, pc->buf, pc->msize, &errstr)))
@@ -296,7 +296,7 @@ respond(P9Req *r, char *error) {
 			r->fid->qid = r->ofcall.qid;
 		}
 		free(r->ifcall.name);
-		r->ofcall.iounit = pc->msize - sizeof(unsigned long);
+		r->ofcall.iounit = pc->msize - sizeof(ulong);
 		break;
 	case TWALK:
 		if(error || r->ofcall.nwqid < r->ifcall.nwname) {

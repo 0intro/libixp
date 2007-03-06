@@ -6,32 +6,32 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define IXP_QIDSZ (sizeof(unsigned char) + sizeof(unsigned int)\
-		+ sizeof(unsigned long long))
+#define IXP_QIDSZ (sizeof(uchar) + sizeof(uint)\
+		+ sizeof(uvlong))
 
-static unsigned short
+static ushort
 sizeof_string(const char *s) {
-	return sizeof(unsigned short) + strlen(s);
+	return sizeof(ushort) + strlen(s);
 }
 
-unsigned short
+ushort
 ixp_sizeof_stat(Stat * stat) {
 	return IXP_QIDSZ
-		+ 2 * sizeof(unsigned short)
-		+ 4 * sizeof(unsigned int)
-		+ sizeof(unsigned long long)
+		+ 2 * sizeof(ushort)
+		+ 4 * sizeof(uint)
+		+ sizeof(uvlong)
 		+ sizeof_string(stat->name)
 		+ sizeof_string(stat->uid)
 		+ sizeof_string(stat->gid)
 		+ sizeof_string(stat->muid);
 }
 
-unsigned int
-ixp_fcall2msg(void *msg, Fcall *fcall, unsigned int msglen) {
-	unsigned int i = sizeof(unsigned char) +
-		sizeof(unsigned short) + sizeof(unsigned int);
+uint
+ixp_fcall2msg(void *msg, Fcall *fcall, uint msglen) {
+	uint i = sizeof(uchar) +
+		sizeof(ushort) + sizeof(uint);
 	int msize = msglen - i;
-	unsigned char *p = msg + i;
+	uchar *p = (uchar*)msg + i;
 
 	switch (fcall->type) {
 	case TVERSION:
@@ -96,13 +96,13 @@ ixp_fcall2msg(void *msg, Fcall *fcall, unsigned int msglen) {
 		break;
 	case RREAD:
 		ixp_pack_u32(&p, &msize, fcall->count);
-		ixp_pack_data(&p, &msize, (unsigned char *)fcall->data, fcall->count);
+		ixp_pack_data(&p, &msize, (uchar *)fcall->data, fcall->count);
 		break;
 	case TWRITE:
 		ixp_pack_u32(&p, &msize, fcall->fid);
 		ixp_pack_u64(&p, &msize, fcall->offset);
 		ixp_pack_u32(&p, &msize, fcall->count);
-		ixp_pack_data(&p, &msize, (unsigned char *)fcall->data, fcall->count);
+		ixp_pack_data(&p, &msize, (uchar *)fcall->data, fcall->count);
 		break;
 	case RWRITE:
 		ixp_pack_u32(&p, &msize, fcall->count);
@@ -129,13 +129,13 @@ ixp_fcall2msg(void *msg, Fcall *fcall, unsigned int msglen) {
 	return msize;
 }
 
-unsigned int
-ixp_msg2fcall(Fcall *fcall, void *msg, unsigned int msglen) {
+uint
+ixp_msg2fcall(Fcall *fcall, void *msg, uint msglen) {
 	int msize;
-	unsigned int i, tsize;
-	unsigned short len;
-	unsigned char *p = msg;
-	ixp_unpack_prefix(&p, (unsigned int *)&msize, &fcall->type, &fcall->tag);
+	uint i, tsize;
+	ushort len;
+	uchar *p = msg;
+	ixp_unpack_prefix(&p, (uint *)&msize, &fcall->type, &fcall->tag);
 	tsize = msize;
 
 	if(msize > msglen)          /* bad message */

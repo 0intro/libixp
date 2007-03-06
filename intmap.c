@@ -6,14 +6,14 @@
 #define USED(v) if(v){}else{}
 
 struct Intlist {
-	unsigned long	id;
+	ulong	id;
 	void*		aux;
 	Intlist*	link;
-	unsigned int	ref;
+	uint	ref;
 };
 
-static unsigned long
-hashid(Intmap *map, unsigned long id) {
+static ulong
+hashid(Intmap *map, ulong id) {
 	return id%map->nhash;
 }
 
@@ -23,13 +23,13 @@ nop(void *v) {
 }
 
 void
-initmap(Intmap *m, unsigned long nhash, void *hash) {
+initmap(Intmap *m, ulong nhash, void *hash) {
 	m->nhash = nhash;
 	m->hash = hash;
 }
 
 static Intlist**
-llookup(Intmap *map, unsigned long id) {
+llookup(Intmap *map, ulong id) {
 	Intlist **lf;
 
 	for(lf=&map->hash[hashid(map, id)]; *lf; lf=&(*lf)->link)
@@ -67,7 +67,7 @@ execmap(Intmap *map, void (*run)(void*)) {
 }
 
 void *
-lookupkey(Intmap *map, unsigned long id) {
+lookupkey(Intmap *map, ulong id) {
 	Intlist *f;
 	void *v;
 
@@ -79,10 +79,10 @@ lookupkey(Intmap *map, unsigned long id) {
 }
 
 void *
-insertkey(Intmap *map, unsigned long id, void *v) {
+insertkey(Intmap *map, ulong id, void *v) {
 	Intlist *f;
 	void *ov;
-	unsigned long h;
+	ulong h;
 
 	if((f = *llookup(map, id))){
 		/* no decrement for ov because we're returning it */
@@ -101,10 +101,10 @@ insertkey(Intmap *map, unsigned long id, void *v) {
 }
 
 int
-caninsertkey(Intmap *map, unsigned long id, void *v) {
+caninsertkey(Intmap *map, ulong id, void *v) {
 	Intlist *f;
 	int rv;
-	unsigned long h;
+	ulong h;
 
 	if(*llookup(map, id))
 		rv = 0;
@@ -121,7 +121,7 @@ caninsertkey(Intmap *map, unsigned long id, void *v) {
 }
 
 void*
-deletekey(Intmap *map, unsigned long id) {
+deletekey(Intmap *map, ulong id) {
 	Intlist **lf, *f;
 	void *ov;
 

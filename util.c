@@ -10,7 +10,7 @@
 #include <unistd.h>
 
 void *
-ixp_emalloc(unsigned int size) {
+ixp_emalloc(uint size) {
 	void *res = malloc(size);
 
 	if(!res)
@@ -19,7 +19,7 @@ ixp_emalloc(unsigned int size) {
 }
 
 void *
-ixp_emallocz(unsigned int size) {
+ixp_emallocz(uint size) {
 	void *res = calloc(1, size);
 
 	if(!res)
@@ -38,7 +38,7 @@ ixp_eprint(const char *errstr, ...) {
 }
 
 void *
-ixp_erealloc(void *ptr, unsigned int size) {
+ixp_erealloc(void *ptr, uint size) {
 	void *res = realloc(ptr, size);
 
 	if(!res)
@@ -55,10 +55,10 @@ ixp_estrdup(const char *str) {
 	return res;
 }
 
-unsigned int
-ixp_tokenize(char **result, unsigned int reslen, char *str, char delim) {
+uint
+ixp_tokenize(char **result, uint reslen, char *str, char delim) {
 	char *p, *n;
-	unsigned int i = 0;
+	uint i = 0;
 
 	if(!str)
 		return 0;
@@ -114,12 +114,12 @@ ixp_tokenize(char **result, unsigned int reslen, char *str, char delim) {
  * Returns strlen(src) + MIN(siz, strlen(initial dst)).
  * If retval >= siz, truncation occurred.
  */
-unsigned int
-ixp_strlcat(char *dst, const char *src, unsigned int siz)
+uint
+ixp_strlcat(char *dst, const char *src, uint siz)
 {
         const char *s;
         char *d;
-        unsigned int n, dlen;
+        uint n, dlen;
 
 	n = siz;
 	s = src;

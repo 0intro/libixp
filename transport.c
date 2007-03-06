@@ -12,9 +12,9 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-unsigned int
-ixp_send_message(int fd, void *msg, unsigned int msize, char **errstr) {
-	unsigned int num = 0;
+uint
+ixp_send_message(int fd, void *msg, uint msize, char **errstr) {
+	uint num = 0;
 	int r;
 
 	/* send message */
@@ -31,9 +31,9 @@ ixp_send_message(int fd, void *msg, unsigned int msize, char **errstr) {
 	return num;
 }
 
-static unsigned int
-ixp_recv_data(int fd, void *msg, unsigned int msize, char **errstr) {
-	unsigned int num = 0;
+static uint
+ixp_recv_data(int fd, void *msg, uint msize, char **errstr) {
+	uint num = 0;
 	int r = 0;
 
 	/* receive data */
@@ -50,13 +50,13 @@ ixp_recv_data(int fd, void *msg, unsigned int msize, char **errstr) {
 	return num;
 }
 
-unsigned int
-ixp_recv_message(int fd, void *msg, unsigned int msglen, char **errstr) {
-	unsigned int msize;
+uint
+ixp_recv_message(int fd, void *msg, uint msglen, char **errstr) {
+	uint msize;
 
 	/* receive header */
-	if(ixp_recv_data(fd, msg, sizeof(unsigned int), errstr) !=
-			sizeof(unsigned int))
+	if(ixp_recv_data(fd, msg, sizeof(uint), errstr) !=
+			sizeof(uint))
 		return 0;
 	ixp_unpack_u32((void *)&msg, NULL, &msize);
 	if(msize > msglen) {
@@ -64,8 +64,8 @@ ixp_recv_message(int fd, void *msg, unsigned int msglen, char **errstr) {
 		return 0;
 	}
 	/* receive message */
-	if(ixp_recv_data(fd, msg, msize - sizeof(unsigned int), errstr)
-		!= msize - sizeof(unsigned int))
+	if(ixp_recv_data(fd, msg, msize - sizeof(uint), errstr)
+		!= msize - sizeof(uint))
 		return 0;
 	return msize;
 }

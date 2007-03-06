@@ -14,7 +14,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-static unsigned char *msg[IXP_MAX_MSG];
+static uchar *msg[IXP_MAX_MSG];
 
 IXPConn *
 ixp_server_open_conn(IXPServer *s, int fd, void *aux,
@@ -86,10 +86,10 @@ ixp_server_loop(IXPServer *s) {
 	return NULL;
 }
 
-unsigned int
+uint
 ixp_server_receive_fcall(IXPConn *c, Fcall *fcall)
 {
-	unsigned int msize;
+	uint msize;
 	char *errstr = 0;
 	if(!(msize = ixp_recv_message(c->fd, msg, IXP_MAX_MSG, &errstr))) {
 		ixp_server_close_conn(c);
@@ -101,7 +101,7 @@ ixp_server_receive_fcall(IXPConn *c, Fcall *fcall)
 int
 ixp_server_respond_fcall(IXPConn *c, Fcall *fcall) {
 	char *errstr;
-	unsigned int msize = ixp_fcall2msg(msg, fcall, IXP_MAX_MSG);
+	uint msize = ixp_fcall2msg(msg, fcall, IXP_MAX_MSG);
 	if(c->closed)
 		return 0;
 	if(ixp_send_message(c->fd, msg, msize, &errstr) != msize) {
