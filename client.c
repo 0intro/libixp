@@ -105,6 +105,7 @@ ixp_client_walk(IXPClient *c, uint newfid, char *filepath) {
 		c->ifcall.nwname = ixp_tokenize(wname, IXP_MAX_WELEM, fp, '/'); // was "c->ifcall.name"
 		for(i = 0; i < c->ifcall.nwname; i++)
 			c->ifcall.wname[i] = wname[i];
+		free(fp);
 	}
 	return ixp_client_do_fcall(c);
 }
