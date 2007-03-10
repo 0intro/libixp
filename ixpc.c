@@ -281,12 +281,11 @@ main(int argc, char *argv[]) {
 	else if(!strncmp(cmd, "write", 6))
 		ret = xwrite(file, P9OWRITE);
 	else if(!strncmp(cmd, "xwrite", 7)) {
-		if(i < argc)
-			ixp_strlcat(buffer, argv[i++], 1023);
 		while(i < argc) {
-			ixp_strlcat(buffer, " ", 1024);
 			if(ixp_strlcat(buffer, argv[i++], 1024) > 1023)
 				break;
+			if(i < argc)
+				ixp_strlcat(buffer, " ", 1024);
 		}
 		ret = xawrite(file, P9OWRITE);
 	}else {

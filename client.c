@@ -94,14 +94,15 @@ ixp_client_create(IXPClient *c, uint dirfid, char *name,
 int
 ixp_client_walk(IXPClient *c, uint newfid, char *filepath) {
 	uint i;
-	char *wname[IXP_MAX_WELEM];
+	char *wname[IXP_MAX_WELEM], *fp;
 
 	c->ifcall.type = TWALK;
 	c->ifcall.fid = c->root_fid;
 	c->ifcall.newfid = newfid;
 	if(filepath) {
 		// c->ifcall.name = filepath; // tcreate overlaps with twalk !!!
-		c->ifcall.nwname = ixp_tokenize(wname, IXP_MAX_WELEM, filepath, '/'); // was "c->ifcall.name"
+		fp = ixp_estrdup(filepath);
+		c->ifcall.nwname = ixp_tokenize(wname, IXP_MAX_WELEM, fp, '/'); // was "c->ifcall.name"
 		for(i = 0; i < c->ifcall.nwname; i++)
 			c->ifcall.wname[i] = wname[i];
 	}
