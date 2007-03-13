@@ -7,7 +7,7 @@ SRC = client.c convert.c intmap.c message.c request.c server.c socket.c \
       transport.c util.c
 SRCIXPC = ixpc.c
 OBJ = ${SRC:.c=.o}
-OBJIXPC = ${SRCIXPC:.c=.o}
+OBJIXPC = ${SRCIXPC:.c=.o} ${OBJ}
 
 #all: options libixp.a libixp.so ixpc
 all: options libixp.a ixpc
