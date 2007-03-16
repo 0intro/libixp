@@ -38,9 +38,10 @@ connect_inet_sock(char *host) {
 	int fd = 0;
 	struct sockaddr_in addr = { 0 };
 	struct hostent *hp;
-	char *port = strrchr(host, '!');
+	char *port;
 	uint prt;
 
+	port = strrchr(host, '!');
 	if(!port)
 		return -1;
 	*port = 0;
@@ -64,16 +65,20 @@ connect_inet_sock(char *host) {
 int
 ixp_connect_sock(char *address) {
 	char *p;
+	int ret;
 	
+	address = strdup(address);
+	ret = -1;
 	if((p = strchr(address, '!'))) {
 		*p = 0;
 		p++;
 		if(!strncmp(address, "unix", 5))
-			return connect_unix_sock(p);
+			ret = connect_unix_sock(p);
 		else if(!strncmp(address, "tcp", 4))
-			return connect_inet_sock(p);
+			ret = connect_inet_sock(p);
 	}
-	return -1;
+	free(address);
+	return ret;
 }
 
 static int
@@ -81,9 +86,10 @@ create_inet_sock(char *host, char **errstr) {
 	int fd;
 	struct sockaddr_in addr = { 0 };
 	struct hostent *hp;
-	char *port = strrchr(host, '!');
+	char *port;
 	uint prt;
 
+	port = strrchr(host, '!');
 	if(!port) {
 		*errstr = "no port provided in address";
 		return -1;
@@ -160,9 +166,10 @@ create_unix_sock(char *file, char **errstr) {
 
 int
 ixp_create_sock(char *address, char **errstr) {
-	char *p = strchr(address, '!');
+	char *p;
 	char *addr, *type;
 
+	p = strchr(address, '!');
 	if(!p) {
 		*errstr = "no socket type defined";
 		return -1;
