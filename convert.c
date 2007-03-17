@@ -3,6 +3,7 @@
  */
 #include "ixp.h"
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 /* packode/unpackode stuff */
@@ -93,15 +94,19 @@ ixp_pack_string(uchar **msg, int *msize, const char *s) {
 
 void
 ixp_unpack_strings(uchar **msg, int *msize, ushort n, char **strings) {
-	uchar *s = *msg;
-	uint i, size = 0;
+	uchar *s;
+	uint i, size;
 	ushort len;
+
+	size = *msize;
+	s = *msg;
 	for(i=0; i<n; i++) {
-		ixp_unpack_u16(&s, msize, &len);
+		ixp_unpack_u16(&s, &size, &len);
 		s += len;
-		size += len + 1; /* for '\0' */
+		size -= len;
 	}
-	if(!size) {
+	if((size <= 0)
+	|| (size = *msize - size) == 0) {
 		/* So we don't try to free some random value */
 		*strings = NULL;
 		return;
