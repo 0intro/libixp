@@ -100,13 +100,15 @@ ixp_unpack_strings(uchar **msg, int *msize, ushort n, char **strings) {
 
 	size = *msize;
 	s = *msg;
-	for(i=0; i<n; i++) {
+	for(i=0; i<n && size > 0; i++) {
 		ixp_unpack_u16(&s, &size, &len);
 		s += len;
 		size -= len;
 	}
-	if((size <= 0)
-	|| (size = *msize - size) == 0) {
+	if(size < 0)
+		size = 0;
+	size = *msize - size + n;
+	if(size <= 0) {
 		/* So we don't try to free some random value */
 		*strings = NULL;
 		return;
