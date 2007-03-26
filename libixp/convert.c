@@ -132,11 +132,13 @@ ixp_pstrings(Message *msg, ushort *num, char *strings[]) {
 		ixp_pu16(msg, &len);
 
 		if(msg->mode == MsgUnpack) {
+			memcpy(s, msg->pos, len);
 			strings[i] = s;
 			s += len;
+			msg->pos += len;
 			*s++ = '\0';
-		}
-		ixp_pdata(msg, &strings[i], len);
+		}else
+			ixp_pdata(msg, &strings[i], len);
 	}
 }
 

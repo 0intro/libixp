@@ -369,7 +369,14 @@ respond(Ixp9Req *r, char *error) {
 			ixp_hangup(pc->conn);
 	}
 
-	ixp_freefcall(&r->ofcall);
+	switch(r->ofcall.type) {
+	case RStat:
+		free(r->ofcall.stat);
+		break;
+	case RRead:
+		free(r->ofcall.data);
+		break;
+	}
 	free(r);
 
 	pc->ref--;
