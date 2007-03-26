@@ -1,8 +1,9 @@
 /* This file is derived from src/lib9p/intmap.c from plan9port */
 /* See LICENCE.p9p for terms of use */
 
-#include "ixp.h"
 #include <stdlib.h>
+#include "ixp.h"
+
 #define USED(v) if(v){}else{}
 
 struct Intlist {
@@ -43,7 +44,7 @@ freemap(Intmap *map, void (*destroy)(void*)) {
 	int i;
 	Intlist *p, *nlink;
 
-	if(destroy == NULL)
+	if(destroy == nil)
 		destroy = nop;
 	for(i=0; i<map->nhash; i++){
 		for(p=map->hash[i]; p; p=nlink){
@@ -74,7 +75,7 @@ lookupkey(Intmap *map, ulong id) {
 	if((f = *llookup(map, id)))
 		v = f->aux;
 	else
-		v = NULL;
+		v = nil;
 	return v;
 }
 
@@ -95,7 +96,7 @@ insertkey(Intmap *map, ulong id, void *v) {
 		h = hashid(map, id);
 		f->link = map->hash[h];
 		map->hash[h] = f;
-		ov = NULL;
+		ov = nil;
 	}
 	return ov;	
 }
@@ -130,6 +131,6 @@ deletekey(Intmap *map, ulong id) {
 		*lf = f->link;
 		free(f);
 	}else
-		ov = NULL;
+		ov = nil;
 	return ov;
 }

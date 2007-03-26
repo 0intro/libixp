@@ -1,33 +1,31 @@
-# libixp version
-VERSION = 0.3
-
 # Customize below to fit your system
 
 # paths
 PREFIX = /usr/local
-MANPREFIX = ${PREFIX}/share/man
+BIN = ${PREFIX}/bin
+MAN = ${PREFIX}/share/man
+ETC = ${PREFIX}/etc
+LIBDIR = ${PREFIX}/lib
+INCLUDE = ${PREFIX}/include
 
-# includes and libs
-INCS = -I. -I/usr/include
-LIBS = -L/usr/lib -lc -L.
+# Includes and libs
+INCS = -I. -I${ROOT}/include -I${INCLUDE} -I/usr/include
+LIBS = -L/usr/lib -lc
 
-# flags
-CFLAGS = -g ${INCS} -DVERSION=\"${VERSION}\"
-LDFLAGS = ${LIBS}
-SOFLAGS = -fPIC -shared
-#CFLAGS = -g -Wall -O2 ${INCS} -DVERSION=\"${VERSION}\"
-#LDFLAGS = -g ${LIBS}
+# Flags
+CFLAGS = -g -Wall ${INCS} -DVERSION=\"${VERSION}\"
+LDFLAGS = -g ${LIBS}
+
+# Compiler
+CC = cc -c
+# Linker (Under normal circumstances, this should *not* be 'ld')
+LD = cc
+# Other
+AR = ar cr
+RANLIB = ranlib
 
 # Solaris
 #CFLAGS = -fast ${INCS} -DVERSION=\"${VERSION}\"
 #LDFLAGS = ${LIBS} -R${PREFIX}/lib
-#SOFLAGS = -G
-#LIBS += -lsocket -lnsl
+#LDFLAGS += -lsocket -lnsl
 #CFLAGS += -xtarget=ultra
-#FCALL_H_VERSION= .nounion
-
-# compiler and linker
-AR = ar cr
-CC = cc
-LD = ${CC}
-RANLIB = ranlib

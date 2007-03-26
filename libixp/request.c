@@ -1,17 +1,21 @@
-/* (C)opyright MMVI Kris Maglione <fbsdaemon at gmail dot com>
+/* Copyright ©2006-2007 Kris Maglione <fbsdaemon@gmail.com>
  * See LICENSE file for license details.
  */
-#include "ixp.h"
 #include <assert.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
+#include "ixp.h"
 
-static void ixp_handle_req(P9Req *r);
+static void handlereq(Ixp9Req *r);
 
-/* We use string literals rather than arrays here because
- * they're allocated in a readonly section */
+static int
+min(int a, int b) {
+	if(a < b)
+		return a;
+	return b;
+}
+
 static char
 	Eduptag[] = "tag in use",
 	Edupfid[] = "fid in use",
@@ -21,33 +25,35 @@ static char
 	Enofid[] = "fid does not exist",
 	Enotag[] = "tag does not exist",
 	Enotdir[] = "not a directory",
-	Einterrupted[] = "interrupted",
+	Eintr[] = "interrupted",
 	Eisdir[] = "cannot perform operation on a directory";
 
-enum {	TAG_BUCKETS = 64,
-	FID_BUCKETS = 64 };
+enum {
+	TAG_BUCKETS = 64,
+	FID_BUCKETS = 64,
+};
 
-struct P9Conn {
+struct Ixp9Conn {
 	Intmap	tagmap;
 	void	*taghash[TAG_BUCKETS];
 	Intmap	fidmap;
 	void	*fidhash[FID_BUCKETS];
-	P9Srv	*srv;
-	IXPConn	*conn;
-	uint	msize;
-	uchar	*buf;
+	Ixp9Srv	*srv;
+	IxpConn	*conn;
+	Message	msg;
 	uint ref;
 };
 
 static void
-free_p9conn(P9Conn *pc) {
-	free(pc->buf);
+free_p9conn(Ixp9Conn *pc) {
+	free(pc->msg.data);
 	free(pc);
 }
 
 static void *
-createfid(Intmap *map, int fid, P9Conn *pc) {
+createfid(Intmap *map, int fid, Ixp9Conn *pc) {
 	Fid *f;
+
 	pc->ref++;
 	f = ixp_emallocz(sizeof(Fid));
 	f->fid = fid;
@@ -57,71 +63,79 @@ createfid(Intmap *map, int fid, P9Conn *pc) {
 	if(caninsertkey(map, fid, f))
 		return f;
 	free(f);
-	return NULL;
+	return nil;
 }
 
 static int
-destroyfid(P9Conn *pc, ulong fid) {
+destroyfid(Ixp9Conn *pc, ulong fid) {
 	Fid *f;
-	if(!(f = deletekey(&pc->fidmap, fid)))
+
+	f = deletekey(&pc->fidmap, fid);
+	if(f == nil)
 		return 0;
+
 	if(pc->srv->freefid)
 		pc->srv->freefid(f);
+
 	pc->ref--;
 	free(f);
 	return 1;
 }
 
-void
-ixp_server_handle_fcall(IXPConn *c) {
+static void
+handlefcall(IxpConn *c) {
 	Fcall fcall = {0};
-	P9Conn *pc = c->aux;
-	P9Req *req;
-	uint msize;
-	char *errstr = NULL;
+	Ixp9Conn *pc;
+	Ixp9Req *req;
 
-	if(!(msize = ixp_recv_message(c->fd, pc->buf, pc->msize, &errstr)))
+	pc = c->aux;
+	errstr = nil;
+
+	if(ixp_recvmsg(c->fd, &pc->msg) == 0)
 		goto Fail;
-	if(!(msize = ixp_msg2fcall(&fcall, pc->buf, IXP_MAX_MSG)))
+	if(ixp_msg2fcall(&pc->msg, &fcall) == 0)
 		goto Fail;
-	req = ixp_emallocz(sizeof(P9Req));
+
+	req = ixp_emallocz(sizeof(Ixp9Req));
 	req->conn = pc;
 	req->ifcall = fcall;
 	pc->ref++;
 	pc->conn = c;
-	if(lookupkey(&pc->tagmap, fcall.tag)) {
+	if(caninsertkey(&pc->tagmap, fcall.tag, req) == 0) {
 		respond(req, Eduptag);
 		return;
 	}
-	insertkey(&pc->tagmap, fcall.tag, req);
-	ixp_handle_req(req);
+	handlereq(req);
 	return;
+
 Fail:
-	ixp_server_close_conn(c);
+	ixp_hangup(c);
+	return;
 }
 
 static void
-ixp_handle_req(P9Req *r) {
-	P9Conn *pc = r->conn;
-	P9Srv *srv = pc->srv;
+handlereq(Ixp9Req *r) {
+	Ixp9Conn *pc;
+	Ixp9Srv *srv;
+
+	pc = r->conn;
+	srv = pc->srv;
 
 	switch(r->ifcall.type) {
 	default:
 		respond(r, Enofunc);
 		break;
-	case TVERSION:
-		if(!strncmp(r->ifcall.version, "9P", 3)) {
+	case TVersion:
+		if(!strcmp(r->ifcall.version, "9P"))
 			r->ofcall.version = "9P";
-		}else
-		if(!strncmp(r->ifcall.version, "9P2000", 7)) {
+		else if(!strcmp(r->ifcall.version, "9P2000"))
 			r->ofcall.version = "9P2000";
-		}else{
+		else
 			r->ofcall.version = "unknown";
-		}
 		r->ofcall.msize = r->ifcall.msize;
-		respond(r, NULL);
+		respond(r, nil);
 		break;
-	case TATTACH:
+	case TAttach:
 		if(!(r->fid = createfid(&pc->fidmap, r->ifcall.fid, pc))) {
 			respond(r, Edupfid);
 			return;
@@ -129,18 +143,18 @@ ixp_handle_req(P9Req *r) {
 		/* attach is a required function */
 		srv->attach(r);
 		break;
-	case TCLUNK:
+	case TClunk:
 		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.fid))) {
 			respond(r, Enofid);
 			return;
 		}
 		if(!srv->clunk) {
-			respond(r, NULL);
+			respond(r, nil);
 			return;
 		}
 		srv->clunk(r);
 		break;
-	case TFLUSH:
+	case TFlush:
 		if(!(r->oldreq = lookupkey(&pc->tagmap, r->ifcall.oldtag))) {
 			respond(r, Enotag);
 			return;
@@ -151,7 +165,7 @@ ixp_handle_req(P9Req *r) {
 		}
 		srv->flush(r);
 		break;
-	case TCREATE:
+	case TCreate:
 		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.fid))) {
 			respond(r, Enofid);
 			return;
@@ -160,7 +174,7 @@ ixp_handle_req(P9Req *r) {
 			respond(r, Ebotch);
 			return;
 		}
-		if(!(r->fid->qid.type&P9QTDIR)) {
+		if(!(r->fid->qid.type&QTDIR)) {
 			respond(r, Enotdir);
 			return;
 		}
@@ -170,12 +184,12 @@ ixp_handle_req(P9Req *r) {
 		}
 		pc->srv->create(r);
 		break;
-	case TOPEN:
+	case TOpen:
 		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.fid))) {
 			respond(r, Enofid);
 			return;
 		}
-		if((r->fid->qid.type&P9QTDIR) && (r->ifcall.mode|P9ORCLOSE) != (P9OREAD|P9ORCLOSE)) {
+		if((r->fid->qid.type&QTDIR) && (r->ifcall.mode|P9_ORCLOSE) != (P9_OREAD|P9_ORCLOSE)) {
 			respond(r, Eisdir);
 			return;
 		}
@@ -186,12 +200,12 @@ ixp_handle_req(P9Req *r) {
 		}
 		pc->srv->open(r);
 		break;
-	case TREAD:
+	case TRead:
 		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.fid))) {
 			respond(r, Enofid);
 			return;
 		}
-		if(r->fid->omode == -1 || r->fid->omode == P9OWRITE) {
+		if(r->fid->omode == -1 || r->fid->omode == P9_OWRITE) {
 			respond(r, Ebotch);
 			return;
 		}
@@ -201,7 +215,7 @@ ixp_handle_req(P9Req *r) {
 		}
 		pc->srv->read(r);
 		break;
-	case TREMOVE:
+	case TRemove:
 		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.fid))) {
 			respond(r, Enofid);
 			return;
@@ -212,7 +226,7 @@ ixp_handle_req(P9Req *r) {
 		}
 		pc->srv->remove(r);
 		break;
-	case TSTAT:
+	case TStat:
 		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.fid))) {
 			respond(r, Enofid);
 			return;
@@ -223,7 +237,7 @@ ixp_handle_req(P9Req *r) {
 		}
 		pc->srv->stat(r);
 		break;
-	case TWALK:
+	case TWalk:
 		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.fid))) {
 			respond(r, Enofid);
 			return;
@@ -232,7 +246,7 @@ ixp_handle_req(P9Req *r) {
 			respond(r, "cannot walk from an open fid");
 			return;
 		}
-		if(r->ifcall.nwname && !(r->fid->qid.type&P9QTDIR)) {
+		if(r->ifcall.nwname && !(r->fid->qid.type&QTDIR)) {
 			respond(r, Enotdir);
 			return;
 		}
@@ -249,12 +263,12 @@ ixp_handle_req(P9Req *r) {
 		}
 		pc->srv->walk(r);
 		break;
-	case TWRITE:
+	case TWrite:
 		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.fid))) {
 			respond(r, Enofid);
 			return;
 		}
-		if((r->fid->omode&3) != P9OWRITE && (r->fid->omode&3) != P9ORDWR) {
+		if((r->fid->omode&3) != P9_OWRITE && (r->fid->omode&3) != P9_ORDWR) {
 			respond(r, "write on fid not opened for writing");
 			return;
 		}
@@ -269,36 +283,41 @@ ixp_handle_req(P9Req *r) {
 }
 
 void
-respond(P9Req *r, char *error) {
-	P9Conn *pc = r->conn;
+respond(Ixp9Req *r, char *error) {
+	Ixp9Conn *pc;
+	int msize;
+
+	pc = r->conn;
+
 	switch(r->ifcall.type) {
 	default:
 		if(!error)
 			assert(!"Respond called on unsupported fcall type");
 		break;
-	case TVERSION:
-		assert(!error);
+	case TVersion:
+		assert(error == nil);
 		free(r->ifcall.version);
-		pc->msize = (r->ofcall.msize < IXP_MAX_MSG) ? r->ofcall.msize : IXP_MAX_MSG;
-		free(pc->buf);
-		pc->buf = ixp_emallocz(r->ofcall.msize);
+
+		pc->msg.size = min(r->ofcall.msize, IXP_MAX_MSG);
+		pc->msg.data = ixp_erealloc(pc->msg.data, pc->msg.size);
+		r->ofcall.msize = pc->msg.size;
 		break;
-	case TATTACH:
+	case TAttach:
 		if(error)
 			destroyfid(pc, r->fid->fid);
 		free(r->ifcall.uname);
 		free(r->ifcall.aname);
 		break;
-	case TOPEN:
-	case TCREATE:
+	case TOpen:
+	case TCreate:
 		if(!error) {
 			r->fid->omode = r->ifcall.mode;
 			r->fid->qid = r->ofcall.qid;
 		}
 		free(r->ifcall.name);
-		r->ofcall.iounit = pc->msize - sizeof(ulong);
+		r->ofcall.iounit = pc->msg.size - sizeof(ulong);
 		break;
-	case TWALK:
+	case TWalk:
 		if(error || r->ofcall.nwqid < r->ifcall.nwname) {
 			if(r->ifcall.fid != r->ifcall.newfid && r->newfid)
 				destroyfid(pc, r->newfid->fid);
@@ -312,106 +331,110 @@ respond(P9Req *r, char *error) {
 		}
 		free(*r->ifcall.wname);
 		break;
-	case TWRITE:
+	case TWrite:
 		free(r->ifcall.data);
 		break;
-	case TREMOVE:
+	case TRemove:
 		if(r->fid)
 			destroyfid(pc, r->fid->fid);
 		break;
-	case TCLUNK:
+	case TClunk:
 		if(r->fid)
 			destroyfid(pc, r->fid->fid);
 		break;
-	case TFLUSH:
+	case TFlush:
 		if((r->oldreq = lookupkey(&pc->tagmap, r->ifcall.oldtag)))
-			respond(r->oldreq, Einterrupted);
+			respond(r->oldreq, Eintr);
 		break;
-	case TREAD:
-	case TSTAT:
+	case TRead:
+	case TStat:
 		break;
 	/* Still to be implemented: flush, wstat, auth */
 	}
+
 	r->ofcall.tag = r->ifcall.tag;
-	if(!error)
+
+	if(error == nil)
 		r->ofcall.type = r->ifcall.type + 1;
 	else {
-		r->ofcall.type = RERROR;
+		r->ofcall.type = RError;
 		r->ofcall.ename = error;
 	}
+
 	deletekey(&pc->tagmap, r->ifcall.tag);;
-	if(pc->conn)
-		ixp_server_respond_fcall(pc->conn, &r->ofcall);
-	switch(r->ofcall.type) {
-	case RSTAT:
-		free(r->ofcall.stat);
-		break;
-	case RREAD:
-		free(r->ofcall.data);
-		break;
+
+	if(pc->conn) {
+		msize = ixp_fcall2msg(&pc->msg, &r->ofcall);
+		if(ixp_sendmsg(pc->conn->fd, &pc->msg) != msize)
+			ixp_hangup(pc->conn);
 	}
+
+	ixp_freefcall(&r->ofcall);
 	free(r);
+
 	pc->ref--;
 	if(!pc->conn && pc->ref == 0)
 		free_p9conn(pc);
 }
 
-/* Pending request cleanup */
+/* Flush a pending request */
 static void
-ixp_void_request(void *t) {
-	P9Req *r, *tr;
-	P9Conn *pc;
+voidrequest(void *t) {
+	Ixp9Req *r, *tr;
+	Ixp9Conn *pc;
 
 	r = t;
 	pc = r->conn;
 	pc->ref++;
-	tr = ixp_emallocz(sizeof(P9Req));
-	tr->conn = pc;
-	tr->ifcall.type = TFLUSH;
+
+	tr = ixp_emallocz(sizeof(Ixp9Req));
+	tr->ifcall.type = TFlush;
 	tr->ifcall.tag = IXP_NOTAG;
 	tr->ifcall.oldtag = r->ifcall.tag;
-	ixp_handle_req(tr);
+	tr->conn = pc;
+	handlereq(tr);
 }
 
-/* Open FID cleanup */
+/* Clunk an open Fid */
 static void
-ixp_void_fid(void *t) {
-	P9Conn *pc;
-	P9Req *tr;
+voidfid(void *t) {
+	Ixp9Conn *pc;
+	Ixp9Req *tr;
 	Fid *f;
 
 	f = t;
 	pc = f->conn;
 	pc->ref++;
-	tr = ixp_emallocz(sizeof(P9Req));
-	tr->fid = f;
-	tr->conn = pc;
-	tr->ifcall.type = TCLUNK;
+
+	tr = ixp_emallocz(sizeof(Ixp9Req));
+	tr->ifcall.type = TClunk;
 	tr->ifcall.tag = IXP_NOTAG;
 	tr->ifcall.fid = f->fid;
-	ixp_handle_req(tr);
+	tr->fid = f;
+	tr->conn = pc;
+	handlereq(tr);
 }
 
+#if 0
 static void
-ixp_p9conn_incref(void *r) {
-	P9Conn *pc = *(P9Conn **)r;
+p9conn_incref(void *r) {
+	Ixp9Conn *pc;
+	
+	pc = *(Ixp9Conn **)r;
 	pc->ref++;
 }
+#endif
 
-/* To cleanup a connction, we increase the ref count for
- * each open FID and pending request and generate clunk and
- * flush requests. As each request is responded to and each
- * FID is clunked, we decrease the ref count. When the ref
- * count is 0, we free the P9Conn and its buf. The IXPConn
- * is taken care of in server.c */
 static void
-ixp_cleanup_conn(IXPConn *c) {
-	P9Conn *pc = c->aux;
-	pc->conn = NULL;
+cleanupconn(IxpConn *c) {
+	Ixp9Conn *pc;
+
+	pc = c->aux;
+	pc->conn = nil;
 	pc->ref++;
 	if(pc->ref > 1) {
-		execmap(&pc->tagmap, ixp_void_request);
-		execmap(&pc->fidmap, ixp_void_fid);
+		execmap(&pc->tagmap, voidrequest);
+		execmap(&pc->fidmap, voidfid);
 	}
 	if(--pc->ref == 0)
 		free_p9conn(pc);
@@ -419,17 +442,20 @@ ixp_cleanup_conn(IXPConn *c) {
 
 /* Handle incoming 9P connections */
 void
-serve_9pcon(IXPConn *c) {
-	int fd = accept(c->fd, NULL, NULL);
+serve_9pcon(IxpConn *c) {
+	Ixp9Conn *pc;
+	int fd;
+
+	fd = accept(c->fd, nil, nil);
 	if(fd < 0)
 		return;
 
-	P9Conn *pc = ixp_emallocz(sizeof(P9Conn));
+	pc = ixp_emallocz(sizeof(Ixp9Conn));
 	pc->srv = c->aux;
-	/* XXX */
-	pc->msize = 1024;
-	pc->buf = ixp_emallocz(pc->msize);
+	pc->msg.size = 1024;
+	pc->msg.data = ixp_emalloc(pc->msg.size);
 	initmap(&pc->tagmap, TAG_BUCKETS, &pc->taghash);
 	initmap(&pc->fidmap, FID_BUCKETS, &pc->fidhash);
-	ixp_server_open_conn(c->srv, fd, pc, ixp_server_handle_fcall, ixp_cleanup_conn);
+
+	ixp_listen(c->srv, fd, pc, handlefcall, cleanupconn);
 }
