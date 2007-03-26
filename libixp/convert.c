@@ -180,7 +180,7 @@ ixp_pstat(Message *msg, Stat *stat) {
 	ushort size;
 
 	if(msg->mode == MsgPack)
-		size = ixp_sizeof_stat(stat);
+		size = ixp_sizeof_stat(stat) - 2;
 
 	ixp_pu16(msg, &size);
 	ixp_pu16(msg, &stat->type);

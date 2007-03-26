@@ -73,14 +73,15 @@ dofcall(IxpClient *c, Fcall *fcall) {
 		errstr = "received bad message";
 		return 0;
 	}
-	if(fcall->type != (type^1)) {
-		ixp_freefcall(fcall);
-		errstr = "received mismatched fcall";
-	}
 	if(fcall->type == RError) {
 		strncpy(errbuf, fcall->ename, sizeof errbuf);
 		ixp_freefcall(fcall);
 		errstr = errbuf;
+		return 0;
+	}
+	if(fcall->type != (type^1)) {
+		ixp_freefcall(fcall);
+		errstr = "received mismatched fcall";
 		return 0;
 	}
 	return 1;
@@ -378,7 +379,7 @@ ixp_write(IxpCFid *f, void *buf, uint count) {
 	len = 0;
 	do {
 		n = min(count-len, f->iounit);
-		fcall.type = TRead;
+		fcall.type = TWrite;
 		fcall.tag = IXP_NOTAG;
 		fcall.fid = f->fid;
 		fcall.offset = f->offset;

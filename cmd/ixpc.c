@@ -28,25 +28,27 @@ static IxpClient *client;
 
 static void
 usage() {
-	ixp_eprint("usage: ixpc [-a <address>] {create | read | ls [-l] | remove | write} <file>\n"
-		   "       ixpc [-a <address>] xwrite <file> <data>\n"
-		   "       ixpc -v\n");
+	fprintf(stderr,
+		   "usage: %1$s [-a <address>] {create | read | ls [-ld] | remove | write} <file>\n"
+		   "       %1$s [-a <address>] xwrite <file> <data>\n"
+		   "       %1$s -v\n", argv0);
+	exit(1);
 }
 
 /* Utility Functions */
 static void
-write_data(IxpCFid *fid) {
+write_data(IxpCFid *fid, char *name) {
 	void *buf;
 	uint len;
 
 	buf = ixp_emalloc(fid->iounit);;
 	while((len = read(0, buf, fid->iounit)) > 0)
 		if(ixp_write(fid, buf, len) != len)
-			ixp_eprint("ixpc: cannot write file: %s\n", errstr);
+			ixp_eprint("cannot write file '%s': %s\n", name, errstr);
 	/* do an explicit empty write when no writing has been done yet */
 	if(fid->offset == 0)
 		if(ixp_write(fid, buf, 0) != 0)
-			ixp_eprint("ixpc: cannot write file: %s\n", errstr);
+			ixp_eprint("cannot write file '%s': %s\n", name, errstr);
 	free(buf);
 }
 
@@ -120,9 +122,9 @@ xwrite(int argc, char *argv[]) {
 	file = EARGF(usage());
 	fid = ixp_open(client, file, P9_OWRITE);
 	if(fid == nil)
-		ixp_eprint("ixpc: error: Can't open file '%s': %s\n", file, errstr);
+		ixp_eprint("Can't open file '%s': %s\n", file, errstr);
 
-	write_data(fid);
+	write_data(fid, file);
 	return 0;
 }
 
@@ -140,7 +142,7 @@ xawrite(int argc, char *argv[]) {
 	file = EARGF(usage());
 	fid = ixp_open(client, file, P9_OWRITE);
 	if(fid == nil)
-		ixp_eprint("ixpc: error: Can't open file '%s': %s\n", file, errstr);
+		ixp_eprint("Can't open file '%s': %s\n", file, errstr);
 
 	nbuf = 0;
 	mbuf = 128;
@@ -159,7 +161,7 @@ xawrite(int argc, char *argv[]) {
 	}
 
 	if(ixp_write(fid, buf, nbuf) == -1)
-		ixp_eprint("ixpc: cannot write file '%s': %s\n", file, errstr);
+		ixp_eprint("cannot write file '%s': %s\n", file, errstr);
 	return 0;
 }
 
@@ -174,12 +176,12 @@ xcreate(int argc, char *argv[]) {
 	}ARGEND;
 
 	file = EARGF(usage());
-	fid = ixp_create(client, file, 0777, P9_OREAD);
+	fid = ixp_create(client, file, 0777, P9_OWRITE);
 	if(fid == nil)
 		ixp_eprint("ixpc: error: Can't create file '%s': %s\n", file, errstr);
 
 	if((fid->qid.type&P9_DMDIR) == 0)
-		write_data(fid);
+		write_data(fid, file);
 
 	return 0;
 }
@@ -299,7 +301,7 @@ main(int argc, char *argv[]) {
 
 	ARGBEGIN{
 	case 'v':
-		puts("ixpc-" VERSION ", ©2007 Kris Maglione\n");
+		printf("%s-" VERSION ", ©2007 Kris Maglione\n", argv0);
 		exit(0);
 	case 'a':
 		address = EARGF(usage());
@@ -315,7 +317,7 @@ main(int argc, char *argv[]) {
 
 	client = ixp_mount(address);
 	if(client == nil)
-		ixp_eprint("ixpc: %s\n", errstr);
+		ixp_eprint("%s: %s\n", argv0, errstr);
 
 	if(!strcmp(cmd, "create"))
 		ret = xcreate(argc, argv);
