@@ -303,6 +303,9 @@ main(int argc, char *argv[]) {
 		exit(0);
 	case 'a':
 		address = EARGF(usage());
+		break;
+	default:
+		usage();
 	}ARGEND;
 
 	cmd = EARGF(usage());
