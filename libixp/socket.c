@@ -27,7 +27,7 @@ dial_unix(char *address) {
 
 	sa.sun_family = AF_UNIX;
 	strncpy(sa.sun_path, address, sizeof(sa.sun_path));
-	su_len = sizeof(sa) + strlen(sa.sun_path);
+	su_len = SUN_LEN(&sa);
 
 	fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if(fd < 0) {
@@ -160,7 +160,7 @@ announce_unix(char *file) {
 
 	sa.sun_family = AF_UNIX;
 	strncpy(sa.sun_path, file, sizeof(sa.sun_path));
-	su_len = sizeof(sa) + strlen(sa.sun_path);
+	su_len = SUN_LEN(&sa);
 
 	unlink(file);
 
