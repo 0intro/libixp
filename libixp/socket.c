@@ -29,7 +29,7 @@ get_port(char *addr) {
 	char *s, *end;
 	int port;
 
-	s = strrchr(addr, '!');
+	s = strchr(addr, '!');
 	if(s == nil) {
 		errstr = "no port provided";
 		return -1;
@@ -214,7 +214,7 @@ lookup(char *address, addrtab *tab) {
 	else {
 		*addr++ = '\0';
 		for(; tab->type; tab++)
-			if(strcmp(tab->type, type)) break;
+			if(strcmp(tab->type, type) == 0) break;
 		if(tab->type == nil)
 			errstr = "unsupported address type";
 		else
