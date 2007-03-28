@@ -20,21 +20,21 @@ typedef struct sockaddr sockaddr;
 static int
 dial_unix(char *address) {
 	struct sockaddr_un sa;
-	socklen_t su_len;
+	socklen_t salen;
 	int fd;
 
 	memset(&sa, 0, sizeof(sa));
 
 	sa.sun_family = AF_UNIX;
 	strncpy(sa.sun_path, address, sizeof(sa.sun_path));
-	su_len = SUN_LEN(&sa);
+	salen = SUN_LEN(&sa);
 
 	fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if(fd < 0) {
 		errstr = strerror(errno);
 		return -1;
 	}
-	if(connect(fd, (sockaddr*) &sa, su_len)) {
+	if(connect(fd, (sockaddr*) &sa, salen)) {
 		errstr = strerror(errno);
 		close(fd);
 		return -1;
@@ -139,7 +139,7 @@ static int
 announce_unix(char *file) {
 	const int yes = 1;
 	struct sockaddr_un sa;
-	socklen_t su_len;
+	socklen_t salen;
 	int fd;
 
 	memset(&sa, 0, sizeof(sa));
@@ -160,11 +160,11 @@ announce_unix(char *file) {
 
 	sa.sun_family = AF_UNIX;
 	strncpy(sa.sun_path, file, sizeof(sa.sun_path));
-	su_len = SUN_LEN(&sa);
+	salen = SUN_LEN(&sa);
 
 	unlink(file);
 
-	if(bind(fd, (sockaddr*)&sa, su_len) < 0) {
+	if(bind(fd, (sockaddr*)&sa, salen) < 0) {
 		errstr = strerror(errno);
 		close(fd);
 		return -1;

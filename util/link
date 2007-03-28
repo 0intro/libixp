@@ -19,7 +19,7 @@ done
 
 xtmp=/tmp/ld.$$.$USER.out
 
-echo LD $outfile
+echo LD ${BASE}$outfile
 $LD -o $outfile $ofiles $LDFLAGS $args >$xtmp 2>&1
 status=$?
 

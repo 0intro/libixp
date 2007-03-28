@@ -8,11 +8,14 @@
 #include <unistd.h>
 #include "ixp.h"
 
+/* Temporary */
+#define fatal(...) ixp_eprint("ixpc: fatal: " __VA_ARGS__)
+
 char *argv0;
 #define ARGBEGIN int _argi, _argtmp, _inargv=0; char *_argv; \
 		if(!argv0)argv0=ARGF(); _inargv=1; \
 		while(argc && argv[0][0] == '-') { \
-			_argi=1; _argv=*argv++; argc++; \
+			_argi=1; _argv=*argv++; argc--; \
 			while(_argv[_argi]) switch(_argv[_argi++])
 #define ARGEND }_inargv=0;USED(_argtmp);USED(_argv);USED(_argi)
 #define ARGF() ((_inargv && _argv[_argi]) ? \
@@ -42,13 +45,12 @@ write_data(IxpCFid *fid, char *name) {
 	uint len;
 
 	buf = ixp_emalloc(fid->iounit);;
-	while((len = read(0, buf, fid->iounit)) > 0)
-		if(ixp_write(fid, buf, len) != len)
-			ixp_eprint("cannot write file '%s': %s\n", name, errstr);
-	/* do an explicit empty write when no writing has been done yet */
-	if(fid->offset == 0)
-		if(ixp_write(fid, buf, 0) != 0)
-			ixp_eprint("cannot write file '%s': %s\n", name, errstr);
+	do {
+		len = read(0, buf, fid->iounit);
+		if(len >= 0 && ixp_write(fid, buf, len) != len)
+			fatal("cannot write file '%s': %s\n", name, errstr);
+	} while(len > 0);
+
 	free(buf);
 }
 
@@ -122,7 +124,7 @@ xwrite(int argc, char *argv[]) {
 	file = EARGF(usage());
 	fid = ixp_open(client, file, P9_OWRITE);
 	if(fid == nil)
-		ixp_eprint("Can't open file '%s': %s\n", file, errstr);
+		fatal("Can't open file '%s': %s\n", file, errstr);
 
 	write_data(fid, file);
 	return 0;
@@ -142,7 +144,7 @@ xawrite(int argc, char *argv[]) {
 	file = EARGF(usage());
 	fid = ixp_open(client, file, P9_OWRITE);
 	if(fid == nil)
-		ixp_eprint("Can't open file '%s': %s\n", file, errstr);
+		fatal("Can't open file '%s': %s\n", file, errstr);
 
 	nbuf = 0;
 	mbuf = 128;
@@ -161,7 +163,7 @@ xawrite(int argc, char *argv[]) {
 	}
 
 	if(ixp_write(fid, buf, nbuf) == -1)
-		ixp_eprint("cannot write file '%s': %s\n", file, errstr);
+		fatal("cannot write file '%s': %s\n", file, errstr);
 	return 0;
 }
 
@@ -178,7 +180,7 @@ xcreate(int argc, char *argv[]) {
 	file = EARGF(usage());
 	fid = ixp_create(client, file, 0777, P9_OWRITE);
 	if(fid == nil)
-		ixp_eprint("ixpc: error: Can't create file '%s': %s\n", file, errstr);
+		fatal("Can't create file '%s': %s\n", file, errstr);
 
 	if((fid->qid.type&P9_DMDIR) == 0)
 		write_data(fid, file);
@@ -197,7 +199,7 @@ xremove(int argc, char *argv[]) {
 
 	file = EARGF(usage());
 	if(ixp_remove(client, file) == 0)
-		ixp_eprint("ixpc: error: Can't remove file '%s': %s\n", file, errstr);
+		fatal("Can't remove file '%s': %s\n", file, errstr);
 	return 0;
 }
 
@@ -215,14 +217,14 @@ xread(int argc, char *argv[]) {
 	file = EARGF(usage());
 	fid = ixp_open(client, file, P9_OREAD);
 	if(fid == nil)
-		ixp_eprint("ixpc: error: Can't open file '%s': %s\n", file, errstr);
+		fatal("Can't open file '%s': %s\n", file, errstr);
 
 	buf = ixp_emalloc(fid->iounit);
 	while((count = ixp_read(fid, buf, fid->iounit)) > 0)
 		write(1, buf, count);
 
 	if(count == -1)
-		ixp_eprint("ixpc: cannot read file/directory '%s': %s\n", file, errstr);
+		fatal("cannot read file/directory '%s': %s\n", file, errstr);
 
 	return 0;
 }
@@ -252,7 +254,7 @@ xls(int argc, char *argv[]) {
 
 	stat = ixp_stat(client, file);
 	if(stat == nil)
-		ixp_eprint("ixpc: cannot stat file '%s': %s\n", file, errstr);
+		fatal("cannot stat file '%s': %s\n", file, errstr);
 
 	if(dflag || (stat->mode&P9_DMDIR) == 0) {
 		print_stat(stat, lflag);
@@ -263,7 +265,7 @@ xls(int argc, char *argv[]) {
 
 	fid = ixp_open(client, file, P9_OREAD);
 	if(fid == nil)
-		ixp_eprint("ixpc: error: Can't open file '%s': %s\n", file, errstr);
+		fatal("Can't open file '%s': %s\n", file, errstr);
 
 	nstat = 0;
 	mstat = 16;
@@ -288,14 +290,29 @@ xls(int argc, char *argv[]) {
 	free(stat);
 
 	if(count == -1)
-		ixp_eprint("ixpc: cannot read directory '%s': %s\n", file, errstr);
+		fatal("cannot read directory '%s': %s\n", file, errstr);
 	return 0;
 }
 
+typedef struct exectab exectab;
+struct exectab {
+	char *cmd;
+	int (*fn)(int, char**);
+} etab[] = {
+	{"write", xwrite},
+	{"xwrite", xawrite},
+	{"read", xread},
+	{"create", xcreate},
+	{"remove", xremove},
+	{"ls", xls},
+	{0, 0}
+};
+
 int
 main(int argc, char *argv[]) {
-	int ret;
 	char *cmd, *address;
+	exectab *tab;
+	int ret;
 
 	address = getenv("IXP_ADDRESS");
 
@@ -313,26 +330,18 @@ main(int argc, char *argv[]) {
 	cmd = EARGF(usage());
 
 	if(!address)
-		ixp_eprint("ixpc: error: $IXP_ADDRESS not set\n");
+		fatal("$IXP_ADDRESS not set\n");
 
 	client = ixp_mount(address);
 	if(client == nil)
-		ixp_eprint("%s: %s\n", argv0, errstr);
+		fatal("%s\n", errstr);
 
-	if(!strcmp(cmd, "create"))
-		ret = xcreate(argc, argv);
-	else if(!strcmp(cmd, "ls"))
-		ret = xls(argc, argv);
-	else if(!strcmp(cmd, "read"))
-		ret = xread(argc, argv);
-	else if(!strcmp(cmd, "remove"))
-		ret = xremove(argc, argv);
-	else if(!strcmp(cmd, "write"))
-		ret = xwrite(argc, argv);
-	else if(!strcmp(cmd, "xwrite"))
-		ret = xawrite(argc, argv);
-	else
+	for(tab = etab; tab->cmd; tab++)
+		if(strcmp(cmd, tab->cmd) == 0) break;
+	if(tab->cmd == 0)
 		usage();
+
+	ret = tab->fn(argc, argv);
 
 	ixp_unmount(client);
 	return ret;
