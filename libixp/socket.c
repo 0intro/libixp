@@ -15,119 +15,97 @@
 #include <unistd.h>
 #include "ixp.h"
 
+/* Note: These functions modify the strings that they are passed.
+ *   The lookup function duplicates the original string, so it is
+ *   not modified.
+ */
+
 typedef struct sockaddr sockaddr;
+typedef struct sockaddr_un sockaddr_un;
+typedef struct sockaddr_in sockaddr_in;
 
 static int
-dial_unix(char *address) {
-	struct sockaddr_un sa;
-	socklen_t salen;
+get_port(char *addr) {
+	char *s, *end;
+	int port;
+
+	s = strrchr(addr, '!');
+	if(s == nil) {
+		errstr = "no port provided";
+		return -1;
+	}
+
+	*s++ = '\0';
+	port = strtol(s, &end, 10);
+	if(*s == '\0' && *end != '\0') {
+		errstr = "invalid port number";
+		return -1;
+	}
+	return port;
+}
+
+static int
+sock_unix(char *address, sockaddr_un *sa, socklen_t *salen) {
 	int fd;
 
-	memset(&sa, 0, sizeof(sa));
+	memset(sa, 0, sizeof(sa));
 
-	sa.sun_family = AF_UNIX;
-	strncpy(sa.sun_path, address, sizeof(sa.sun_path));
-	salen = SUN_LEN(&sa);
+	sa->sun_family = AF_UNIX;
+	strncpy(sa->sun_path, address, sizeof(sa->sun_path));
+	*salen = SUN_LEN(sa);
 
 	fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if(fd < 0) {
 		errstr = strerror(errno);
 		return -1;
 	}
-	if(connect(fd, (sockaddr*) &sa, salen)) {
-		errstr = strerror(errno);
-		close(fd);
-		return -1;
-	}
 	return fd;
 }
 
 static int
-dial_tcp(char *host) {
-	struct sockaddr_in sa;
-	struct hostent *hp;
-	char *port;
-	uint prt;
-	int fd;
-
-	memset(&sa, 0, sizeof(sa));
-
-	port = strrchr(host, '!');
-	if(port == nil) {
-		errstr = "no port provided";
-		return -1;
-	}
-	*port++ = '\0';
-
-	if(sscanf(port, "%u", &prt) != 1)
-		return -1;
-
-	fd = socket(AF_INET, SOCK_STREAM, 0);
-	if(fd < 0) {
-		errstr = strerror(errno);
-		return -1;
-	}
-
-	hp = gethostbyname(host);
-	sa.sin_family = AF_INET;
-	sa.sin_port = htons(prt);
-	memcpy(&sa.sin_addr, hp->h_addr, hp->h_length);
-
-	if(connect(fd, (sockaddr*)&sa, sizeof(struct sockaddr_in))) {
-		errstr = strerror(errno);
-		close(fd);
-		return -1;
-	}
-	return fd;
-}
-
-static int
-announce_tcp(char *host) {
-	struct sockaddr_in sa;
+sock_tcp(char *host, sockaddr_in *sa) {
 	struct hostent *he;
-	char *port;
-	uint prt;
-	int fd;
+	int port, fd;
 
-	memset(&sa, 0, sizeof(sa));
-
-	port = strrchr(host, '!');
-	if(port == nil) {
-		errstr = "no port provided";
+	/* Truncates host at '!' */
+	port = get_port(host);
+	if(port < 0)
 		return -1;
-	}
-
-	*port++ = '\0';
-	if(sscanf(port, "%u", &prt) != 1) {
-		errstr = "invalid port number";
-		return -1;
-	}
 
 	signal(SIGPIPE, SIG_IGN);
-	if((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		errstr = "cannot open socket";
-		return -1;
-	}
+	fd = socket(AF_INET, SOCK_STREAM, 0);
+	if(fd < 0)
+		goto fail;
 
-	sa.sin_family = AF_INET;
-	sa.sin_port = htons(prt);
+	memset(sa, 0, sizeof(sa));
+	sa->sin_family = AF_INET;
+	sa->sin_port = htons(port);
 
-	if(!strcmp(host, "*"))
-		sa.sin_addr.s_addr = htonl(INADDR_ANY);
+	if(strcmp(host, "*") == 0)
+		sa->sin_addr.s_addr = htonl(INADDR_ANY);
 	else if((he = gethostbyname(host)))
-		memcpy(&sa.sin_addr, he->h_addr, he->h_length);
-	else {
-		errstr = "cannot translate hostname to an address";
-		return -1;
-	}
+		memcpy(&sa->sin_addr, he->h_addr, he->h_length);
+	else
+		goto fail;
 
-	if(bind(fd, (sockaddr*)&sa, sizeof(struct sockaddr_in)) < 0) {
-		errstr = strerror(errno);
-		close(fd);
-		return -1;
-	}
+	return fd;
 
-	if(listen(fd, IXP_MAX_CACHE) < 0) {
+fail:
+	errstr = strerror(errno);
+	return -1;
+}
+
+static int
+dial_unix(char *address) {
+	sockaddr_un sa;
+	socklen_t salen;
+	int fd;
+
+	fd = sock_unix(address, &sa, &salen);
+	if(fd == -1)
+		return fd;
+
+	if(connect(fd, (sockaddr*) &sa, salen)) {
 		errstr = strerror(errno);
 		close(fd);
 		return -1;
@@ -138,93 +116,121 @@ announce_tcp(char *host) {
 static int
 announce_unix(char *file) {
 	const int yes = 1;
-	struct sockaddr_un sa;
+	sockaddr_un sa;
 	socklen_t salen;
 	int fd;
 
-	memset(&sa, 0, sizeof(sa));
-
 	signal(SIGPIPE, SIG_IGN);
 
-	fd = socket(AF_UNIX, SOCK_STREAM, 0);
-	if(fd < 0) {
-		errstr = "cannot open socket";
-		return -1;
-	}
+	fd = sock_unix(file, &sa, &salen);
+	if(fd == -1)
+		return fd;
 
-	if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void*)&yes, sizeof(yes)) < 0) {
-		errstr = strerror(errno);
-		close(fd);
-		return -1;
-	}
-
-	sa.sun_family = AF_UNIX;
-	strncpy(sa.sun_path, file, sizeof(sa.sun_path));
-	salen = SUN_LEN(&sa);
+	if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void*)&yes, sizeof(yes)) < 0)
+		goto fail;
 
 	unlink(file);
-
-	if(bind(fd, (sockaddr*)&sa, salen) < 0) {
-		errstr = strerror(errno);
-		close(fd);
-		return -1;
-	}
+	if(bind(fd, (sockaddr*)&sa, salen) < 0)
+		goto fail;
 
 	chmod(file, S_IRWXU);
-	if(listen(fd, IXP_MAX_CACHE) < 0) {
+	if(listen(fd, IXP_MAX_CACHE) < 0)
+		goto fail;
+
+	return fd;
+
+fail:
+	errstr = strerror(errno);
+	close(fd);
+	return -1;
+}
+
+static int
+dial_tcp(char *host) {
+	sockaddr_in sa;
+	int fd;
+
+	fd = sock_tcp(host, &sa);
+	if(fd == -1)
+		return fd;
+
+	if(connect(fd, (sockaddr*)&sa, sizeof(sa))) {
 		errstr = strerror(errno);
 		close(fd);
 		return -1;
 	}
+
 	return fd;
+}
+
+static int
+announce_tcp(char *host) {
+	sockaddr_in sa;
+	int fd;
+
+	fd = sock_tcp(host, &sa);
+	if(fd == -1)
+		return fd;
+
+	if(bind(fd, (sockaddr*)&sa, sizeof(sa)) < 0)
+		goto fail;
+
+	if(listen(fd, IXP_MAX_CACHE) < 0)
+		goto fail;
+
+	return fd;
+
+fail:
+	errstr = strerror(errno);
+	close(fd);
+	return -1;
+}
+
+typedef struct addrtab addrtab;
+struct addrtab {
+	char *type;
+	int (*fn)(char*);
+} dtab[] = {
+	{"tcp", dial_tcp},
+	{"unix", dial_unix},
+	{0, 0}
+}, atab[] = {
+	{"tcp", announce_tcp},
+	{"unix", announce_unix},
+	{0, 0}
+};
+
+static int
+lookup(char *address, addrtab *tab) {
+	char *addr, *type;
+	int ret;
+
+	ret = -1;
+	type = ixp_estrdup(address);
+
+	addr = strchr(type, '!');
+	if(addr == nil)
+		errstr = "no address type defined";
+	else {
+		*addr++ = '\0';
+		for(; tab->type; tab++)
+			if(strcmp(tab->type, type)) break;
+		if(tab->type == nil)
+			errstr = "unsupported address type";
+		else
+			ret = tab->fn(addr);
+	}
+
+	free(type);
+	return ret;
 }
 
 int
 ixp_dial(char *address) {
-	char *addr, *type;
-	int ret;
-	
-	ret = -1;
-	type = ixp_estrdup(address);
-
-	addr = strchr(type, '!');
-	if(addr == nil)
-		errstr = "no address type defined";
-	else {
-		*addr++ = '\0';
-		if(strcmp(type, "unix") == 0)
-			ret = dial_unix(addr);
-		else if(strcmp(type, "tcp") == 0)
-			ret = dial_tcp(addr);
-		else
-			errstr = "unkown address type";
-	}
-
-	free(type);
-	return ret;
+	return lookup(address, dtab);
 }
 
 int
 ixp_announce(char *address) {
-	char *addr, *type;
-	int ret;
-	
-	ret = -1;
-	type = ixp_estrdup(address);
-
-	addr = strchr(type, '!');
-	if(addr == nil)
-		errstr = "no address type defined";
-	else {
-		*addr++ = '\0';
-		if(strcmp(type, "unix") == 0)
-			ret = announce_unix(addr);
-		else if(strcmp(type, "tcp") == 0)
-			ret = announce_tcp(addr);
-		else
-			errstr = "unkown address type";
-	}
-
-	free(type);
-	return ret;
+	return lookup(address, atab);
 }
