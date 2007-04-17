@@ -1,6 +1,6 @@
 libixp - simple 9P client-/server-library
-=========================================
-libixp is an extremly simple 9P stand-alone library.
+===============================
+libixp is an extremly simple, stand-alone 9P library.
 
 
 Installation

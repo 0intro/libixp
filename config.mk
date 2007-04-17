@@ -21,11 +21,12 @@ CC = cc -c
 # Linker (Under normal circumstances, this should *not* be 'ld')
 LD = cc
 # Other
-AR = ar cr
-RANLIB = ranlib
+AR = ar crs
+#AR = sh -c 'ar cr "$$@" && ranlib "$$@"'
 
 # Solaris
 #CFLAGS = -fast ${INCS} -DVERSION=\"${VERSION}\"
 #LDFLAGS = ${LIBS} -R${PREFIX}/lib
 #LDFLAGS += -lsocket -lnsl
 #CFLAGS += -xtarget=ultra
+#FCALL_H_VERSION=.nounion
