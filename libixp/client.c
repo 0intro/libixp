@@ -107,6 +107,7 @@ ixp_mountfd(int fd) {
 
 	c->msg.size = 64;
 	c->msg.data = ixp_emalloc(c->msg.size);
+	c->lastfid = RootFid;
 
 	fcall.type = TVersion;
 	fcall.tag = IXP_NOTAG;
