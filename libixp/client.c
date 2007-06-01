@@ -27,20 +27,19 @@ min(int a, int b) {
 
 static IxpCFid *
 getfid(IxpClient *c) {
-	IxpCFid *temp;
-	uint i;
+	IxpCFid *f;
 
-	temp = c->freefid;
-	if(temp != nil)
-		c->freefid = temp->next;
+	f = c->freefid;
+	if(f != nil)
+		c->freefid = f->next;
 	else {
-		temp = ixp_emallocz(sizeof(IxpCFid) * i);
-		temp->client = c;
-		temp->fid = ++c->lastfid;
+		f = ixp_emallocz(sizeof *f);
+		f->client = c;
+		f->fid = ++c->lastfid;
 	}
-	temp->next = nil;
-	temp->open = 0;
-	return temp;
+	f->next = nil;
+	f->open = 0;
+	return f;
 }
 
 static void
@@ -240,7 +239,7 @@ ixp_remove(IxpClient *c, char *path) {
 	return ret;
 }
 
-void
+static void
 initfid(IxpCFid *f, Fcall *fcall) {
 	f->open = 1;
 	f->offset = 0;
