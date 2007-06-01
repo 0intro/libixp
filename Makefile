@@ -7,3 +7,4 @@ DIRS =	libixp	\
 	man
 
 include ${ROOT}/mk/dir.mk
+

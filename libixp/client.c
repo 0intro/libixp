@@ -30,18 +30,14 @@ getfid(IxpClient *c) {
 	IxpCFid *temp;
 	uint i;
 
-	if(!c->freefid) {
-		i = 15;
-		temp = ixp_emallocz(sizeof(IxpCFid) * i);
-		while(i--) {
-			temp->client = c;
-			temp->fid = ++c->lastfid;
-			temp->next = c->freefid;
-			c->freefid = temp++;
-		}
-	}
 	temp = c->freefid;
-	c->freefid = temp->next;
+	if(temp != nil)
+		c->freefid = temp->next;
+	else {
+		temp = ixp_emallocz(sizeof(IxpCFid) * i);
+		temp->client = c;
+		temp->fid = ++c->lastfid;
+	}
 	temp->next = nil;
 	temp->open = 0;
 	return temp;
@@ -89,8 +85,15 @@ dofcall(IxpClient *c, Fcall *fcall) {
 
 void
 ixp_unmount(IxpClient *c) {
+	IxpCFid *f;
+
 	shutdown(c->fd, SHUT_RDWR);
 	close(c->fd);
+
+	while((f = c->freefid)) {
+		c->freefid = f->next;
+		free(f);
+	}
 	free(c->msg.data);
 	free(c);
 }

@@ -30,10 +30,10 @@ char *errstr;
 #define nil ((void*)0)
 
 #define IXP_VERSION	"9P2000"
-#define IXP_NOTAG	((ushort)~0)	/*Dummy tag */
+#define IXP_NOTAG	((ushort)~0)	/* Dummy tag */
+#define IXP_NOFID (~0U)
 
 enum {
-	IXP_NOFID = ~0U,
 	IXP_MAX_VERSION = 32,
 	IXP_MAX_MSG = 65535,
 	IXP_MAX_ERROR = 128,

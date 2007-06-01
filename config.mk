@@ -13,6 +13,7 @@ INCS = -I. -I${ROOT}/include -I${INCLUDE} -I/usr/include
 LIBS = -L/usr/lib -lc
 
 # Flags
+include ${ROOT}/mk/gcc.mk
 CFLAGS = -g -Wall ${INCS} -DVERSION=\"${VERSION}\"
 LDFLAGS = -g ${LIBS}
 

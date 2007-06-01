@@ -52,12 +52,12 @@ prepare_select(IxpServer *s) {
 	IxpConn *c;
 
 	FD_ZERO(&s->rd);
-	for(c = s->conn; c; c = c->next) {
-		if(s->maxfd < c->fd)
-			s->maxfd = c->fd;
-		if(c->read)
+	for(c = s->conn; c; c = c->next)
+		if(c->read) {
+			if(s->maxfd < c->fd)
+				s->maxfd = c->fd;
 			FD_SET(c->fd, &s->rd);
-	}
+		}
 }
 
 static void
