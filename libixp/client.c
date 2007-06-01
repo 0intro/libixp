@@ -91,6 +91,7 @@ void
 ixp_unmount(IxpClient *c) {
 	shutdown(c->fd, SHUT_RDWR);
 	close(c->fd);
+	free(c->msg.data);
 	free(c);
 }
 
@@ -358,6 +359,8 @@ ixp_read(IxpCFid *f, void *buf, uint count) {
 		fcall.offset = f->offset;
 		fcall.count = n;
 		if(dofcall(f->client, &fcall) == 0)
+			return -1;
+		if(fcall.count > n)
 			return -1;
 
 		memcpy(buf+len, fcall.data, fcall.count);
