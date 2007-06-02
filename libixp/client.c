@@ -47,8 +47,13 @@ putfid(IxpCFid *f) {
 	IxpClient *c;
 
 	c = f->client;
-	f->next = c->freefid;
-	c->freefid = f;
+	if(f->fid == c->lastfid) {
+		c->lastfid--;
+		free(f);
+	}else {
+		f->next = c->freefid;
+		c->freefid = f;
+	}
 }
 
 static int
