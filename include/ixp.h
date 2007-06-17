@@ -179,8 +179,10 @@ struct IxpConn {
 };
 
 struct IxpServer {
-	int running;
 	IxpConn *conn;
+	void (*preselect)(IxpServer*);
+	void *aux;
+	int running;
 	int maxfd;
 	fd_set rd;
 };
