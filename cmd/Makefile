@@ -4,6 +4,6 @@ include ${ROOT}/mk/ixp.mk
 
 TARG =	ixpc
 OBJ =	ixpc
-LIB = ${ROOT}/libixp/libixp.a
+LIB = ${ROOT}/lib/libixp.a
 
 include ${ROOT}/mk/one.mk

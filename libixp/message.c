@@ -169,7 +169,7 @@ ixp_pfcall(IxpMsg *msg, Fcall *fcall) {
 
 uint
 ixp_fcall2msg(IxpMsg *msg, Fcall *fcall) {
-	int size;
+	uint size;
 
 	msg->end = msg->data + msg->size;
 	msg->pos = msg->data + SDWord;

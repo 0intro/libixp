@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "ixp_local.h"
-#include "ixp_pthread.h"
 
 static IxpThread ixp_pthread;
 static pthread_key_t errstr_k;

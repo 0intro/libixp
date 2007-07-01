@@ -397,6 +397,7 @@ struct IxpThread {
 
 extern IxpThread *ixp_thread;
 extern int (*ixp_vsnprint)(char*, int, char*, va_list);
+extern char* (*ixp_vsmprint)(char*, va_list);
 
 /* thread_*.c */
 int ixp_taskinit(void);
@@ -416,6 +417,8 @@ long ixp_write(IxpCFid *f, void *buf, long count);
 long ixp_pread(IxpCFid *f, void *buf, long count, vlong offset);
 long ixp_pwrite(IxpCFid *f, void *buf, long count, vlong offset);
 int ixp_close(IxpCFid *f);
+int ixp_print(IxpCFid *f, char *fmt, ...);
+int ixp_vprint(IxpCFid *f, char *fmt, va_list ap);
 
 /* convert.c */
 void ixp_pu8(IxpMsg *msg, uchar *val);

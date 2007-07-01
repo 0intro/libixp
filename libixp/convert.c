@@ -133,7 +133,7 @@ ixp_pstrings(IxpMsg *msg, ushort *num, char *strings[]) {
 
 		if(msg->mode == MsgUnpack) {
 			memcpy(s, msg->pos, len);
-			strings[i] = s;
+			strings[i] = (char*)s;
 			s += len;
 			msg->pos += len;
 			*s++ = '\0';

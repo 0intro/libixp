@@ -1,10 +1,33 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "ixp_local.h"
 
-int (*ixp_vsnprint)(char*, int, char*, va_list);
+static int
+_vsnprint(char *buf, int n, char *fmt, va_list ap) {
+	return vsnprintf(buf, n, fmt, ap);
+}
+
+static char*
+_vsmprint(char *fmt, va_list ap) {
+	va_list al;
+	char *buf = "";
+	int n;
+
+	va_copy(al, ap);
+	n = snprintf(buf, 0, fmt, al);
+	va_end(al);
+
+	buf = malloc(++n);
+	if(buf)
+		snprintf(buf, n, fmt, ap);
+	return buf;
+}
+
+int (*ixp_vsnprint)(char*, int, char*, va_list) = _vsnprint;
+char* (*ixp_vsmprint)(char*, va_list) = _vsmprint;
 
 /* Approach to errno handling taken from Plan 9 Port. */
 enum {
@@ -44,10 +67,7 @@ werrstr(char *fmt, ...) {
 	va_list ap;
 
 	va_start(ap, fmt);
-	if(ixp_vsnprint)
-		ixp_vsnprint(tmp, sizeof(tmp), fmt, ap);
-	else
-		vsnprintf(tmp, sizeof(tmp), fmt, ap);
+	ixp_vsnprint(tmp, sizeof(tmp), fmt, ap);
 	va_end(ap);
 	strncpy(thread->errbuf(), tmp, IXP_ERRMAX);
 	errno = EPLAN9;

@@ -3,7 +3,6 @@
 #include <unistd.h>
 #include <ruby.h>
 #include "ixp_local.h"
-#include "ixp_rubythread.h"
 
 static IxpThread ixp_rthread;
 static char RWLock[];

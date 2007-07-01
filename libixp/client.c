@@ -425,7 +425,7 @@ _pwrite(IxpCFid *f, void *buf, long count, vlong offset) {
 		fcall.type = TWrite;
 		fcall.fid = f->fid;
 		fcall.offset = f->offset;
-		fcall.data = (uchar*)buf + len;
+		fcall.data = buf + len;
 		fcall.count = n;
 		if(dofcall(f->client, &fcall) == 0)
 			return -1;
@@ -459,6 +459,32 @@ ixp_pwrite(IxpCFid *f, void *buf, long count, vlong offset) {
 	thread->lock(&f->iolock);
 	n = _pwrite(f, buf, count, offset);
 	thread->unlock(&f->iolock);
+	return n;
+}
+
+int
+ixp_vprint(IxpCFid *f, char *fmt, va_list ap) {
+	char *buf;
+	int n;
+
+	buf = ixp_vsmprint(fmt, ap);
+	if(buf == nil)
+		return -1;
+
+	n = ixp_write(f, buf, strlen(buf));
+	free(buf);
+	return n;
+}
+
+int
+ixp_print(IxpCFid *f, char *fmt, ...) {
+	va_list ap;
+	int n;
+
+	va_start(ap, fmt);
+	n = ixp_vprint(f, fmt, ap);
+	va_end(ap);
+
 	return n;
 }
 

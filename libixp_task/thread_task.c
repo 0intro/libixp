@@ -3,7 +3,6 @@
 #include <unistd.h>
 #include <task.h>
 #include "ixp_local.h"
-#include "ixp_task.h"
 
 static IxpThread ixp_task;
 
