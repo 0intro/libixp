@@ -5,6 +5,7 @@
 
 #include <stdarg.h>
 #include <sys/types.h>
+#include <sys/select.h>
 
 #undef	uchar
 #define	uchar	_ixpuchar
@@ -403,6 +404,12 @@ extern char* (*ixp_vsmprint)(char*, va_list);
 int ixp_taskinit(void);
 int ixp_rubyinit(void);
 int ixp_pthread_init(void);
+
+#ifdef VARARGCK
+# pragma varargck	argpos	ixp_print	3
+# pragma varargck	argpos	ixp_werrstr	2
+# pragma varargck	argpos	ixp_eprint	2
+#endif
 
 /* client.c */
 IxpClient *ixp_mount(char *address);
