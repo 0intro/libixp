@@ -3,6 +3,7 @@
  * See LICENSE file for license details.
  */
 
+#include <stdarg.h>
 #include <sys/types.h>
 
 #undef	uchar
@@ -395,6 +396,7 @@ struct IxpThread {
 };
 
 extern IxpThread *ixp_thread;
+extern int (*ixp_vsnprint)(char*, int, char*, va_list);
 
 /* thread_*.c */
 int ixp_taskinit(void);

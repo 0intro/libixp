@@ -4,6 +4,8 @@
 #include <string.h>
 #include "ixp_local.h"
 
+int (*ixp_vsnprint)(char*, int, char*, va_list);
+
 /* Approach to errno handling taken from Plan 9 Port. */
 enum {
 	EPLAN9 = 0x19283745,
@@ -42,7 +44,10 @@ werrstr(char *fmt, ...) {
 	va_list ap;
 
 	va_start(ap, fmt);
-	vsnprintf(tmp, sizeof(tmp), fmt, ap);
+	if(ixp_vsnprint)
+		ixp_vsnprint(tmp, sizeof(tmp), fmt, ap);
+	else
+		vsnprintf(tmp, sizeof(tmp), fmt, ap);
 	va_end(ap);
 	strncpy(thread->errbuf(), tmp, IXP_ERRMAX);
 	errno = EPLAN9;

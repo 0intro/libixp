@@ -2,7 +2,8 @@
 
 COMPONENTS = \
 	libixp \
-	libixp_pthread \
+	libixp_pthread
+IGNORE = \
 	libixp_task \
 	libixp_rubythread
 
