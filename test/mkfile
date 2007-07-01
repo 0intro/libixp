@@ -1,0 +1,12 @@
+<$PLAN9/src/mkhdr
+
+default:V: all
+
+CFLAGS=-I../include -O0
+LDFLAGS=-L../libixp -L../libixp_pthread -lixp -lixp_pthread
+
+TARG=\
+	client\
+
+<$PLAN9/src/mkmany
+

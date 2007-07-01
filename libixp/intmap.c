@@ -2,9 +2,7 @@
 /* See LICENCE.p9p for terms of use */
 
 #include <stdlib.h>
-#include "ixp.h"
-
-#define USED(v) if(v){}else{}
+#include "ixp_local.h"
 
 struct Intlist {
 	ulong	id;
@@ -27,6 +25,8 @@ void
 initmap(Intmap *m, ulong nhash, void *hash) {
 	m->nhash = nhash;
 	m->hash = hash;
+
+	thread->initrwlock(&m->lk);
 }
 
 static Intlist**
@@ -53,18 +53,25 @@ freemap(Intmap *map, void (*destroy)(void*)) {
 			free(p);
 		}
 	}
+
+	thread->rwdestroy(&map->lk);
 }
+
 void
 execmap(Intmap *map, void (*run)(void*)) {
 	int i;
 	Intlist *p, *nlink;
 
+	thread->rlock(&map->lk);
 	for(i=0; i<map->nhash; i++){
 		for(p=map->hash[i]; p; p=nlink){
+			thread->runlock(&map->lk);
 			nlink = p->link;
 			run(p->aux);
+			thread->rlock(&map->lk);
 		}
 	}
+	thread->runlock(&map->lk);
 }
 
 void *
@@ -72,10 +79,12 @@ lookupkey(Intmap *map, ulong id) {
 	Intlist *f;
 	void *v;
 
+	thread->rlock(&map->lk);
 	if((f = *llookup(map, id)))
 		v = f->aux;
 	else
 		v = nil;
+	thread->runlock(&map->lk);
 	return v;
 }
 
@@ -85,12 +94,13 @@ insertkey(Intmap *map, ulong id, void *v) {
 	void *ov;
 	ulong h;
 
+	thread->wlock(&map->lk);
 	if((f = *llookup(map, id))){
 		/* no decrement for ov because we're returning it */
 		ov = f->aux;
 		f->aux = v;
 	}else{
-		f = ixp_emallocz(sizeof(*f));
+		f = emallocz(sizeof(*f));
 		f->id = id;
 		f->aux = v;
 		h = hashid(map, id);
@@ -98,6 +108,7 @@ insertkey(Intmap *map, ulong id, void *v) {
 		map->hash[h] = f;
 		ov = nil;
 	}
+	thread->wunlock(&map->lk);
 	return ov;	
 }
 
@@ -107,10 +118,11 @@ caninsertkey(Intmap *map, ulong id, void *v) {
 	int rv;
 	ulong h;
 
+	thread->wlock(&map->lk);
 	if(*llookup(map, id))
 		rv = 0;
 	else{
-		f = ixp_emallocz(sizeof *f);
+		f = emallocz(sizeof *f);
 		f->id = id;
 		f->aux = v;
 		h = hashid(map, id);
@@ -118,6 +130,7 @@ caninsertkey(Intmap *map, ulong id, void *v) {
 		map->hash[h] = f;
 		rv = 1;
 	}
+	thread->wunlock(&map->lk);
 	return rv;	
 }
 
@@ -126,11 +139,13 @@ deletekey(Intmap *map, ulong id) {
 	Intlist **lf, *f;
 	void *ov;
 
+	thread->wlock(&map->lk);
 	if((f = *(lf = llookup(map, id)))){
 		ov = f->aux;
 		*lf = f->link;
 		free(f);
 	}else
 		ov = nil;
+	thread->wunlock(&map->lk);
 	return ov;
 }

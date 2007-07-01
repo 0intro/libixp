@@ -1,5 +1,14 @@
 # Customize below to fit your system
 
+COMPONENTS = \
+	libixp \
+	libixp_pthread \
+	libixp_task \
+	libixp_rubythread
+
+RUBYINC = -I/usr/local/lib/ruby/1.8/i386-freebsd6
+TASKINC = -I${HOME}/libtask
+
 # paths
 PREFIX = /usr/local
 BIN = ${PREFIX}/bin
@@ -9,7 +18,7 @@ LIBDIR = ${PREFIX}/lib
 INCLUDE = ${PREFIX}/include
 
 # Includes and libs
-INCS = -I. -I${ROOT}/include -I${INCLUDE} -I/usr/include
+INCPATH = .:${ROOT}/include:${INCLUDE}:/usr/include
 LIBS = -L/usr/lib -lc
 
 # Flags
@@ -30,4 +39,5 @@ AR = ar crs
 #LDFLAGS = ${LIBS} -R${PREFIX}/lib
 #LDFLAGS += -lsocket -lnsl
 #CFLAGS += -xtarget=ultra
-#FCALL_H_VERSION=.nounion
+FCALL_H_VERSION=.nounion
+

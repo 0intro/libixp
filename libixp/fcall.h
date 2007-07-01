@@ -1,5 +1,5 @@
 /* from fcall(3) in plan9port */
-typedef struct Fcall {
+struct IxpFcall {
 	uchar type;
 	ushort tag;
 	uint fid;
@@ -15,11 +15,11 @@ typedef struct Fcall {
 			char *ename;
 		};
 		struct { /* Ropen, Rcreate */
-			Qid qid; /* +Rattach */
+			IxpQid qid; /* +Rattach */
 			uint iounit;
 		};
 		struct { /* Rauth */
-			Qid aqid;
+			IxpQid aqid;
 		};
 		struct { /* Tauth, Tattach */
 			uint	afid;
@@ -38,7 +38,7 @@ typedef struct Fcall {
 		};
 		struct { /* Rwalk */
 			ushort	nwqid;
-			Qid	wqid[IXP_MAX_WELEM];
+			IxpQid	wqid[IXP_MAX_WELEM];
 		};
 		struct { /* Twrite */
 			uvlong	offset; /* +Tread */
@@ -51,4 +51,4 @@ typedef struct Fcall {
 			uchar	*stat;
 		};
 	};
-} Fcall;
+};

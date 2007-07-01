@@ -1,7 +1,6 @@
 all:
 
 install: all
-depend: cleandep
 
 MANDIRS=${MAN}/man1
 mkdirs:
@@ -10,10 +9,12 @@ mkdirs:
 		mkdir -pm 0755 $$i; \
 	done
 
-install: ${HFILES:.h=.install}
-uninstall: ${HFILES:.h=.uninstall}
-
 cleandep:
+	echo CLEANDEP
 	rm .depend 2>/dev/null || true
+
+DEP:=${shell if test -f .depend;then echo .depend;else echo /dev/null; fi}
+DEP!=echo /dev/null
+include ${DEP}
 
 .PHONY: all options clean dist install uninstall depend cleandep

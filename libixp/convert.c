@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "ixp.h"
+#include "ixp_local.h"
 
 enum {
 	SByte = 1,
@@ -14,7 +14,7 @@ enum {
 };
 
 void
-ixp_puint(Message *msg, uint size, uint *val) {
+ixp_puint(IxpMsg *msg, uint size, uint *val) {
 	int v;
 
 	if(msg->pos + size <= msg->end) {
@@ -50,11 +50,11 @@ ixp_puint(Message *msg, uint size, uint *val) {
 }
 
 void
-ixp_pu32(Message *msg, uint *val) {
+ixp_pu32(IxpMsg *msg, uint *val) {
 	ixp_puint(msg, SDWord, val);
 }
 void
-ixp_pu8(Message *msg, uchar *val) {
+ixp_pu8(IxpMsg *msg, uchar *val) {
 	uint v;
 
 	v = *val;
@@ -62,7 +62,7 @@ ixp_pu8(Message *msg, uchar *val) {
 	*val = (uchar)v;
 }
 void
-ixp_pu16(Message *msg, ushort *val) {
+ixp_pu16(IxpMsg *msg, ushort *val) {
 	uint v;
 
 	v = *val;
@@ -70,7 +70,7 @@ ixp_pu16(Message *msg, ushort *val) {
 	*val = (ushort)v;
 }
 void
-ixp_pu64(Message *msg, uvlong *val) {
+ixp_pu64(IxpMsg *msg, uvlong *val) {
 	uint vl, vb;
 
 	vl = (uint)*val;
@@ -81,7 +81,7 @@ ixp_pu64(Message *msg, uvlong *val) {
 }
 
 void
-ixp_pstring(Message *msg, char **s) {
+ixp_pstring(IxpMsg *msg, char **s) {
 	ushort len;
 
 	if(msg->mode == MsgPack)
@@ -90,7 +90,7 @@ ixp_pstring(Message *msg, char **s) {
 
 	if(msg->pos + len <= msg->end) {
 		if(msg->mode == MsgUnpack) {
-			*s = ixp_emalloc(len + 1);
+			*s = emalloc(len + 1);
 			memcpy(*s, msg->pos, len);
 			(*s)[len] = '\0';
 		}else
@@ -100,7 +100,7 @@ ixp_pstring(Message *msg, char **s) {
 }
 
 void
-ixp_pstrings(Message *msg, ushort *num, char *strings[]) {
+ixp_pstrings(IxpMsg *msg, ushort *num, char *strings[]) {
 	uchar *s;
 	uint i, size;
 	ushort len;
@@ -123,7 +123,7 @@ ixp_pstrings(Message *msg, ushort *num, char *strings[]) {
 		}
 		msg->pos = s;
 		size += *num;
-		s = ixp_emalloc(size);
+		s = emalloc(size);
 	}
 
 	for(i=0; i < *num; i++) {
@@ -143,10 +143,10 @@ ixp_pstrings(Message *msg, ushort *num, char *strings[]) {
 }
 
 void
-ixp_pdata(Message *msg, char **data, uint len) {
+ixp_pdata(IxpMsg *msg, char **data, uint len) {
 	if(msg->pos + len <= msg->end) {
 		if(msg->mode == MsgUnpack) {
-			*data = ixp_emalloc(len);
+			*data = emalloc(len);
 			memcpy(*data, msg->pos, len);
 		}else
 			memcpy(msg->pos, *data, len);
@@ -155,14 +155,14 @@ ixp_pdata(Message *msg, char **data, uint len) {
 }
 
 void
-ixp_pqid(Message *msg, Qid *qid) {
+ixp_pqid(IxpMsg *msg, Qid *qid) {
 	ixp_pu8(msg, &qid->type);
 	ixp_pu32(msg, &qid->version);
 	ixp_pu64(msg, &qid->path);
 }
 
 void
-ixp_pqids(Message *msg, ushort *num, Qid qid[]) {
+ixp_pqids(IxpMsg *msg, ushort *num, Qid qid[]) {
 	int i;
 
 	ixp_pu16(msg, num);
@@ -176,7 +176,7 @@ ixp_pqids(Message *msg, ushort *num, Qid qid[]) {
 }
 
 void
-ixp_pstat(Message *msg, Stat *stat) {
+ixp_pstat(IxpMsg *msg, Stat *stat) {
 	ushort size;
 
 	if(msg->mode == MsgPack)

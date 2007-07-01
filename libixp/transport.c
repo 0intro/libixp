@@ -1,7 +1,6 @@
 /* Copyright ©2007 Kris Maglione <fbsdaemon@gmail.com>
  * See LICENSE file for license details.
  */
-#include "ixp.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -11,39 +10,38 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include "ixp_local.h"
 
 static int
-mread(int fd, Message *msg, uint count) {
+mread(int fd, IxpMsg *msg, uint count) {
 	int r, n;
 
 	n = msg->end - msg->pos;
 	if(n <= 0) {
-		errstr = "buffer full";
+		werrstr("buffer full");
 		return -1;
 	}
 	if(n > count)
 		n = count;
 
-	r = read(fd, msg->pos, n);
+	r = ixp_thread->read(fd, msg->pos, n);
 	if(r > 0)
 		msg->pos += r;
 	return r;
 }
 
 static int
-readn(int fd, Message *msg, uint count) {
+readn(int fd, IxpMsg *msg, uint count) {
 	uint num;
 	int r;
 
-	errstr = nil;
 	num = count;
 	while(num > 0) {
 		r = mread(fd, msg, num);
-		if(r < 1) {
-			if(errstr == nil)
-				errstr = "broken pipe";
-			else if(errno == EINTR)
-				continue;
+		if(r == -1 && errno == EINTR)
+			continue;
+		if(r == 0) {
+			werrstr("broken pipe");
 			return count - num;
 		}
 		num -= r;
@@ -52,16 +50,16 @@ readn(int fd, Message *msg, uint count) {
 }
 
 uint
-ixp_sendmsg(int fd, Message *msg) {
+ixp_sendmsg(int fd, IxpMsg *msg) {
 	int r;
 
 	msg->pos = msg->data;
 	while(msg->pos < msg->end) {
-		r = write(fd, msg->pos, msg->end - msg->pos);
+		r = ixp_thread->write(fd, msg->pos, msg->end - msg->pos);
 		if(r < 1) {
 			if(errno == EINTR)
 				continue;
-			errstr = "broken pipe";
+			werrstr("broken pipe");
 			return 0;
 		}
 		msg->pos += r;
@@ -70,7 +68,7 @@ ixp_sendmsg(int fd, Message *msg) {
 }
 
 uint
-ixp_recvmsg(int fd, Message *msg) {
+ixp_recvmsg(int fd, IxpMsg *msg) {
 	enum { SSize = 4 };
 	uint msize, size;
 
@@ -85,11 +83,11 @@ ixp_recvmsg(int fd, Message *msg) {
 
 	size = msize - SSize;
 	if(msg->pos + size >= msg->end) {
-		errstr = "message too large";
+		werrstr("message too large");
 		return 0;
 	}
 	if(readn(fd, msg, size) != size) {
-		errstr = "message incomplete";
+		werrstr("message incomplete");
 		return 0;
 	}
 

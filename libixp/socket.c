@@ -13,7 +13,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
-#include "ixp.h"
+#include "ixp_local.h"
 
 /* Note: These functions modify the strings that they are passed.
  *   The lookup function duplicates the original string, so it is
@@ -31,14 +31,14 @@ get_port(char *addr) {
 
 	s = strchr(addr, '!');
 	if(s == nil) {
-		errstr = "no port provided";
+		werrstr("no port provided");
 		return -1;
 	}
 
 	*s++ = '\0';
 	port = strtol(s, &end, 10);
 	if(*s == '\0' && *end != '\0') {
-		errstr = "invalid port number";
+		werrstr("invalid port number");
 		return -1;
 	}
 	return port;
@@ -55,10 +55,8 @@ sock_unix(char *address, sockaddr_un *sa, socklen_t *salen) {
 	*salen = SUN_LEN(sa);
 
 	fd = socket(AF_UNIX, SOCK_STREAM, 0);
-	if(fd < 0) {
-		errstr = strerror(errno);
+	if(fd < 0)
 		return -1;
-	}
 	return fd;
 }
 
@@ -75,7 +73,7 @@ sock_tcp(char *host, sockaddr_in *sa) {
 	signal(SIGPIPE, SIG_IGN);
 	fd = socket(AF_INET, SOCK_STREAM, 0);
 	if(fd < 0)
-		goto fail;
+		return -1;
 
 	memset(sa, 0, sizeof(sa));
 	sa->sin_family = AF_INET;
@@ -86,13 +84,8 @@ sock_tcp(char *host, sockaddr_in *sa) {
 	else if((he = gethostbyname(host)))
 		memcpy(&sa->sin_addr, he->h_addr, he->h_length);
 	else
-		goto fail;
-
+		return -1;
 	return fd;
-
-fail:
-	errstr = strerror(errno);
-	return -1;
 }
 
 static int
@@ -106,7 +99,6 @@ dial_unix(char *address) {
 		return fd;
 
 	if(connect(fd, (sockaddr*) &sa, salen)) {
-		errstr = strerror(errno);
 		close(fd);
 		return -1;
 	}
@@ -140,7 +132,6 @@ announce_unix(char *file) {
 	return fd;
 
 fail:
-	errstr = strerror(errno);
 	close(fd);
 	return -1;
 }
@@ -155,7 +146,6 @@ dial_tcp(char *host) {
 		return fd;
 
 	if(connect(fd, (sockaddr*)&sa, sizeof(sa))) {
-		errstr = strerror(errno);
 		close(fd);
 		return -1;
 	}
@@ -181,7 +171,6 @@ announce_tcp(char *host) {
 	return fd;
 
 fail:
-	errstr = strerror(errno);
 	close(fd);
 	return -1;
 }
@@ -206,17 +195,17 @@ lookup(char *address, addrtab *tab) {
 	int ret;
 
 	ret = -1;
-	type = ixp_estrdup(address);
+	type = estrdup(address);
 
 	addr = strchr(type, '!');
 	if(addr == nil)
-		errstr = "no address type defined";
+		werrstr("no address type defined");
 	else {
 		*addr++ = '\0';
 		for(; tab->type; tab++)
 			if(strcmp(tab->type, type) == 0) break;
 		if(tab->type == nil)
-			errstr = "unsupported address type";
+			werrstr("unsupported address type");
 		else
 			ret = tab->fn(addr);
 	}

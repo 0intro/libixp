@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include "ixp.h"
+#include "ixp_local.h"
 
 IxpConn *
 ixp_listen(IxpServer *s, int fd, void *aux,
@@ -15,7 +15,7 @@ ixp_listen(IxpServer *s, int fd, void *aux,
 		) {
 	IxpConn *c;
 
-	c = ixp_emallocz(sizeof(IxpConn));
+	c = emallocz(sizeof(IxpConn));
 	c->fd = fd;
 	c->aux = aux;
 	c->srv = s;
@@ -70,7 +70,7 @@ handle_conns(IxpServer *s) {
 	}
 }
 
-char *
+int
 ixp_serverloop(IxpServer *s) {
 	int r;
 
@@ -83,11 +83,11 @@ ixp_serverloop(IxpServer *s) {
 		if(r < 0) {
 			if(errno == EINTR)
 				continue;
-			return "fatal select error";
+			return 1;
 		}
 		handle_conns(s);
 	}
-	return nil;
+	return 0;
 }
 
 void

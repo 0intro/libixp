@@ -1,20 +1,23 @@
 #!/bin/sh -f
 
 outfile="$1"; shift
+bin="$(echo $0 | sed 's,/[^/]*$,,')"
 
 # Derived from Russ Cox's 9c in plan9port.
 
 xtmp=/tmp/cc.$$.$USER.out
 
-echo CC ${BASE}$outfile
+echo CC $($bin/cleanname ${BASE}$outfile)
 $CC -o $outfile $CFLAGS $@ 2>$xtmp
 status=$?
 
-cat $xtmp \
-| egrep -v ': error: .Each undeclared identifier|: error: for each function it appears|is dangerous, better use|is almost always misused|: In function |: At top level:|support .long long.|use of C99 long long|ISO C forbids conversion' \
-| sed 's/ .first use in this function.$//; s/\"\([^\"][^\"]*\)\", line \([0-9][0-9]*\)/\1:\2/g' \
-| uniq 1>&2
+base=$(echo $BASE | sed 's/,/\\,/g')
 
-rm -f $xtmp $xtmp.status
+cat $xtmp | sed "s,^[^/][^:]*\.c:,$base&,g" |
+	egrep -v ': error: .Each undeclared identifier|: error: for each function it appears|is dangerous, better use|is almost always misused|: In function |: At top level:|support .long long.|use of C99 long long|ISO C forbids conversion' |
+	sed 's/ .first use in this function.$//; s/\"\([^\"][^\"]*\)\", line \([0-9][0-9]*\)/\1:\2/g' |
+	uniq 1>&2
+
+rm -f $xtmp
 exit $status
 

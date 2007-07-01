@@ -1,4 +1,4 @@
-LIB = ${TARG}.a
+LIB = ${ROOT}/lib/${TARG}.a
 OFILES = ${OBJ:=.o}
 
 all: ${HFILES} ${LIB} 
@@ -10,7 +10,7 @@ depend: ${OBJ:=.depend}
 
 libclean:
 	for i in ${LIB} ${OFILES}; do \
-		rm $$i; \
+		rm -f $$i; \
 	done 2>/dev/null || true
 
 printinstall:
@@ -18,7 +18,8 @@ printinstall:
 	echo '	Lib: ${LIBDIR}'
 
 ${LIB}: ${OFILES}
-	@echo AR $@
+	@echo AR $$($(ROOT)/util/cleanname $(BASE)/$@)
 	@${AR} $@ ${OFILES}
+	@${RANLIB} $@
 
 include ${ROOT}/mk/common.mk

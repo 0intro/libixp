@@ -1,7 +1,7 @@
 ROOT=.
 include ${ROOT}/mk/hdr.mk
 
-DIRS =	libixp	\
+DIRS =	${COMPONENTS}	\
 	cmd	\
 	include	\
 	man

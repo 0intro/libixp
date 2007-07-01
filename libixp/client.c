@@ -2,20 +2,19 @@
  * See LICENSE file for license details.
  */
 #include <assert.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include "ixp.h"
+#include "ixp_local.h"
 
 #define nelem(ary) (sizeof(ary) / sizeof(*ary))
-static char errbuf[1024];
 
 enum {
 	RootFid = 1,
-	Tag = 1,
 };
 
 static int
@@ -29,16 +28,19 @@ static IxpCFid *
 getfid(IxpClient *c) {
 	IxpCFid *f;
 
+	thread->lock(&c->lk);
 	f = c->freefid;
 	if(f != nil)
 		c->freefid = f->next;
 	else {
-		f = ixp_emallocz(sizeof *f);
+		f = emallocz(sizeof *f);
 		f->client = c;
 		f->fid = ++c->lastfid;
+		thread->initmutex(&f->iolock);
 	}
 	f->next = nil;
 	f->open = 0;
+	thread->unlock(&c->lk);
 	return f;
 }
 
@@ -47,44 +49,40 @@ putfid(IxpCFid *f) {
 	IxpClient *c;
 
 	c = f->client;
+	thread->lock(&c->lk);
 	if(f->fid == c->lastfid) {
 		c->lastfid--;
+		thread->mdestroy(&f->iolock);
 		free(f);
 	}else {
 		f->next = c->freefid;
 		c->freefid = f;
 	}
+	thread->unlock(&c->lk);
 }
 
 static int
 dofcall(IxpClient *c, Fcall *fcall) {
-	int type;
+	Fcall *ret;
 
-	type = fcall->type;
-	if(ixp_fcall2msg(&c->msg, fcall) == 0) {
-		errstr = "failed to pack message";
+	ret = muxrpc(c, fcall);
+	if(ret == nil)
 		return 0;
+	if(ret->type == RError) {
+		werrstr("%s", ret->ename);
+		goto fail;
 	}
-	if(ixp_sendmsg(c->fd, &c->msg) == 0)
-		return 0;
-	if(ixp_recvmsg(c->fd, &c->msg) == 0)
-		return 0;
-	if(ixp_msg2fcall(&c->msg, fcall) == 0) {
-		errstr = "received bad message";
-		return 0;
+	if(ret->type != (fcall->type^1)) {
+		werrstr("received mismatched fcall");
+		goto fail;
 	}
-	if(fcall->type == RError) {
-		strncpy(errbuf, fcall->ename, sizeof errbuf);
-		ixp_freefcall(fcall);
-		errstr = errbuf;
-		return 0;
-	}
-	if(fcall->type != (type^1)) {
-		ixp_freefcall(fcall);
-		errstr = "received mismatched fcall";
-		return 0;
-	}
+	memcpy(fcall, ret, sizeof(*fcall));
+	free(ret);
 	return 1;
+fail:
+	ixp_freefcall(fcall);
+	free(ret);
+	return 0;
 }
 
 void
@@ -94,12 +92,24 @@ ixp_unmount(IxpClient *c) {
 	shutdown(c->fd, SHUT_RDWR);
 	close(c->fd);
 
+	muxfree(c);
+
 	while((f = c->freefid)) {
 		c->freefid = f->next;
+		thread->mdestroy(&f->iolock);
 		free(f);
 	}
-	free(c->msg.data);
+	free(c->rmsg.data);
+	free(c->wmsg.data);
 	free(c);
+}
+
+static void
+allocmsg(IxpClient *c, int n) {
+	c->rmsg.size = n;
+	c->wmsg.size = n;
+	c->rmsg.data = erealloc(c->rmsg.data, n);
+	c->wmsg.data = erealloc(c->wmsg.data, n);
 }
 
 IxpClient *
@@ -107,15 +117,18 @@ ixp_mountfd(int fd) {
 	IxpClient *c;
 	Fcall fcall;
 
-	c = ixp_emallocz(sizeof(*c));
+	c = emallocz(sizeof(*c));
 	c->fd = fd;
 
-	c->msg.size = 64;
-	c->msg.data = ixp_emalloc(c->msg.size);
+	muxinit(c);
+
+	allocmsg(c, 256);
 	c->lastfid = RootFid;
+	/* Override tag matching on TVersion */
+	c->mintag = IXP_NOTAG;
+	c->maxtag = IXP_NOTAG+1;
 
 	fcall.type = TVersion;
-	fcall.tag = IXP_NOTAG;
 	fcall.msize = IXP_MAX_MSG;
 	fcall.version = IXP_VERSION;
 
@@ -124,18 +137,19 @@ ixp_mountfd(int fd) {
 		return nil;
 	}
 
-	if(strcmp(fcall.version, IXP_VERSION) != 0) {
-		errstr = "bad 9P version response";
+	if(strcmp(fcall.version, IXP_VERSION) || fcall.msize > IXP_MAX_MSG) {
+		werrstr("bad 9P version response");
 		ixp_unmount(c);
 		return nil;
 	}
 
-	c->msg.size = fcall.msize;
-	c->msg.data = ixp_erealloc(c->msg.data, c->msg.size);
+	c->mintag = 0;
+	c->maxtag = 255;
+
+	allocmsg(c, fcall.msize);
 	ixp_freefcall(&fcall);
 
 	fcall.type = TAttach;
-	fcall.tag = Tag;
 	fcall.fid = RootFid;
 	fcall.afid = IXP_NOFID;
 	fcall.uname = getenv("USER");
@@ -164,8 +178,8 @@ walk(IxpClient *c, char *path) {
 	Fcall fcall;
 	int n;
 
-	path = ixp_estrdup(path);
-	n = ixp_tokenize(fcall.wname, nelem(fcall.wname), path, '/');
+	path = estrdup(path);
+	n = tokenize(fcall.wname, nelem(fcall.wname), path, '/');
 	f = getfid(c);
 
 	fcall.type = TWalk;
@@ -199,7 +213,7 @@ walkdir(IxpClient *c, char *path, char **rest) {
 	while((p > path) && (*p != '/'))
 		p--;
 	if(*p != '/') {
-		errstr = "bad path";
+		werrstr("bad path");
 		return nil;
 	}
 
@@ -217,7 +231,6 @@ clunk(IxpCFid *f) {
 	c = f->client;
 
 	fcall.type = TClunk;
-	fcall.tag = Tag;
 	fcall.fid = f->fid;
 	ret = dofcall(c, &fcall);
 	if(ret)
@@ -236,7 +249,6 @@ ixp_remove(IxpClient *c, char *path) {
 		return 0;
 
 	fcall.type = TRemove;
-	fcall.tag = Tag;
 	fcall.fid = f->fid;;
 	ret = dofcall(c, &fcall);
 	ixp_freefcall(&fcall);
@@ -249,24 +261,25 @@ static void
 initfid(IxpCFid *f, Fcall *fcall) {
 	f->open = 1;
 	f->offset = 0;
-	f->iounit = min(fcall->iounit, IXP_MAX_MSG-32);
+	f->iounit = fcall->iounit;
+	if(f->iounit == 0 || fcall->iounit > f->client->msize-24)
+		f->iounit =  f->client->msize-24;
 	f->qid = fcall->qid;
 }
 
-IxpCFid *
+IxpCFid*
 ixp_create(IxpClient *c, char *name, uint perm, uchar mode) {
 	Fcall fcall;
 	IxpCFid *f;
 	char *path;;
 
-	path = ixp_estrdup(name);
+	path = estrdup(name);
 
 	f = walkdir(c, path, &name);
 	if(f == nil)
 		goto done;
 
 	fcall.type = TCreate;
-	fcall.tag = Tag;
 	fcall.fid = f->fid;
 	fcall.name = name;
 	fcall.perm = perm;
@@ -288,7 +301,7 @@ done:
 	return f;
 }
 
-IxpCFid *
+IxpCFid*
 ixp_open(IxpClient *c, char *name, uchar mode) {
 	Fcall fcall;
 	IxpCFid *f;
@@ -298,7 +311,6 @@ ixp_open(IxpClient *c, char *name, uchar mode) {
 		return nil;
 
 	fcall.type = TOpen;
-	fcall.tag = Tag;
 	fcall.fid = f->fid;
 	fcall.mode = mode;
 
@@ -321,7 +333,7 @@ ixp_close(IxpCFid *f) {
 
 Stat *
 ixp_stat(IxpClient *c, char *path) {
-	Message msg;
+	IxpMsg msg;
 	Fcall fcall;
 	Stat *stat;
 	IxpCFid *f;
@@ -332,14 +344,13 @@ ixp_stat(IxpClient *c, char *path) {
 		return nil;
 
 	fcall.type = TStat;
-	fcall.tag = Tag;
 	fcall.fid = f->fid;
 	if(dofcall(c, &fcall) == 0)
 		goto done;
 
 	msg = ixp_message(fcall.stat, fcall.nstat, MsgUnpack);
 
-	stat = ixp_emalloc(sizeof(*stat));
+	stat = emalloc(sizeof(*stat));
 	ixp_pstat(&msg, stat);
 	ixp_freefcall(&fcall);
 	if(msg.pos > msg.end) {
@@ -352,8 +363,8 @@ done:
 	return stat;
 }
 
-int
-ixp_read(IxpCFid *f, void *buf, uint count) {
+static long
+_pread(IxpCFid *f, void *buf, long count, vlong offset) {
 	Fcall fcall;
 	int n, len;
 
@@ -362,9 +373,8 @@ ixp_read(IxpCFid *f, void *buf, uint count) {
 		n = min(count-len, f->iounit);
 
 		fcall.type = TRead;
-		fcall.tag = IXP_NOTAG;
 		fcall.fid = f->fid;
-		fcall.offset = f->offset;
+		fcall.offset = offset;
 		fcall.count = n;
 		if(dofcall(f->client, &fcall) == 0)
 			return -1;
@@ -372,7 +382,7 @@ ixp_read(IxpCFid *f, void *buf, uint count) {
 			return -1;
 
 		memcpy(buf+len, fcall.data, fcall.count);
-		f->offset += fcall.count;
+		offset += fcall.count;
 		len += fcall.count;
 
 		ixp_freefcall(&fcall);
@@ -382,8 +392,30 @@ ixp_read(IxpCFid *f, void *buf, uint count) {
 	return len;
 }
 
-int
-ixp_write(IxpCFid *f, void *buf, uint count) {
+long
+ixp_read(IxpCFid *f, void *buf, long count) {
+	int n;
+
+	thread->lock(&f->iolock);
+	n = _pread(f, buf, count, f->offset);
+	if(n > 0)
+		f->offset += n;
+	thread->unlock(&f->iolock);
+	return n;
+}
+
+long
+ixp_pread(IxpCFid *f, void *buf, long count, vlong offset) {
+	int n;
+
+	thread->lock(&f->iolock);
+	n = _pread(f, buf, count, offset);
+	thread->unlock(&f->iolock);
+	return n;
+}
+
+static long
+_pwrite(IxpCFid *f, void *buf, long count, vlong offset) {
 	Fcall fcall;
 	int n, len;
 
@@ -391,7 +423,6 @@ ixp_write(IxpCFid *f, void *buf, uint count) {
 	do {
 		n = min(count-len, f->iounit);
 		fcall.type = TWrite;
-		fcall.tag = IXP_NOTAG;
 		fcall.fid = f->fid;
 		fcall.offset = f->offset;
 		fcall.data = (uchar*)buf + len;
@@ -408,3 +439,26 @@ ixp_write(IxpCFid *f, void *buf, uint count) {
 	} while(len < count);
 	return len;
 }
+
+long
+ixp_write(IxpCFid *f, void *buf, long count) {
+	int n;
+
+	thread->lock(&f->iolock);
+	n = _pwrite(f, buf, count, f->offset);
+	if(n > 0)
+		f->offset += n;
+	thread->unlock(&f->iolock);
+	return n;
+}
+
+long
+ixp_pwrite(IxpCFid *f, void *buf, long count, vlong offset) {
+	int n;
+
+	thread->lock(&f->iolock);
+	n = _pwrite(f, buf, count, offset);
+	thread->unlock(&f->iolock);
+	return n;
+}
+

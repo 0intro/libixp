@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
-#include "ixp.h"
+#include "ixp_local.h"
 
 static void handlereq(Ixp9Req *r);
 
@@ -30,24 +30,42 @@ static char
 	Eisdir[] = "cannot perform operation on a directory";
 
 enum {
-	TAG_BUCKETS = 64,
-	FID_BUCKETS = 64,
+	TAG_BUCKETS = 61,
+	FID_BUCKETS = 61,
 };
 
 struct Ixp9Conn {
-	Intmap	tagmap;
-	void	*taghash[TAG_BUCKETS];
-	Intmap	fidmap;
-	void	*fidhash[FID_BUCKETS];
-	Ixp9Srv	*srv;
-	IxpConn	*conn;
-	Message	msg;
-	uint ref;
+	Intmap		tagmap;
+	Intmap		fidmap;
+	void		*taghash[TAG_BUCKETS];
+	void		*fidhash[FID_BUCKETS];
+	Ixp9Srv		*srv;
+	IxpConn		*conn;
+	IxpMutex	rlock, wlock;
+	IxpMsg		rmsg;
+	IxpMsg		wmsg;
+	int		ref;
 };
 
 static void
-free_p9conn(Ixp9Conn *pc) {
-	free(pc->msg.data);
+decref_p9conn(Ixp9Conn *pc) {
+	thread->lock(&pc->wlock);
+	if(--pc->ref > 0) {
+		thread->unlock(&pc->wlock);
+		return;
+	}
+	thread->unlock(&pc->wlock);
+
+	assert(pc->conn == nil);
+
+	thread->mdestroy(&pc->rlock);
+	thread->mdestroy(&pc->wlock);
+
+	freemap(&pc->tagmap, nil);
+	freemap(&pc->fidmap, nil);
+
+	free(pc->rmsg.data);
+	free(pc->wmsg.data);
 	free(pc);
 }
 
@@ -55,12 +73,12 @@ static void *
 createfid(Intmap *map, int fid, Ixp9Conn *pc) {
 	Fid *f;
 
+	f = emallocz(sizeof(Fid));
 	pc->ref++;
-	f = ixp_emallocz(sizeof(Fid));
+	f->conn = pc;
 	f->fid = fid;
 	f->omode = -1;
 	f->map = map;
-	f->conn = pc;
 	if(caninsertkey(map, fid, f))
 		return f;
 	free(f);
@@ -78,7 +96,7 @@ destroyfid(Ixp9Conn *pc, ulong fid) {
 	if(pc->srv->freefid)
 		pc->srv->freefid(f);
 
-	pc->ref--;
+	decref_p9conn(pc);
 	free(f);
 	return 1;
 }
@@ -90,26 +108,31 @@ handlefcall(IxpConn *c) {
 	Ixp9Req *req;
 
 	pc = c->aux;
-	errstr = nil;
 
-	if(ixp_recvmsg(c->fd, &pc->msg) == 0)
+	thread->lock(&pc->rlock);
+	if(ixp_recvmsg(c->fd, &pc->rmsg) == 0)
 		goto Fail;
-	if(ixp_msg2fcall(&pc->msg, &fcall) == 0)
+	if(ixp_msg2fcall(&pc->rmsg, &fcall) == 0)
 		goto Fail;
+	thread->unlock(&pc->rlock);
 
-	req = ixp_emallocz(sizeof(Ixp9Req));
-	req->conn = pc;
-	req->ifcall = fcall;
+	req = emallocz(sizeof(Ixp9Req));
 	pc->ref++;
+	req->conn = pc;
+	req->srv = pc->srv;
+	req->ifcall = fcall;
 	pc->conn = c;
+
 	if(caninsertkey(&pc->tagmap, fcall.tag, req) == 0) {
 		respond(req, Eduptag);
 		return;
 	}
+
 	handlereq(req);
 	return;
 
 Fail:
+	thread->unlock(&pc->rlock);
 	ixp_hangup(c);
 	return;
 }
@@ -279,7 +302,7 @@ handlereq(Ixp9Req *r) {
 		}
 		pc->srv->write(r);
 		break;
-	/* Still to be implemented: flush, wstat, auth */
+	/* Still to be implemented: wstat, auth */
 	}
 }
 
@@ -299,9 +322,16 @@ respond(Ixp9Req *r, char *error) {
 		assert(error == nil);
 		free(r->ifcall.version);
 
-		pc->msg.size = min(r->ofcall.msize, IXP_MAX_MSG);
-		pc->msg.data = ixp_erealloc(pc->msg.data, pc->msg.size);
-		r->ofcall.msize = pc->msg.size;
+		thread->lock(&pc->rlock);
+		thread->lock(&pc->wlock);
+		msize = min(r->ofcall.msize, IXP_MAX_MSG);
+		pc->rmsg.data = erealloc(pc->rmsg.data, msize);
+		pc->wmsg.data = erealloc(pc->wmsg.data, msize);
+		pc->rmsg.size = msize;
+		pc->wmsg.size = msize;
+		thread->unlock(&pc->wlock);
+		thread->unlock(&pc->rlock);
+		r->ofcall.msize = msize;
 		break;
 	case TAttach:
 		if(error)
@@ -316,7 +346,7 @@ respond(Ixp9Req *r, char *error) {
 			r->fid->qid = r->ofcall.qid;
 		}
 		free(r->ifcall.name);
-		r->ofcall.iounit = pc->msg.size - sizeof(ulong);
+		r->ofcall.iounit = pc->rmsg.size - 24;
 		break;
 	case TWalk:
 		if(error || r->ofcall.nwqid < r->ifcall.nwname) {
@@ -350,7 +380,7 @@ respond(Ixp9Req *r, char *error) {
 	case TRead:
 	case TStat:
 		break;
-	/* Still to be implemented: flush, wstat, auth */
+	/* Still to be implemented: wstat, auth */
 	}
 
 	r->ofcall.tag = r->ifcall.tag;
@@ -365,9 +395,11 @@ respond(Ixp9Req *r, char *error) {
 	deletekey(&pc->tagmap, r->ifcall.tag);;
 
 	if(pc->conn) {
-		msize = ixp_fcall2msg(&pc->msg, &r->ofcall);
-		if(ixp_sendmsg(pc->conn->fd, &pc->msg) != msize)
+		thread->lock(&pc->wlock);
+		msize = ixp_fcall2msg(&pc->wmsg, &r->ofcall);
+		if(ixp_sendmsg(pc->conn->fd, &pc->wmsg) != msize)
 			ixp_hangup(pc->conn);
+		thread->unlock(&pc->wlock);
 	}
 
 	switch(r->ofcall.type) {
@@ -379,10 +411,7 @@ respond(Ixp9Req *r, char *error) {
 		break;
 	}
 	free(r);
-
-	pc->ref--;
-	if(!pc->conn && pc->ref == 0)
-		free_p9conn(pc);
+	decref_p9conn(pc);
 }
 
 /* Flush a pending request */
@@ -395,7 +424,7 @@ voidrequest(void *t) {
 	pc = r->conn;
 	pc->ref++;
 
-	tr = ixp_emallocz(sizeof(Ixp9Req));
+	tr = emallocz(sizeof(Ixp9Req));
 	tr->ifcall.type = TFlush;
 	tr->ifcall.tag = IXP_NOTAG;
 	tr->ifcall.oldtag = r->ifcall.tag;
@@ -414,7 +443,7 @@ voidfid(void *t) {
 	pc = f->conn;
 	pc->ref++;
 
-	tr = ixp_emallocz(sizeof(Ixp9Req));
+	tr = emallocz(sizeof(Ixp9Req));
 	tr->ifcall.type = TClunk;
 	tr->ifcall.tag = IXP_NOTAG;
 	tr->ifcall.fid = f->fid;
@@ -423,29 +452,17 @@ voidfid(void *t) {
 	handlereq(tr);
 }
 
-#if 0
-static void
-p9conn_incref(void *r) {
-	Ixp9Conn *pc;
-	
-	pc = *(Ixp9Conn **)r;
-	pc->ref++;
-}
-#endif
-
 static void
 cleanupconn(IxpConn *c) {
 	Ixp9Conn *pc;
 
 	pc = c->aux;
 	pc->conn = nil;
-	pc->ref++;
 	if(pc->ref > 1) {
 		execmap(&pc->tagmap, voidrequest);
 		execmap(&pc->fidmap, voidfid);
 	}
-	if(--pc->ref == 0)
-		free_p9conn(pc);
+	decref_p9conn(pc);
 }
 
 /* Handle incoming 9P connections */
@@ -458,12 +475,18 @@ serve_9pcon(IxpConn *c) {
 	if(fd < 0)
 		return;
 
-	pc = ixp_emallocz(sizeof(Ixp9Conn));
+	pc = emallocz(sizeof(Ixp9Conn));
+	pc->ref++;
 	pc->srv = c->aux;
-	pc->msg.size = 1024;
-	pc->msg.data = ixp_emalloc(pc->msg.size);
+	pc->rmsg.size = 1024;
+	pc->wmsg.size = 1024;
+	pc->rmsg.data = emalloc(pc->rmsg.size);
+	pc->wmsg.data = emalloc(pc->wmsg.size);
+
 	initmap(&pc->tagmap, TAG_BUCKETS, &pc->taghash);
 	initmap(&pc->fidmap, FID_BUCKETS, &pc->fidhash);
+	thread->initmutex(&pc->rlock);
+	thread->initmutex(&pc->wlock);
 
 	ixp_listen(c->srv, fd, pc, handlefcall, cleanupconn);
 }

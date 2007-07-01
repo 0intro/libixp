@@ -1,6 +1,8 @@
 /* Copyright ©2007 Kris Maglione <fbsdaemon@gmail.com>
  * See LICENSE file for license details.
  */
+#define IXP_NO_P9_
+#define IXP_P9_STRUCTS
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,7 +11,7 @@
 #include "ixp.h"
 
 /* Temporary */
-#define fatal(...) ixp_eprint("ixpc: fatal: " __VA_ARGS__)
+#define fatal(...) ixp_eprint("ixpc: fatal: " __VA_ARGS__); \
 
 char *argv0;
 #define ARGBEGIN int _argi, _argtmp, _inargv=0; char *_argv; \
@@ -26,6 +28,7 @@ char *argv0;
 		: ((argc > 0) ? (argc--, *argv++) : ((f), (char*)0)))
 #define USED(x) if(x){}else
 #define SET(x) ((x)=0)
+#define nil ((void*)0)
 
 static IxpClient *client;
 
@@ -48,7 +51,7 @@ write_data(IxpCFid *fid, char *name) {
 	do {
 		len = read(0, buf, fid->iounit);
 		if(len >= 0 && ixp_write(fid, buf, len) != len)
-			fatal("cannot write file '%s': %s\n", name, errstr);
+			fatal("cannot write file '%s': %s\n", name, ixp_errbuf());
 	} while(len > 0);
 
 	free(buf);
@@ -124,7 +127,7 @@ xwrite(int argc, char *argv[]) {
 	file = EARGF(usage());
 	fid = ixp_open(client, file, P9_OWRITE);
 	if(fid == nil)
-		fatal("Can't open file '%s': %s\n", file, errstr);
+		fatal("Can't open file '%s': %s\n", file, ixp_errbuf());
 
 	write_data(fid, file);
 	return 0;
@@ -144,7 +147,7 @@ xawrite(int argc, char *argv[]) {
 	file = EARGF(usage());
 	fid = ixp_open(client, file, P9_OWRITE);
 	if(fid == nil)
-		fatal("Can't open file '%s': %s\n", file, errstr);
+		fatal("Can't open file '%s': %s\n", file, ixp_errbuf());
 
 	nbuf = 0;
 	mbuf = 128;
@@ -163,7 +166,7 @@ xawrite(int argc, char *argv[]) {
 	}
 
 	if(ixp_write(fid, buf, nbuf) == -1)
-		fatal("cannot write file '%s': %s\n", file, errstr);
+		fatal("cannot write file '%s': %s\n", file, ixp_errbuf());
 	return 0;
 }
 
@@ -180,7 +183,7 @@ xcreate(int argc, char *argv[]) {
 	file = EARGF(usage());
 	fid = ixp_create(client, file, 0777, P9_OWRITE);
 	if(fid == nil)
-		fatal("Can't create file '%s': %s\n", file, errstr);
+		fatal("Can't create file '%s': %s\n", file, ixp_errbuf());
 
 	if((fid->qid.type&P9_DMDIR) == 0)
 		write_data(fid, file);
@@ -199,7 +202,7 @@ xremove(int argc, char *argv[]) {
 
 	file = EARGF(usage());
 	if(ixp_remove(client, file) == 0)
-		fatal("Can't remove file '%s': %s\n", file, errstr);
+		fatal("Can't remove file '%s': %s\n", file, ixp_errbuf());
 	return 0;
 }
 
@@ -217,21 +220,21 @@ xread(int argc, char *argv[]) {
 	file = EARGF(usage());
 	fid = ixp_open(client, file, P9_OREAD);
 	if(fid == nil)
-		fatal("Can't open file '%s': %s\n", file, errstr);
+		fatal("Can't open file '%s': %s\n", file, ixp_errbuf());
 
 	buf = ixp_emalloc(fid->iounit);
 	while((count = ixp_read(fid, buf, fid->iounit)) > 0)
 		write(1, buf, count);
 
 	if(count == -1)
-		fatal("cannot read file/directory '%s': %s\n", file, errstr);
+		fatal("cannot read file/directory '%s': %s\n", file, ixp_errbuf());
 
 	return 0;
 }
 
 static int
 xls(int argc, char *argv[]) {
-	Message m;
+	IxpMsg m;
 	Stat *stat;
 	IxpCFid *fid;
 	char *file, *buf;
@@ -254,7 +257,7 @@ xls(int argc, char *argv[]) {
 
 	stat = ixp_stat(client, file);
 	if(stat == nil)
-		fatal("cannot stat file '%s': %s\n", file, errstr);
+		fatal("cannot stat file '%s': %s\n", file, ixp_errbuf());
 
 	if(dflag || (stat->mode&P9_DMDIR) == 0) {
 		print_stat(stat, lflag);
@@ -265,7 +268,7 @@ xls(int argc, char *argv[]) {
 
 	fid = ixp_open(client, file, P9_OREAD);
 	if(fid == nil)
-		fatal("Can't open file '%s': %s\n", file, errstr);
+		fatal("Can't open file '%s': %s\n", file, ixp_errbuf());
 
 	nstat = 0;
 	mstat = 16;
@@ -276,7 +279,7 @@ xls(int argc, char *argv[]) {
 		while(m.pos < m.end) {
 			if(nstat == mstat) {
 				mstat <<= 1;
-				stat = ixp_erealloc(stat, mstat);
+				stat = ixp_erealloc(stat, sizeof(*stat) * mstat);
 			}
 			ixp_pstat(&m, &stat[nstat++]);
 		}
@@ -290,7 +293,7 @@ xls(int argc, char *argv[]) {
 	free(stat);
 
 	if(count == -1)
-		fatal("cannot read directory '%s': %s\n", file, errstr);
+		fatal("cannot read directory '%s': %s\n", file, ixp_errbuf());
 	return 0;
 }
 
@@ -334,7 +337,7 @@ main(int argc, char *argv[]) {
 
 	client = ixp_mount(address);
 	if(client == nil)
-		fatal("%s\n", errstr);
+		fatal("%s\n", ixp_errbuf());
 
 	for(tab = etab; tab->cmd; tab++)
 		if(strcmp(cmd, tab->cmd) == 0) break;

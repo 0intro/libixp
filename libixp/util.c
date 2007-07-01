@@ -6,10 +6,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "ixp.h"
+#include "ixp_local.h"
 
 void
-ixp_eprint(const char *fmt, ...) {
+eprint(const char *fmt, ...) {
 	va_list ap;
 	int err;
 
@@ -54,7 +54,7 @@ mfatal(char *name, uint size) {
 }
 
 void *
-ixp_emalloc(uint size) {
+emalloc(uint size) {
 	void *ret = malloc(size);
 	if(!ret)
 		mfatal("malloc", size);
@@ -62,14 +62,14 @@ ixp_emalloc(uint size) {
 }
 
 void *
-ixp_emallocz(uint size) {
-	void *ret = ixp_emalloc(size);
+emallocz(uint size) {
+	void *ret = emalloc(size);
 	memset(ret, 0, size);
 	return ret;
 }
 
 void *
-ixp_erealloc(void *ptr, uint size) {
+erealloc(void *ptr, uint size) {
 	void *ret = realloc(ptr, size);
 	if(!ret)
 		mfatal("realloc", size);
@@ -77,7 +77,7 @@ ixp_erealloc(void *ptr, uint size) {
 }
 
 char *
-ixp_estrdup(const char *str) {
+estrdup(const char *str) {
 	void *ret = strdup(str);
 	if(!ret)
 		mfatal("strdup", strlen(str));
@@ -85,7 +85,7 @@ ixp_estrdup(const char *str) {
 }
 
 uint
-ixp_tokenize(char *res[], uint reslen, char *str, char delim) {
+tokenize(char *res[], uint reslen, char *str, char delim) {
 	char *s;
 	uint i;
 
@@ -103,7 +103,7 @@ ixp_tokenize(char *res[], uint reslen, char *str, char delim) {
 }
 
 uint
-ixp_strlcat(char *dst, const char *src, uint size) {
+strlcat(char *dst, const char *src, uint size) {
 	const char *s;
 	char *d;
 	int n, len;

@@ -7,11 +7,14 @@ HFILES = ixp_fcall.h
 
 OBJ =	client    \
 	convert   \
+	error     \
 	intmap    \
 	message   \
 	request   \
+	rpc       \
 	server    \
 	socket    \
+	thread    \
 	transport \
 	util
 
