@@ -79,7 +79,7 @@ ixp_serverloop(IxpServer *s) {
 		if(s->preselect)
 			s->preselect(s);
 		prepare_select(s);
-		r = select(s->maxfd + 1, &s->rd, 0, 0, 0);
+		r = thread->select(s->maxfd + 1, &s->rd, 0, 0, 0);
 		if(r < 0) {
 			if(errno == EINTR)
 				continue;

@@ -177,5 +177,6 @@ static IxpThread ixp_pthread = {
 	.errbuf = errbuf,
 	.read = read,
 	.write = write,
+	.select = select,
 };
 

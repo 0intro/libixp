@@ -172,5 +172,6 @@ static IxpThread ixp_task = {
 	.errbuf = errbuf,
 	.read = _read,
 	.write = _write,
+	.select = select, /* wrong */
 };
 

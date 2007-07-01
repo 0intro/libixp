@@ -394,6 +394,7 @@ struct IxpThread {
 	char *(*errbuf)(void);
 	ssize_t (*read)(int, void*, size_t);
 	ssize_t (*write)(int, const void*, size_t);
+	int (*select)(int, fd_set*, fd_set*, fd_set*, struct timeval*);
 };
 
 extern IxpThread *ixp_thread;

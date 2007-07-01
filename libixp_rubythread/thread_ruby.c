@@ -179,6 +179,7 @@ static IxpThread ixp_rthread = {
 	.errbuf = errbuf,
 	.read = _read,
 	.write = _write,
+	.select = rb_thread_select,
 };
 
 static char RWLock[] =
