@@ -3,7 +3,8 @@ include ${ROOT}/mk/hdr.mk
 include ${ROOT}/mk/ixp.mk
 
 TARG =	libixp
-HFILES = ixp_fcall.h
+FCALL_H = $(ROOT)/include/ixp_fcall.h
+HFILES = $(FCALL_H)
 
 OBJ =	client    \
 	convert   \
@@ -20,6 +21,7 @@ OBJ =	client    \
 
 include ${ROOT}/mk/lib.mk
 
-ixp_fcall.h: fcall.h fcall.h.nounion ${ROOT}/config.mk
-	cat fcall.h${FCALL_H_VERSION} > ixp_fcall.h
-	cp -f ixp_fcall.h ${ROOT}/include/
+$(FCALL_H):  fcall.h${FCALL_H_VERSION} ${ROOT}/config.mk
+	echo HEADER $$($(CLEANNAME) $(BASE)/$(FCALL_H)) from fcall.h${FCALL_H_VERSION}
+	cp fcall.h${FCALL_H_VERSION} $(FCALL_H)
+
