@@ -1,10 +1,11 @@
-LIB = ${ROOT}/lib/${TARG}.a
+PTARG = ${ROOT}/lib/${TARG}
+LIB = ${PTARG}.a
 OFILES = ${OBJ:=.o}
 
 all: ${HFILES} ${LIB} 
 
-install: ${TARG}.install
-uninstall: ${TARG}.uninstall
+install: ${PTARG}.install
+uninstall: ${PTARG}.uninstall
 clean: libclean
 depend: ${OBJ:=.depend}
 

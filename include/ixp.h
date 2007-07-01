@@ -406,9 +406,9 @@ int ixp_rubyinit(void);
 int ixp_pthread_init(void);
 
 #ifdef VARARGCK
-# pragma varargck	argpos	ixp_print	3
-# pragma varargck	argpos	ixp_werrstr	2
-# pragma varargck	argpos	ixp_eprint	2
+# pragma varargck	argpos	ixp_print	2
+# pragma varargck	argpos	ixp_werrstr	1
+# pragma varargck	argpos	ixp_eprint	1
 #endif
 
 /* client.c */
