@@ -91,5 +91,6 @@ static IxpThread ixp_nothread = {
 	.errbuf = errbuf,
 	.read = read,
 	.write = write,
+	.select = select,
 };
 
