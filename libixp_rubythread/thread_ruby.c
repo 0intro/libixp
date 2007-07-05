@@ -9,8 +9,7 @@ static char RWLock[];
 
 int
 ixp_rubyinit(void) {
-	if(rb_require("thread.rb") != Qtrue)
-		return 1;
+	rb_require("thread.rb");
 	rb_eval_string(RWLock);
 	ixp_thread = &ixp_rthread;
 	return 0;
@@ -264,3 +263,4 @@ static char RWLock[] =
         "               Thread.critical = cr                                                       \n"
         "       end                                                                                \n"
         "end                                                                                       \n";
+

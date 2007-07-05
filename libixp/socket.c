@@ -20,28 +20,27 @@
  *   not modified.
  */
 
+typedef struct addrinfo addrinfo;
 typedef struct sockaddr sockaddr;
 typedef struct sockaddr_un sockaddr_un;
 typedef struct sockaddr_in sockaddr_in;
 
-static int
+static char*
 get_port(char *addr) {
-	char *s, *end;
-	int port;
+	char *s;
 
 	s = strchr(addr, '!');
 	if(s == nil) {
 		werrstr("no port provided");
-		return -1;
+		return nil;
 	}
 
 	*s++ = '\0';
-	port = strtol(s, &end, 10);
-	if(*s == '\0' && *end != '\0') {
+	if(*s == '\0') {
 		werrstr("invalid port number");
-		return -1;
+		return nil;
 	}
-	return port;
+	return s;
 }
 
 static int
@@ -56,34 +55,6 @@ sock_unix(char *address, sockaddr_un *sa, socklen_t *salen) {
 
 	fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if(fd < 0)
-		return -1;
-	return fd;
-}
-
-static int
-sock_tcp(char *host, sockaddr_in *sa) {
-	struct hostent *he;
-	int port, fd;
-
-	/* Truncates host at '!' */
-	port = get_port(host);
-	if(port < 0)
-		return -1;
-
-	signal(SIGPIPE, SIG_IGN);
-	fd = socket(AF_INET, SOCK_STREAM, 0);
-	if(fd < 0)
-		return -1;
-
-	memset(sa, 0, sizeof(sa));
-	sa->sin_family = AF_INET;
-	sa->sin_port = htons(port);
-
-	if(strcmp(host, "*") == 0)
-		sa->sin_addr.s_addr = htonl(INADDR_ANY);
-	else if((he = gethostbyname(host)))
-		memcpy(&sa->sin_addr, he->h_addr, he->h_length);
-	else
 		return -1;
 	return fd;
 }
@@ -136,46 +107,100 @@ fail:
 	return -1;
 }
 
-static int
-dial_tcp(char *host) {
-	sockaddr_in sa;
-	int fd;
+static addrinfo*
+alookup(char *host, int announce) {
+	addrinfo hints, *ret;
+	char *port;
+	int err;
 
-	fd = sock_tcp(host, &sa);
-	if(fd == -1)
-		return fd;
+	/* Truncates host at '!' */
+	port = get_port(host);
+	if(port == nil)
+		return nil;
 
-	if(connect(fd, (sockaddr*)&sa, sizeof(sa))) {
-		close(fd);
-		return -1;
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+
+	if(announce) {
+		hints.ai_flags = AI_PASSIVE;
+		if(!strcmp(host, "*"))
+			host = nil;
 	}
 
+	err = getaddrinfo(host, port, &hints, &ret);
+	if(err) {
+		werrstr("getaddrinfo: %s", gai_strerror(err));
+		return nil;
+	}
+	return ret;
+}
+
+static int
+ai_socket(addrinfo *ai) {
+	return socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+}
+
+static int
+dial_tcp(char *host) {
+	addrinfo *ai, *aip;
+	int fd;
+
+	aip = alookup(host, 0);
+	if(aip == nil)
+		return -1;
+
+	for(ai = aip; ai; ai = ai->ai_next) {
+		fd = ai_socket(ai);
+		if(fd == -1) {
+			werrstr("socket: %s", strerror(errno));
+			continue;
+		}
+
+		if(connect(fd, ai->ai_addr, ai->ai_addrlen) == 0)
+			break;
+
+		werrstr("connect: %s", strerror(errno));
+		close(fd);
+		fd = -1;
+	}
+
+	freeaddrinfo(aip);
 	return fd;
 }
 
 static int
 announce_tcp(char *host) {
-	sockaddr_in sa;
+	addrinfo *ai, *aip;
 	int fd;
 
-	fd = sock_tcp(host, &sa);
-	if(fd == -1)
-		return fd;
+	aip = alookup(host, 1);
+	if(aip == nil)
+		return -1;
 
-	if(bind(fd, (sockaddr*)&sa, sizeof(sa)) < 0)
-		goto fail;
+	/* Probably don't need to loop */
+	for(ai = aip; ai; ai = ai->ai_next) {
+		fd = ai_socket(ai);
+		if(fd == -1)
+			continue;
 
-	if(listen(fd, IXP_MAX_CACHE) < 0)
-		goto fail;
+		if(bind(fd, ai->ai_addr, ai->ai_addrlen) < 0)
+			goto fail;
 
+		if(listen(fd, IXP_MAX_CACHE) < 0)
+			goto fail;
+		break;
+	fail:
+		close(fd);
+		fd = -1;
+	}
+
+	freeaddrinfo(aip);
 	return fd;
-
-fail:
-	close(fd);
-	return -1;
 }
 
 typedef struct addrtab addrtab;
+static
 struct addrtab {
 	char *type;
 	int (*fn)(char*);
@@ -223,3 +248,4 @@ int
 ixp_announce(char *address) {
 	return lookup(address, atab);
 }
+
