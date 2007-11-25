@@ -424,13 +424,13 @@ _pwrite(IxpCFid *f, void *buf, long count, vlong offset) {
 		n = min(count-len, f->iounit);
 		fcall.type = TWrite;
 		fcall.fid = f->fid;
-		fcall.offset = f->offset;
+		fcall.offset = offset;
 		fcall.data = buf + len;
 		fcall.count = n;
 		if(dofcall(f->client, &fcall) == 0)
 			return -1;
 
-		f->offset += fcall.count;
+		offset += fcall.count;
 		len += fcall.count;
 
 		ixp_freefcall(&fcall);
