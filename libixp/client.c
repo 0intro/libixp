@@ -146,6 +146,7 @@ ixp_mountfd(int fd) {
 	c->mintag = 0;
 	c->maxtag = 255;
 
+	c->msize = fcall.msize;
 	allocmsg(c, fcall.msize);
 	ixp_freefcall(&fcall);
 
