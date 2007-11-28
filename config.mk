@@ -21,10 +21,11 @@ INCLUDE = ${PREFIX}/include
 # Includes and libs
 INCPATH = .:${ROOT}/include:${INCLUDE}:/usr/include
 LIBS = -L/usr/lib -lc
+MKDEP = cpp -M
 
 # Flags
 include ${ROOT}/mk/gcc.mk
-CFLAGS = -g -Wall ${INCS} -DVERSION=\"${VERSION}\"
+CFLAGS = -g ${INCS} -DIXPlint -DVERSION=\"${VERSION}\"
 LDFLAGS = -g ${LIBS}
 
 # Compiler
@@ -40,5 +41,4 @@ AR = ar crs
 #LDFLAGS = ${LIBS} -R${PREFIX}/lib
 #LDFLAGS += -lsocket -lnsl
 #CFLAGS += -xtarget=ultra
-FCALL_H_VERSION=.nounion
 

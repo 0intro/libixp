@@ -70,7 +70,7 @@ ixp_sendmsg(int fd, IxpMsg *msg) {
 uint
 ixp_recvmsg(int fd, IxpMsg *msg) {
 	enum { SSize = 4 };
-	uint msize, size;
+	ulong msize, size;
 
 	msg->mode = MsgUnpack;
 	msg->pos = msg->data;

@@ -7,24 +7,39 @@
 #include <sys/types.h>
 #include <sys/select.h>
 
+/* Gunk */
 #undef	uchar
-#define	uchar	_ixpuchar
 #undef	ushort
-#define	ushort	_ixpushort
 #undef	uint
-#define	uint	_ixpuint
 #undef	ulong
-#define	ulong	_ixpulong
 #undef	vlong
-#define	vlong	_ixpvlong
 #undef	uvlong
+#define	uchar	_ixpuchar
+#define	ushort	_ixpushort
+#define	uint	_ixpuint
+#define	ulong	_ixpulong
+#define	vlong	_ixpvlong
 #define	uvlong	_ixpuvlong
+
+#ifdef KENCC
+#  define STRUCT(x) struct {x};
+#  define UNION(x) union {x};
+#elif defined(__GNUC__) && !defined(IXPlint)
+#  define STRUCT(x) __extension__ struct {x};
+#  define UNION(x) __extension__ union {x};
+#else
+#  define STRUCT(x) x
+#  define UNION(x) x
+#endif
+/* End Gunk */
+
 typedef unsigned char		uchar;
 typedef unsigned short		ushort;
 typedef unsigned int		uint;
 typedef unsigned long		ulong;
-typedef long long		vlong;
 typedef unsigned long long	uvlong;
+
+typedef long long	vlong;
 
 #define IXP_VERSION	"9P2000"
 #define IXP_NOTAG	((ushort)~0)	/* Dummy tag */
@@ -147,6 +162,7 @@ enum {
 #  define RStat P9_RStat
 #  define TWStat P9_TWStat
 #  define RWStat P9_RWStat
+#
 #  define OREAD P9_OREAD
 #  define OWRITE P9_OWRITE
 #  define ORDWR P9_ORDWR
@@ -159,6 +175,7 @@ enum {
 #  define OEXCL P9_OEXCL
 #  define OLOCK P9_OLOCK
 #  define OAPPEND P9_OAPPEND
+#
 #  define QTDIR P9_QTDIR
 #  define QTAPPEND P9_QTAPPEND
 #  define QTEXCL P9_QTEXCL
@@ -173,6 +190,7 @@ enum {
 #  define DMMOUNT P9_DMMOUNT
 #  define DMAUTH P9_DMAUTH
 #  define DMTMP P9_DMTMP
+#
 #  define DMSYMLINK P9_DMSYMLINK
 #  define DMDEVICE P9_DMDEVICE
 #  define DMNAMEDPIPE P9_DMNAMEDPIPE
@@ -228,36 +246,89 @@ struct IxpRendez {
 
 enum { MsgPack, MsgUnpack, };
 struct IxpMsg {
-	uchar *data;
-	uchar *pos;
-	uchar *end;
-	uint size;
-	uint mode;
+	char	*data;
+	char	*pos;
+	char	*end;
+	uint	size;
+	uint	mode;
 };
 
 struct IxpQid {
-	uchar type;
-	uint version;
-	uvlong path;
+	uchar	type;
+	ulong	version;
+	uvlong	path;
 	/* internal use only */
-	uchar dir_type;
+	uchar	dir_type;
 };
 
-#include <ixp_fcall.h>
+/* from fcall(3) in plan9port */
+struct IxpFcall {
+	uchar type;
+	ushort tag;
+	ulong fid;
+
+	UNION (
+		STRUCT ( /* Tversion, Rversion */
+			ulong	msize;
+			char	*version;
+		)
+		STRUCT ( /* Tflush */
+			ushort	oldtag;
+		)
+		STRUCT ( /* Rerror */
+			char	*ename;
+		)
+		STRUCT ( /* Ropen, Rcreate */
+			IxpQid	qid; /* +Rattach */
+			ulong	iounit;
+		)
+		STRUCT ( /* Rauth */
+			IxpQid	aqid;
+		)
+		STRUCT ( /* Tauth, Tattach */
+			ulong	afid;
+			char	*uname;
+			char	*aname;
+		)
+		STRUCT ( /* Tcreate */
+			ulong	perm;
+			char	*name;
+			uchar	mode; /* +Topen */
+		)
+		STRUCT ( /* Twalk */
+			ulong	newfid;
+			ushort	nwname;
+			char	*wname[IXP_MAX_WELEM];
+		)
+		STRUCT ( /* Rwalk */
+			ushort	nwqid;
+			IxpQid	wqid[IXP_MAX_WELEM];
+		)
+		STRUCT (
+			uvlong	offset; /* Tread, Twrite */
+			ulong	count; /* Tread, Twrite, Rread */
+			char	*data; /* Twrite, Rread */
+		)
+		STRUCT ( /* Twstat, Rstat */
+			ushort	nstat;
+			uchar	*stat;
+		)
+	)
+};
 
 /* stat structure */
 struct IxpStat {
-	ushort type;
-	uint dev;
-	IxpQid qid;
-	uint mode;
-	uint atime;
-	uint mtime;
-	uvlong length;
-	char *name;
-	char *uid;
-	char *gid;
-	char *muid;
+	ushort	type;
+	ulong	dev;
+	IxpQid	qid;
+	ulong	mode;
+	ulong	atime;
+	ulong	mtime;
+	uvlong	length;
+	char	*name;
+	char	*uid;
+	char	*gid;
+	char	*muid;
 };
 
 struct IxpConn {
@@ -273,23 +344,23 @@ struct IxpConn {
 };
 
 struct IxpServer {
-	IxpConn *conn;
-	void (*preselect)(IxpServer*);
-	void *aux;
-	int running;
-	int maxfd;
-	fd_set rd;
+	IxpConn	*conn;
+	void	(*preselect)(IxpServer*);
+	void	*aux;
+	int	running;
+	int	maxfd;
+	fd_set	rd;
 };
 
 struct IxpRpc {
-	IxpClient *mux;
-	IxpRpc *next;
-	IxpRpc *prev;
-	IxpRendez r;
-	uint tag;
-	IxpFcall *p;
-	int waiting;
-	int async;
+	IxpClient	*mux;
+	IxpRpc		*next;
+	IxpRpc		*prev;
+	IxpRendez	r;
+	uint		tag;
+	IxpFcall	*p;
+	int		waiting;
+	int		async;
 };
 
 struct IxpClient {
@@ -298,21 +369,21 @@ struct IxpClient {
 	uint	lastfid;
 
 	/* Implementation details */
-	uint nwait;
-	uint mwait;
-	uint freetag;
-	IxpCFid	*freefid;
-	IxpMsg	rmsg;
-	IxpMsg	wmsg;
-	IxpMutex lk;
-	IxpMutex rlock;
-	IxpMutex wlock;
-	IxpRendez tagrend;
-	IxpRpc **wait;
-	IxpRpc *muxer;
-	IxpRpc sleep;
-	int mintag;
-	int maxtag;
+	uint		nwait;
+	uint		mwait;
+	uint		freetag;
+	IxpCFid		*freefid;
+	IxpMsg		rmsg;
+	IxpMsg		wmsg;
+	IxpMutex	lk;
+	IxpMutex	rlock;
+	IxpMutex	wlock;
+	IxpRendez	tagrend;
+	IxpRpc		**wait;
+	IxpRpc		*muxer;
+	IxpRpc		sleep;
+	int		mintag;
+	int		maxtag;
 };
 
 struct IxpCFid {
@@ -370,36 +441,36 @@ struct Ixp9Srv {
 
 struct IxpThread {
 	/* RWLock */
-	int (*initrwlock)(IxpRWLock*);
-	void (*rlock)(IxpRWLock*);
-	int (*canrlock)(IxpRWLock*);
-	void (*runlock)(IxpRWLock*);
-	void (*wlock)(IxpRWLock*);
-	int (*canwlock)(IxpRWLock*);
-	void (*wunlock)(IxpRWLock*);
-	void (*rwdestroy)(IxpRWLock*);
+	int	(*initrwlock)(IxpRWLock*);
+	void	(*rlock)(IxpRWLock*);
+	int	(*canrlock)(IxpRWLock*);
+	void	(*runlock)(IxpRWLock*);
+	void	(*wlock)(IxpRWLock*);
+	int	(*canwlock)(IxpRWLock*);
+	void	(*wunlock)(IxpRWLock*);
+	void	(*rwdestroy)(IxpRWLock*);
 	/* Mutex */
-	int (*initmutex)(IxpMutex*);
-	void (*lock)(IxpMutex*);
-	int (*canlock)(IxpMutex*);
-	void (*unlock)(IxpMutex*);
-	void (*mdestroy)(IxpMutex*);
+	int	(*initmutex)(IxpMutex*);
+	void	(*lock)(IxpMutex*);
+	int	(*canlock)(IxpMutex*);
+	void	(*unlock)(IxpMutex*);
+	void	(*mdestroy)(IxpMutex*);
 	/* Rendez */
-	int (*initrendez)(IxpRendez*);
-	void (*sleep)(IxpRendez*);
-	int (*wake)(IxpRendez*);
-	int (*wakeall)(IxpRendez*);
-	void (*rdestroy)(IxpRendez*);
+	int	(*initrendez)(IxpRendez*);
+	void	(*sleep)(IxpRendez*);
+	int	(*wake)(IxpRendez*);
+	int	(*wakeall)(IxpRendez*);
+	void	(*rdestroy)(IxpRendez*);
 	/* Other */
-	char *(*errbuf)(void);
-	ssize_t (*read)(int, void*, size_t);
-	ssize_t (*write)(int, const void*, size_t);
-	int (*select)(int, fd_set*, fd_set*, fd_set*, struct timeval*);
+	char	*(*errbuf)(void);
+	ssize_t	(*read)(int, void*, size_t);
+	ssize_t	(*write)(int, const void*, size_t);
+	int	(*select)(int, fd_set*, fd_set*, fd_set*, struct timeval*);
 };
 
 extern IxpThread *ixp_thread;
-extern int (*ixp_vsnprint)(char*, int, char*, va_list);
-extern char* (*ixp_vsmprint)(char*, va_list);
+extern int (*ixp_vsnprint)(char*, int, const char*, va_list);
+extern char* (*ixp_vsmprint)(const char*, va_list);
 
 /* thread_*.c */
 int ixp_taskinit(void);
@@ -407,79 +478,79 @@ int ixp_rubyinit(void);
 int ixp_pthread_init(void);
 
 #ifdef VARARGCK
-# pragma varargck	argpos	ixp_print	2
-# pragma varargck	argpos	ixp_werrstr	1
-# pragma varargck	argpos	ixp_eprint	1
+#  pragma varargck	argpos	ixp_print	2
+#  pragma varargck	argpos	ixp_werrstr	1
+#  pragma varargck	argpos	ixp_eprint	1
 #endif
 
 /* client.c */
-IxpClient *ixp_mount(char *address);
-IxpClient *ixp_mountfd(int fd);
-void ixp_unmount(IxpClient *c);
-IxpCFid *ixp_create(IxpClient *c, char *name, uint perm, uchar mode);
-IxpCFid *ixp_open(IxpClient *c, char *name, uchar mode);
-int ixp_remove(IxpClient *c, char *path);
-IxpStat *ixp_stat(IxpClient *c, char *path);
-long ixp_read(IxpCFid *f, void *buf, long count);
-long ixp_write(IxpCFid *f, void *buf, long count);
-long ixp_pread(IxpCFid *f, void *buf, long count, vlong offset);
-long ixp_pwrite(IxpCFid *f, void *buf, long count, vlong offset);
-int ixp_close(IxpCFid *f);
-int ixp_print(IxpCFid *f, char *fmt, ...);
-int ixp_vprint(IxpCFid *f, char *fmt, va_list ap);
+IxpClient*	ixp_mount(char*);
+IxpClient*	ixp_mountfd(int);
+void		ixp_unmount(IxpClient*);
+IxpCFid*	ixp_create(IxpClient*, char*, uint perm, uchar mode);
+IxpCFid*	ixp_open(IxpClient*, char*, uchar);
+int		ixp_remove(IxpClient*, char*);
+IxpStat*	ixp_stat(IxpClient*, char*);
+long		ixp_read(IxpCFid*, void*, long);
+long		ixp_write(IxpCFid*, const void*, long);
+long		ixp_pread(IxpCFid*, void*, long, vlong);
+long		ixp_pwrite(IxpCFid*, const void*, long, vlong);
+int		ixp_close(IxpCFid*);
+int		ixp_print(IxpCFid*, const char*, ...);
+int		ixp_vprint(IxpCFid*, const char*, va_list);
 
 /* convert.c */
-void ixp_pu8(IxpMsg *msg, uchar *val);
-void ixp_pu16(IxpMsg *msg, ushort *val);
-void ixp_pu32(IxpMsg *msg, uint *val);
-void ixp_pu64(IxpMsg *msg, uvlong *val);
-void ixp_pdata(IxpMsg *msg, char **data, uint len);
-void ixp_pstring(IxpMsg *msg, char **s);
-void ixp_pstrings(IxpMsg *msg, ushort *num, char *strings[]);
-void ixp_pqid(IxpMsg *msg, IxpQid *qid);
-void ixp_pqids(IxpMsg *msg, ushort *num, IxpQid qid[]);
-void ixp_pstat(IxpMsg *msg, IxpStat *stat);
+void ixp_pu8(IxpMsg*, uchar*);
+void ixp_pu16(IxpMsg*, ushort*);
+void ixp_pu32(IxpMsg*, ulong*);
+void ixp_pu64(IxpMsg*, uvlong*);
+void ixp_pdata(IxpMsg*, char**, uint);
+void ixp_pstring(IxpMsg*, char**);
+void ixp_pstrings(IxpMsg*, ushort*, char**);
+void ixp_pqid(IxpMsg*, IxpQid*);
+void ixp_pqids(IxpMsg*, ushort*, IxpQid*);
+void ixp_pstat(IxpMsg*, IxpStat*);
 
 /* error.h */
 char *ixp_errbuf(void);
 void ixp_errstr(char*, int);
 void ixp_rerrstr(char*, int);
-void ixp_werrstr(char*, ...);
+void ixp_werrstr(const char*, ...);
 
 /* request.c */
-void respond(Ixp9Req *r, char *error);
-void serve_9pcon(IxpConn *c);
+void respond(Ixp9Req*, const char *err);
+void serve_9pcon(IxpConn*);
 
 /* message.c */
-ushort ixp_sizeof_stat(IxpStat *stat);
-IxpMsg ixp_message(uchar *data, uint length, uint mode);
-void ixp_freestat(IxpStat *s);
-void ixp_freefcall(IxpFcall *fcall);
-uint ixp_msg2fcall(IxpMsg *msg, IxpFcall *fcall);
-uint ixp_fcall2msg(IxpMsg *msg, IxpFcall *fcall);
+ushort	ixp_sizeof_stat(IxpStat*);
+IxpMsg	ixp_message(uchar*, uint len, uint mode);
+void	ixp_freestat(IxpStat*);
+void	ixp_freefcall(IxpFcall*);
+uint	ixp_msg2fcall(IxpMsg*, IxpFcall*);
+uint	ixp_fcall2msg(IxpMsg*, IxpFcall*);
 
 /* server.c */
-IxpConn *ixp_listen(IxpServer *s, int fd, void *aux,
-		void (*read)(IxpConn *c),
-		void (*close)(IxpConn *c));
-void ixp_hangup(IxpConn *c);
-int ixp_serverloop(IxpServer *s);
-void ixp_server_close(IxpServer *s);
+IxpConn* ixp_listen(IxpServer*, int, void*,
+		void (*read)(IxpConn*),
+		void (*close)(IxpConn*));
+void	ixp_hangup(IxpConn*);
+int	ixp_serverloop(IxpServer*);
+void	ixp_server_close(IxpServer*);
 
 /* socket.c */
-int ixp_dial(char *address);
-int ixp_announce(char *address);
+int ixp_dial(char*);
+int ixp_announce(char*);
 
 /* transport.c */
-uint ixp_sendmsg(int fd, IxpMsg *msg);
-uint ixp_recvmsg(int fd, IxpMsg *msg);
+uint ixp_sendmsg(int, IxpMsg*);
+uint ixp_recvmsg(int, IxpMsg*);
 
 /* util.c */
-void *ixp_emalloc(uint size);
-void *ixp_emallocz(uint size);
-void *ixp_erealloc(void *ptr, uint size);
-char *ixp_estrdup(const char *str);
-void ixp_eprint(const char *fmt, ...);
-uint ixp_tokenize(char **result, uint reslen, char *str, char delim);
-uint ixp_strlcat(char *dst, const char *src, uint siz);
+void*	ixp_emalloc(uint);
+void*	ixp_emallocz(uint);
+void*	ixp_erealloc(void*, uint);
+char*	ixp_estrdup(const char*);
+void	ixp_eprint(const char*, ...);
+uint	ixp_tokenize(char**, uint len, char*, char);
+uint	ixp_strlcat(char*, const char*, uint);
 

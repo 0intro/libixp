@@ -307,7 +307,7 @@ handlereq(Ixp9Req *r) {
 }
 
 void
-respond(Ixp9Req *r, char *error) {
+respond(Ixp9Req *r, const char *error) {
 	Ixp9Conn *pc;
 	int msize;
 
@@ -389,7 +389,7 @@ respond(Ixp9Req *r, char *error) {
 		r->ofcall.type = r->ifcall.type + 1;
 	else {
 		r->ofcall.type = RError;
-		r->ofcall.ename = error;
+		r->ofcall.ename = (char*)error;
 	}
 
 	deletekey(&pc->tagmap, r->ifcall.tag);;

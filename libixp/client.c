@@ -415,7 +415,7 @@ ixp_pread(IxpCFid *f, void *buf, long count, vlong offset) {
 }
 
 static long
-_pwrite(IxpCFid *f, void *buf, long count, vlong offset) {
+_pwrite(IxpCFid *f, const void *buf, long count, vlong offset) {
 	Fcall fcall;
 	int n, len;
 
@@ -425,7 +425,7 @@ _pwrite(IxpCFid *f, void *buf, long count, vlong offset) {
 		fcall.type = TWrite;
 		fcall.fid = f->fid;
 		fcall.offset = f->offset;
-		fcall.data = buf + len;
+		fcall.data = (char*)buf + len;
 		fcall.count = n;
 		if(dofcall(f->client, &fcall) == 0)
 			return -1;
@@ -441,7 +441,7 @@ _pwrite(IxpCFid *f, void *buf, long count, vlong offset) {
 }
 
 long
-ixp_write(IxpCFid *f, void *buf, long count) {
+ixp_write(IxpCFid *f, const void *buf, long count) {
 	int n;
 
 	thread->lock(&f->iolock);
@@ -453,7 +453,7 @@ ixp_write(IxpCFid *f, void *buf, long count) {
 }
 
 long
-ixp_pwrite(IxpCFid *f, void *buf, long count, vlong offset) {
+ixp_pwrite(IxpCFid *f, const void *buf, long count, vlong offset) {
 	int n;
 
 	thread->lock(&f->iolock);
@@ -463,7 +463,7 @@ ixp_pwrite(IxpCFid *f, void *buf, long count, vlong offset) {
 }
 
 int
-ixp_vprint(IxpCFid *f, char *fmt, va_list ap) {
+ixp_vprint(IxpCFid *f, const char *fmt, va_list ap) {
 	char *buf;
 	int n;
 
@@ -477,7 +477,7 @@ ixp_vprint(IxpCFid *f, char *fmt, va_list ap) {
 }
 
 int
-ixp_print(IxpCFid *f, char *fmt, ...) {
+ixp_print(IxpCFid *f, const char *fmt, ...) {
 	va_list ap;
 	int n;
 

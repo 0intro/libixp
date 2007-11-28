@@ -8,27 +8,10 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#include "ixp.h"
+#include <ixp_local.h>
 
 /* Temporary */
 #define fatal(...) ixp_eprint("ixpc: fatal: " __VA_ARGS__); \
-
-char *argv0;
-#define ARGBEGIN int _argi, _argtmp, _inargv=0; char *_argv; \
-		if(!argv0)argv0=ARGF(); _inargv=1; \
-		while(argc && argv[0][0] == '-') { \
-			_argi=1; _argv=*argv++; argc--; \
-			while(_argv[_argi]) switch(_argv[_argi++])
-#define ARGEND }_inargv=0;USED(_argtmp);USED(_argv);USED(_argi)
-#define ARGF() ((_inargv && _argv[_argi]) ? \
-		(_argtmp=_argi, _argi=strlen(_argv), _argv+_argtmp) \
-		: ((argc > 0) ? (argc--, *argv++) : ((char*)0)))
-#define EARGF(f) ((_inargv && _argv[_argi]) ? \
-		(_argtmp=_argi, _argi=strlen(_argv), _argv+_argtmp) \
-		: ((argc > 0) ? (argc--, *argv++) : ((f), (char*)0)))
-#define USED(x) if(x){}else
-#define SET(x) ((x)=0)
-#define nil ((void*)0)
 
 static IxpClient *client;
 
@@ -47,7 +30,7 @@ write_data(IxpCFid *fid, char *name) {
 	void *buf;
 	uint len;
 
-	buf = ixp_emalloc(fid->iounit);;
+	buf = emalloc(fid->iounit);;
 	do {
 		len = read(0, buf, fid->iounit);
 		if(len >= 0 && ixp_write(fid, buf, len) != len)
@@ -151,7 +134,7 @@ xawrite(int argc, char *argv[]) {
 
 	nbuf = 0;
 	mbuf = 128;
-	buf = ixp_emalloc(mbuf);
+	buf = emalloc(mbuf);
 	while(argc) {
 		arg = ARGF();
 		len = strlen(arg);
@@ -222,7 +205,7 @@ xread(int argc, char *argv[]) {
 	if(fid == nil)
 		fatal("Can't open file '%s': %s\n", file, ixp_errbuf());
 
-	buf = ixp_emalloc(fid->iounit);
+	buf = emalloc(fid->iounit);
 	while((count = ixp_read(fid, buf, fid->iounit)) > 0)
 		write(1, buf, count);
 
@@ -272,8 +255,8 @@ xls(int argc, char *argv[]) {
 
 	nstat = 0;
 	mstat = 16;
-	stat = ixp_emalloc(sizeof(*stat) * mstat);
-	buf = ixp_emalloc(fid->iounit);
+	stat = emalloc(sizeof(*stat) * mstat);
+	buf = emalloc(fid->iounit);
 	while((count = ixp_read(fid, buf, fid->iounit)) > 0) {
 		m = ixp_message(buf, count, MsgUnpack);
 		while(m.pos < m.end) {

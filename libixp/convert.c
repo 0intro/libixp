@@ -14,33 +14,35 @@ enum {
 };
 
 void
-ixp_puint(IxpMsg *msg, uint size, uint *val) {
+ixp_puint(IxpMsg *msg, uint size, ulong *val) {
+	uchar *pos;
 	int v;
 
 	if(msg->pos + size <= msg->end) {
+		pos = msg->pos;
 		switch(msg->mode) {
 		case MsgPack:
 			v = *val;
 			switch(size) {
 			case SDWord:
-				msg->pos[3] = v>>24;
-				msg->pos[2] = v>>16;
+				pos[3] = v>>24;
+				pos[2] = v>>16;
 			case SWord:
-				msg->pos[1] = v>>8;
+				pos[1] = v>>8;
 			case SByte:
-				msg->pos[0] = v;
+				pos[0] = v;
 				break;
 			}
 		case MsgUnpack:
 			v = 0;
 			switch(size) {
 			case SDWord:
-				v |= msg->pos[3]<<24;
-				v |= msg->pos[2]<<16;
+				v |= pos[3]<<24;
+				v |= pos[2]<<16;
 			case SWord:
-				v |= msg->pos[1]<<8;
+				v |= pos[1]<<8;
 			case SByte:
-				v |= msg->pos[0];
+				v |= pos[0];
 				break;
 			}
 			*val = v;
@@ -50,12 +52,12 @@ ixp_puint(IxpMsg *msg, uint size, uint *val) {
 }
 
 void
-ixp_pu32(IxpMsg *msg, uint *val) {
+ixp_pu32(IxpMsg *msg, ulong *val) {
 	ixp_puint(msg, SDWord, val);
 }
 void
 ixp_pu8(IxpMsg *msg, uchar *val) {
-	uint v;
+	ulong v;
 
 	v = *val;
 	ixp_puint(msg, SByte, &v);
@@ -63,7 +65,7 @@ ixp_pu8(IxpMsg *msg, uchar *val) {
 }
 void
 ixp_pu16(IxpMsg *msg, ushort *val) {
-	uint v;
+	ulong v;
 
 	v = *val;
 	ixp_puint(msg, SWord, &v);
@@ -71,7 +73,7 @@ ixp_pu16(IxpMsg *msg, ushort *val) {
 }
 void
 ixp_pu64(IxpMsg *msg, uvlong *val) {
-	uint vl, vb;
+	ulong vl, vb;
 
 	vl = (uint)*val;
 	vb = (uint)(*val>>32);
@@ -101,7 +103,7 @@ ixp_pstring(IxpMsg *msg, char **s) {
 
 void
 ixp_pstrings(IxpMsg *msg, ushort *num, char *strings[]) {
-	uchar *s;
+	char *s;
 	uint i, size;
 	ushort len;
 

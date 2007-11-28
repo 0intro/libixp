@@ -6,12 +6,12 @@
 #include "ixp_local.h"
 
 static int
-_vsnprint(char *buf, int n, char *fmt, va_list ap) {
+_vsnprint(char *buf, int n, const char *fmt, va_list ap) {
 	return vsnprintf(buf, n, fmt, ap);
 }
 
 static char*
-_vsmprint(char *fmt, va_list ap) {
+_vsmprint(const char *fmt, va_list ap) {
 	va_list al;
 	char *buf = "";
 	int n;
@@ -26,8 +26,8 @@ _vsmprint(char *fmt, va_list ap) {
 	return buf;
 }
 
-int (*ixp_vsnprint)(char*, int, char*, va_list) = _vsnprint;
-char* (*ixp_vsmprint)(char*, va_list) = _vsmprint;
+int (*ixp_vsnprint)(char*, int, const char*, va_list) = _vsnprint;
+char* (*ixp_vsmprint)(const char*, va_list) = _vsmprint;
 
 /* Approach to errno handling taken from Plan 9 Port. */
 enum {
@@ -62,7 +62,7 @@ rerrstr(char *buf, int n) {
 }
 
 void
-werrstr(char *fmt, ...) {
+werrstr(const char *fmt, ...) {
 	char tmp[IXP_ERRMAX];
 	va_list ap;
 

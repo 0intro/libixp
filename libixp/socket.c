@@ -1,5 +1,5 @@
-/* (C)opyright MMIV-MMVI Anselm R. Garbe <garbeam at gmail dot com>
- * Copyright ©2007 Kris Maglione <fbsdaemon@gmail.com>
+/* Copyright ©2007 Kris Maglione <fbsdaemon@gmail.com>
+ * Copyright ©2004-2006 Anselm R. Garbe <garbeam at gmail dot com>
  * See LICENSE file for license details.
  */
 #include <errno.h>
@@ -47,7 +47,7 @@ static int
 sock_unix(char *address, sockaddr_un *sa, socklen_t *salen) {
 	int fd;
 
-	memset(sa, 0, sizeof(sa));
+	memset(sa, 0, sizeof(*sa));
 
 	sa->sun_family = AF_UNIX;
 	strncpy(sa->sun_path, address, sizeof(sa->sun_path));

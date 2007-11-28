@@ -13,8 +13,8 @@ all:
 	${LINK} $@ $<
 
 .c.O:
-	${COMPILE} $@ $<
-	${LINK} $@ $<
+	${COMPILE} ${<:.c=.o} $<
+	${LINK} $@ ${<:.c=.o}
 
 .awk.O:
 	echo FILTER ${BASE}$<

@@ -2,6 +2,22 @@
 #define IXP_P9_STRUCTS
 #include <ixp.h>
 
+char *argv0;
+#define ARGBEGIN int _argi, _argtmp, _inargv=0; char *_argv; \
+		if(!argv0)argv0=ARGF(); _inargv=1; \
+		while(argc && argv[0][0] == '-') { \
+			_argi=1; _argv=*argv++; argc--; \
+			while(_argv[_argi]) switch(_argv[_argi++])
+#define ARGEND }_inargv=0;USED(_argtmp);USED(_argv);USED(_argi)
+#define ARGF() ((_inargv && _argv[_argi]) ? \
+		(_argtmp=_argi, _argi=strlen(_argv), _argv+_argtmp) \
+		: ((argc > 0) ? (argc--, *argv++) : ((char*)0)))
+#define EARGF(f) ((_inargv && _argv[_argi]) ? \
+		(_argtmp=_argi, _argi=strlen(_argv), _argv+_argtmp) \
+		: ((argc > 0) ? (argc--, *argv++) : ((f), (char*)0)))
+#define USED(x) if(x){}else
+#define SET(x) ((x)=0)
+
 #define thread ixp_thread
 
 #define eprint ixp_eprint
@@ -42,17 +58,16 @@ struct Intmap {
 #define caninsertkey ixp_caninsertkey
 
 /* intmap.c */
-void initmap(Intmap *m, ulong nhash, void *hash);
-void incref_map(Intmap *m);
-void decref_map(Intmap *m);
-void freemap(Intmap *map, void (*destroy)(void*));
-void execmap(Intmap *map, void (*destroy)(void*));
-void *lookupkey(Intmap *map, ulong id);
-void *insertkey(Intmap *map, ulong id, void *v);
-void *deletekey(Intmap *map, ulong id);
-int caninsertkey(Intmap *map, ulong id, void *v);
+void initmap(Intmap*, ulong, void*);
+void incref_map(Intmap*);
+void decref_map(Intmap*);
+void freemap(Intmap*, void (*destroy)(void*));
+void execmap(Intmap*, void (*destroy)(void*));
+void *lookupkey(Intmap*, ulong);
+void *insertkey(Intmap*, ulong, void*);
+void *deletekey(Intmap*, ulong);
+int caninsertkey(Intmap*, ulong, void*);
 
 #undef nil
 #define nil ((void*)0)
-#define USED(v) if(v){}else{}
 

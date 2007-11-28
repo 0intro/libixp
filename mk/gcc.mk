@@ -7,7 +7,6 @@ CFLAGS += \
 	-Wno-switch \
 	-Wno-comment \
 	-Wno-sign-compare \
-	-Wno-uninitialized \
 	-Wno-unused-parameter \
 	-Wimplicit \
 	-Wreturn-type \
