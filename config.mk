@@ -26,7 +26,7 @@ MKDEP = cpp -M
 # Flags
 include ${ROOT}/mk/gcc.mk
 CFLAGS = -g ${INCS} -DIXPlint -DVERSION=\"${VERSION}\"
-LDFLAGS = -g ${LIBS}
+LDFLAGS = -g ${LDLIBS} ${LIBS}
 
 # Compiler
 CC = cc -c

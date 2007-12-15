@@ -2,7 +2,7 @@ ROOT=..
 include ${ROOT}/mk/hdr.mk
 include ${ROOT}/mk/ixp.mk
 
-LDFLAGS += -L${ROOT}/lib -lixp
+LDLIBS = -L${ROOT}/lib -lixp
 TARG =	ixpc
 LIB = ${ROOT}/lib/libixp.a
 
