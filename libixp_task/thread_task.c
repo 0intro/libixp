@@ -1,3 +1,5 @@
+/* Written by Kris Maglione <fbsdaemon@gmail.com> */
+/* Public domain */
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>

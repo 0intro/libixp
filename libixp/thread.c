@@ -1,11 +1,12 @@
+/* Public Domain --Kris Maglione */
 #include <unistd.h>
 #include "ixp_local.h"
 
 static IxpThread ixp_nothread;
-IxpThread *ixp_thread = &ixp_nothread;
+IxpThread*ixp_thread = &ixp_nothread;
 
 static char*
-errbuf() {
+errbuf(void) {
 	static char errbuf[IXP_ERRMAX];
 
 	return errbuf;

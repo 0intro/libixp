@@ -1,3 +1,5 @@
+/* Written by Kris Maglione <fbsdaemon@gmail.com> */
+/* Public domain */
 #define _XOPEN_SOURCE 600
 #include <errno.h>
 #include <pthread.h>

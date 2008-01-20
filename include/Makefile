@@ -6,4 +6,3 @@ HFILES = ixp.h
 
 install: ${HFILES:.h=.install}
 
-include ${ROOT}/mk/common.mk

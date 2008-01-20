@@ -3,20 +3,32 @@
 #include <ixp.h>
 
 char *argv0;
-#define ARGBEGIN int _argi, _argtmp, _inargv=0; char *_argv; \
-		if(!argv0)argv0=ARGF(); _inargv=1; \
+#define ARGBEGIN \
+		int _argtmp=0, _inargv=0; char *_argv=nil; \
+		if(!argv0) argv0=*argv; argv++, argc--; \
+		_inargv=1; USED(_inargv); \
 		while(argc && argv[0][0] == '-') { \
-			_argi=1; _argv=*argv++; argc--; \
-			while(_argv[_argi]) switch(_argv[_argi++])
-#define ARGEND }_inargv=0;USED(_argtmp);USED(_argv);USED(_argi)
-#define ARGF() ((_inargv && _argv[_argi]) ? \
-		(_argtmp=_argi, _argi=strlen(_argv), _argv+_argtmp) \
-		: ((argc > 0) ? (argc--, *argv++) : ((char*)0)))
-#define EARGF(f) ((_inargv && _argv[_argi]) ? \
-		(_argtmp=_argi, _argi=strlen(_argv), _argv+_argtmp) \
-		: ((argc > 0) ? (argc--, *argv++) : ((f), (char*)0)))
-#define USED(x) if(x){}else
-#define SET(x) ((x)=0)
+			_argv=&argv[0][1]; argv++; argc--; \
+			if(_argv[0] == '-' && _argv[1] == '\0') \
+				break; \
+			while(*_argv) switch(*_argv++)
+#define ARGEND }_inargv=0;USED(_argtmp, _argv, _inargv)
+
+#define EARGF(f) ((_inargv && *_argv) ? \
+			(_argtmp=strlen(_argv), _argv+=_argtmp, _argv-_argtmp) \
+			: ((argc > 0) ? \
+				(--argc, ++argv, _used(argc), *(argv-1)) \
+				: ((f), (char*)0)))
+#define ARGF() EARGF(_used(0))
+
+#ifndef KENC
+  static inline void _used(long a, ...) { if(a){} }
+# define USED(...) _used((long)__VA_ARGS__)
+# define SET(x) USED(&x)
+#endif
+
+#undef nil
+#define nil ((void*)0)
 
 #define thread ixp_thread
 
@@ -32,21 +44,6 @@ char *argv0;
 #define muxfree ixp_muxfree
 #define muxrpc ixp_muxrpc
 
-void muxinit(IxpClient*);
-void muxfree(IxpClient*);
-Fcall *muxrpc(IxpClient*, Fcall*);
-
-#define errstr ixp_errstr
-#define rerrstr ixp_rerrstr
-#define werrstr ixp_werrstr
-
-typedef struct Intlist Intlist;
-struct Intmap {
-	ulong nhash;
-	Intlist	**hash;
-	IxpRWLock lk;
-};
-
 #define initmap ixp_initmap
 #define incref ixp_incref
 #define decref ixp_decref
@@ -57,17 +54,45 @@ struct Intmap {
 #define deletekey ixp_deletekey
 #define caninsertkey ixp_caninsertkey
 
-/* intmap.c */
-void initmap(Intmap*, ulong, void*);
-void incref_map(Intmap*);
-void decref_map(Intmap*);
-void freemap(Intmap*, void (*destroy)(void*));
-void execmap(Intmap*, void (*destroy)(void*));
-void *lookupkey(Intmap*, ulong);
-void *insertkey(Intmap*, ulong, void*);
-void *deletekey(Intmap*, ulong);
-int caninsertkey(Intmap*, ulong, void*);
+#define errstr ixp_errstr
+#define rerrstr ixp_rerrstr
+#define werrstr ixp_werrstr
 
-#undef nil
-#define nil ((void*)0)
+typedef struct Intlist Intlist;
+typedef IxpTimer Timer;
+
+typedef struct timeval timeval;
+
+struct Intmap {
+	ulong nhash;
+	Intlist	**hash;
+	IxpRWLock lk;
+};
+
+struct IxpTimer {
+	Timer*	link;
+	long	msec;
+	long	id;
+	void	(*fn)(long, void*);
+	void*	aux;
+};
+
+/* intmap.c */
+int	caninsertkey(Intmap*, ulong, void*);
+void	decref_map(Intmap*);
+void*	deletekey(Intmap*, ulong);
+void	execmap(Intmap*, void (*destroy)(void*));
+void	freemap(Intmap*, void (*destroy)(void*));
+void	incref_map(Intmap*);
+void	initmap(Intmap*, ulong, void*);
+void*	insertkey(Intmap*, ulong, void*);
+void*	lookupkey(Intmap*, ulong);
+
+/* mux.c */
+void	muxfree(IxpClient*);
+void	muxinit(IxpClient*);
+Fcall*	muxrpc(IxpClient*, Fcall*);
+
+/* timer.c */
+long	ixp_nexttimer(IxpServer*);
 

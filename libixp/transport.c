@@ -1,4 +1,4 @@
-/* Copyright ©2007 Kris Maglione <fbsdaemon@gmail.com>
+/* Copyright ©2007-2008 Kris Maglione <fbsdaemon@gmail.com>
  * See LICENSE file for license details.
  */
 #include <errno.h>
@@ -82,7 +82,7 @@ ixp_recvmsg(int fd, IxpMsg *msg) {
 	ixp_pu32(msg, &msize);
 
 	size = msize - SSize;
-	if(msg->pos + size >= msg->end) {
+	if(size >= msg->end - msg->pos) {
 		werrstr("message too large");
 		return 0;
 	}

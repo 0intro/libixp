@@ -1,4 +1,4 @@
-/* Copyright ©2007 Kris Maglione <fbsdaemon@gmail.com>
+/* Copyright ©2007-2008 Kris Maglione <fbsdaemon@gmail.com>
  * Copyright ©2004-2006 Anselm R. Garbe <garbeam at gmail dot com>
  * See LICENSE file for license details.
  */
@@ -19,6 +19,10 @@
  *   The lookup function duplicates the original string, so it is
  *   not modified.
  */
+
+/* From FreeBSD's sys/su.h */
+#define SUN_LEN(su) \
+	(sizeof(*(su)) - sizeof((su)->sun_path) + strlen((su)->sun_path))
 
 typedef struct addrinfo addrinfo;
 typedef struct sockaddr sockaddr;
@@ -150,6 +154,7 @@ dial_tcp(char *host) {
 	if(aip == nil)
 		return -1;
 
+	SET(fd);
 	for(ai = aip; ai; ai = ai->ai_next) {
 		fd = ai_socket(ai);
 		if(fd == -1) {
@@ -179,6 +184,7 @@ announce_tcp(char *host) {
 		return -1;
 
 	/* Probably don't need to loop */
+	SET(fd);
 	for(ai = aip; ai; ai = ai->ai_next) {
 		fd = ai_socket(ai);
 		if(fd == -1)

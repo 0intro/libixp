@@ -1,4 +1,4 @@
-/* Copyright ©2006-2007 Kris Maglione <fbsdaemon@gmail.com>
+/* Copyright ©2006-2008 Kris Maglione <fbsdaemon@gmail.com>
  * See LICENSE file for license details.
  */
 #include <assert.h>
@@ -69,7 +69,7 @@ decref_p9conn(Ixp9Conn *pc) {
 	free(pc);
 }
 
-static void *
+static void*
 createfid(Intmap *map, int fid, Ixp9Conn *pc) {
 	Fid *f;
 
@@ -342,11 +342,12 @@ respond(Ixp9Req *r, const char *error) {
 	case TOpen:
 	case TCreate:
 		if(!error) {
+			r->ofcall.iounit = pc->rmsg.size - 24;
+			r->fid->iounit = r->ofcall.iounit;
 			r->fid->omode = r->ifcall.mode;
 			r->fid->qid = r->ofcall.qid;
 		}
 		free(r->ifcall.name);
-		r->ofcall.iounit = pc->rmsg.size - 24;
 		break;
 	case TWalk:
 		if(error || r->ofcall.nwqid < r->ifcall.nwname) {

@@ -1,3 +1,4 @@
+/* Public Domain --Kris Maglione */
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -17,12 +18,12 @@ _vsmprint(const char *fmt, va_list ap) {
 	int n;
 
 	va_copy(al, ap);
-	n = snprintf(buf, 0, fmt, al);
+	n = vsnprintf(buf, 0, fmt, al);
 	va_end(al);
 
 	buf = malloc(++n);
 	if(buf)
-		snprintf(buf, n, fmt, ap);
+		vsnprintf(buf, n, fmt, ap);
 	return buf;
 }
 

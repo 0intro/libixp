@@ -1,4 +1,4 @@
-/* Copyright ©2007 Kris Maglione <fbsdaemon@gmail.com>
+/* Copyright ©2007-2008 Kris Maglione <fbsdaemon@gmail.com>
  * See LICENSE file for license details.
  */
 #include <stdio.h>
@@ -13,13 +13,13 @@ enum {
 	SQWord = 8,
 };
 
-void
+static void
 ixp_puint(IxpMsg *msg, uint size, ulong *val) {
 	uchar *pos;
 	int v;
 
 	if(msg->pos + size <= msg->end) {
-		pos = msg->pos;
+		pos = (uchar*)msg->pos;
 		switch(msg->mode) {
 		case MsgPack:
 			v = *val;
@@ -113,6 +113,7 @@ ixp_pstrings(IxpMsg *msg, ushort *num, char *strings[]) {
 		return;
 	}
 
+	SET(s);
 	if(msg->mode == MsgUnpack) {
 		s = msg->pos;
 		size = 0;

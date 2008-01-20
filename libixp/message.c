@@ -1,4 +1,4 @@
-/* Copyright ©2007 Kris Maglione <fbsdaemon@gmail.com>
+/* Copyright ©2007-2008 Kris Maglione <fbsdaemon@gmail.com>
  * See LICENSE file for license details.
  */
 #include <stdlib.h>
@@ -19,7 +19,7 @@ enum {
 };
 
 IxpMsg
-ixp_message(uchar *data, uint length, uint mode) {
+ixp_message(char *data, uint length, uint mode) {
 	IxpMsg m;
 
 	m.data = data;
@@ -200,3 +200,4 @@ ixp_msg2fcall(IxpMsg *msg, Fcall *fcall) {
 
 	return msg->pos - msg->data;
 }
+

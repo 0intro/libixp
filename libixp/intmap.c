@@ -74,7 +74,7 @@ execmap(Intmap *map, void (*run)(void*)) {
 	thread->runlock(&map->lk);
 }
 
-void *
+void*
 lookupkey(Intmap *map, ulong id) {
 	Intlist *f;
 	void *v;
@@ -88,7 +88,7 @@ lookupkey(Intmap *map, ulong id) {
 	return v;
 }
 
-void *
+void*
 insertkey(Intmap *map, ulong id, void *v) {
 	Intlist *f;
 	void *ov;

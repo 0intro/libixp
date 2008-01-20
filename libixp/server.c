@@ -1,4 +1,4 @@
-/* (C)opyright MMIV-MMVI Anselm R. Garbe <garbeam at gmail dot com>
+/* Copyright ©2004-2006 Anselm R. Garbe <garbeam at gmail dot com>
  * See LICENSE file for license details.
  */
 #include <assert.h>
@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include "ixp_local.h"
 
-IxpConn *
+IxpConn*
 ixp_listen(IxpServer *s, int fd, void *aux,
 		void (*read)(IxpConn *c),
 		void (*close)(IxpConn *c)
@@ -72,14 +72,27 @@ handle_conns(IxpServer *s) {
 
 int
 ixp_serverloop(IxpServer *s) {
+	timeval *tvp;
+	timeval tv;
+	long timeout;
 	int r;
 
 	s->running = 1;
+	thread->initmutex(&s->lk);
 	while(s->running) {
 		if(s->preselect)
 			s->preselect(s);
+
+		tvp = nil;
+		timeout = ixp_nexttimer(s);
+		if(timeout > 0) {
+			tv.tv_sec = timeout/1000;
+			tv.tv_usec = timeout%1000 * 1000;
+			tvp = &tv;
+		}
+
 		prepare_select(s);
-		r = thread->select(s->maxfd + 1, &s->rd, 0, 0, 0);
+		r = thread->select(s->maxfd + 1, &s->rd, 0, 0, tvp);
 		if(r < 0) {
 			if(errno == EINTR)
 				continue;
@@ -98,3 +111,4 @@ ixp_server_close(IxpServer *s) {
 		ixp_hangup(c);
 	}
 }
+

@@ -1,4 +1,4 @@
-/* (C)opyright MMIV-MMVI Anselm R. Garbe <garbeam at gmail dot com>
+/* Copyright ©2004-2006 Anselm R. Garbe <garbeam at gmail dot com>
  * Copyright ©2006-2007 Kris Maglione <fbsdaemon@gmail.com>
  * See LICENSE file for license details.
  */
@@ -7,7 +7,18 @@
 #include <sys/types.h>
 #include <sys/select.h>
 
+#define IXP_API 86
+
 /* Gunk */
+#ifdef IXP_NEEDAPI
+# if IXP_API < IXP_NEEDAPI
+#   error A newer version of libixp is needed for this compilation.
+# elif IXP_API > IXP_NEEDAPI && \
+       (defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(KENC))
+#   warning This version of libixp has a newer API than this compilation suggests.
+# endif
+#endif
+
 #undef	uchar
 #undef	ushort
 #undef	uint
@@ -21,7 +32,7 @@
 #define	vlong	_ixpvlong
 #define	uvlong	_ixpuvlong
 
-#ifdef KENCC
+#ifdef KENC
 #  define STRUCT(x) struct {x};
 #  define UNION(x) union {x};
 #elif defined(__GNUC__) && !defined(IXPlint)
@@ -220,6 +231,7 @@ typedef struct IxpQid IxpQid;
 typedef struct IxpRpc IxpRpc;
 typedef struct IxpServer IxpServer;
 typedef struct IxpStat IxpStat;
+typedef struct IxpTimer IxpTimer;
 
 typedef struct IxpMutex IxpMutex;
 typedef struct IxpRWLock IxpRWLock;
@@ -232,23 +244,23 @@ enum {
 };
 
 struct IxpMutex {
-	void *aux;
+	void* aux;
 };
 
 struct IxpRWLock {
-	void *aux;
+	void* aux;
 };
 
 struct IxpRendez {
-	IxpMutex *mutex;
-	void *aux;
+	IxpMutex* mutex;
+	void*	aux;
 };
 
 enum { MsgPack, MsgUnpack, };
 struct IxpMsg {
-	char	*data;
-	char	*pos;
-	char	*end;
+	char*	data;
+	char*	pos;
+	char*	end;
 	uint	size;
 	uint	mode;
 };
@@ -325,15 +337,15 @@ struct IxpStat {
 	ulong	atime;
 	ulong	mtime;
 	uvlong	length;
-	char	*name;
-	char	*uid;
-	char	*gid;
-	char	*muid;
+	char*	name;
+	char*	uid;
+	char*	gid;
+	char*	muid;
 };
 
 struct IxpConn {
-	IxpServer	*srv;
-	void		*aux;
+	IxpServer*	srv;
+	void*		aux;
 	int		fd;
 	void		(*read)(IxpConn *);
 	void		(*close)(IxpConn *);
@@ -344,21 +356,23 @@ struct IxpConn {
 };
 
 struct IxpServer {
-	IxpConn	*conn;
-	void	(*preselect)(IxpServer*);
-	void	*aux;
-	int	running;
-	int	maxfd;
-	fd_set	rd;
+	IxpConn*	conn;
+	IxpMutex	lk;
+	IxpTimer*	timer;
+	void		(*preselect)(IxpServer*);
+	void*		aux;
+	int		running;
+	int		maxfd;
+	fd_set		rd;
 };
 
 struct IxpRpc {
-	IxpClient	*mux;
-	IxpRpc		*next;
-	IxpRpc		*prev;
+	IxpClient*	mux;
+	IxpRpc*		next;
+	IxpRpc*		prev;
 	IxpRendez	r;
 	uint		tag;
-	IxpFcall	*p;
+	IxpFcall*	p;
 	int		waiting;
 	int		async;
 };
@@ -372,60 +386,61 @@ struct IxpClient {
 	uint		nwait;
 	uint		mwait;
 	uint		freetag;
-	IxpCFid		*freefid;
+	IxpCFid*	freefid;
 	IxpMsg		rmsg;
 	IxpMsg		wmsg;
 	IxpMutex	lk;
 	IxpMutex	rlock;
 	IxpMutex	wlock;
 	IxpRendez	tagrend;
-	IxpRpc		**wait;
-	IxpRpc		*muxer;
+	IxpRpc**	wait;
+	IxpRpc*		muxer;
 	IxpRpc		sleep;
 	int		mintag;
 	int		maxtag;
 };
 
 struct IxpCFid {
-	uint	fid;
-	IxpQid	qid;
-	uchar	mode;
-	uint	open;
-	uint	iounit;
-	uvlong	offset;
-	IxpClient *client;
+	uint		fid;
+	IxpQid		qid;
+	uchar		mode;
+	uint		open;
+	uint		iounit;
+	uvlong		offset;
+	IxpClient*	client;
 	/* internal use only */
-	IxpCFid *next;
-	IxpMutex iolock;
+	IxpCFid*	next;
+	IxpMutex	iolock;
 };
 
 struct IxpFid {
-	char		*uid;
-	void		*aux;
+	char*		uid;
+	void*		aux;
 	ulong		fid;
 	IxpQid		qid;
 	signed char	omode;
+	uint		iounit;
 
 	/* Implementation details */
-	Ixp9Conn	*conn;
-	Intmap		*map;
+	Ixp9Conn*	conn;
+	Intmap*		map;
 };
 
 struct Ixp9Req {
-	Ixp9Srv	*srv;
-	IxpFid	*fid;
-	IxpFid	*newfid;
-	Ixp9Req	*oldreq;
+	Ixp9Srv*	srv;
+	IxpFid*		fid;
+	IxpFid*		newfid;
+	Ixp9Req*	oldreq;
 	IxpFcall	ifcall;
 	IxpFcall	ofcall;
-	void	*aux;
+	void*		aux;
 
 	/* Implementation details */
 	Ixp9Conn *conn;
 };
 
 struct Ixp9Srv {
-	void *aux;
+	void* aux;
 	void (*attach)(Ixp9Req *r);
 	void (*clunk)(Ixp9Req *r);
 	void (*create)(Ixp9Req *r);
@@ -510,12 +525,13 @@ void ixp_pstrings(IxpMsg*, ushort*, char**);
 void ixp_pqid(IxpMsg*, IxpQid*);
 void ixp_pqids(IxpMsg*, ushort*, IxpQid*);
 void ixp_pstat(IxpMsg*, IxpStat*);
+void ixp_pfcall(IxpMsg*, Fcall*);
 
 /* error.h */
-char *ixp_errbuf(void);
-void ixp_errstr(char*, int);
-void ixp_rerrstr(char*, int);
-void ixp_werrstr(const char*, ...);
+char*	ixp_errbuf(void);
+void	ixp_errstr(char*, int);
+void	ixp_rerrstr(char*, int);
+void	ixp_werrstr(const char*, ...);
 
 /* request.c */
 void respond(Ixp9Req*, const char *err);
@@ -523,7 +539,7 @@ void serve_9pcon(IxpConn*);
 
 /* message.c */
 ushort	ixp_sizeof_stat(IxpStat*);
-IxpMsg	ixp_message(uchar*, uint len, uint mode);
+IxpMsg	ixp_message(char*, uint len, uint mode);
 void	ixp_freestat(IxpStat*);
 void	ixp_freefcall(IxpFcall*);
 uint	ixp_msg2fcall(IxpMsg*, IxpFcall*);
@@ -544,6 +560,11 @@ int ixp_announce(char*);
 /* transport.c */
 uint ixp_sendmsg(int, IxpMsg*);
 uint ixp_recvmsg(int, IxpMsg*);
+
+/* timer.c */
+long	ixp_msec(void);
+long	ixp_settimer(IxpServer*, long, void (*)(long, void*), void*);
+int	ixp_unsettimer(IxpServer*, long);
 
 /* util.c */
 void*	ixp_emalloc(uint);

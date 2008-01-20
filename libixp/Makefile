@@ -14,6 +14,7 @@ OBJ =	client    \
 	server    \
 	socket    \
 	thread    \
+	timer     \
 	transport \
 	util
 

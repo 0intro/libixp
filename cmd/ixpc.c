@@ -16,7 +16,7 @@
 static IxpClient *client;
 
 static void
-usage() {
+usage(void) {
 	fprintf(stderr,
 		   "usage: %1$s [-a <address>] {create | read | ls [-ld] | remove | write} <file>\n"
 		   "       %1$s [-a <address>] xwrite <file> <data>\n"

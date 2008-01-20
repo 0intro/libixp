@@ -1,4 +1,4 @@
-/* Copyright ©2007 Kris Maglione <fbsdaemon@gmail.com>
+/* Copyright ©2007-2008 Kris Maglione <fbsdaemon@gmail.com>
  * See LICENSE file for license details.
  */
 #include <assert.h>
@@ -24,7 +24,7 @@ min(int a, int b) {
 	return b;
 }
 
-static IxpCFid *
+static IxpCFid*
 getfid(IxpClient *c) {
 	IxpCFid *f;
 
@@ -112,7 +112,7 @@ allocmsg(IxpClient *c, int n) {
 	c->wmsg.data = erealloc(c->wmsg.data, n);
 }
 
-IxpClient *
+IxpClient*
 ixp_mountfd(int fd) {
 	IxpClient *c;
 	Fcall fcall;
@@ -163,7 +163,7 @@ ixp_mountfd(int fd) {
 	return c;
 }
 
-IxpClient *
+IxpClient*
 ixp_mount(char *address) {
 	int fd;
 
@@ -173,7 +173,7 @@ ixp_mount(char *address) {
 	return ixp_mountfd(fd);
 }
 
-static IxpCFid *
+static IxpCFid*
 walk(IxpClient *c, char *path) {
 	IxpCFid *f;
 	Fcall fcall;
@@ -202,7 +202,7 @@ fail:
 	return nil;
 }
 
-static IxpCFid *
+static IxpCFid*
 walkdir(IxpClient *c, char *path, char **rest) {
 	char *p;
 
@@ -332,7 +332,7 @@ ixp_close(IxpCFid *f) {
 	return clunk(f);
 }
 
-Stat *
+Stat*
 ixp_stat(IxpClient *c, char *path) {
 	IxpMsg msg;
 	Fcall fcall;
@@ -349,7 +349,7 @@ ixp_stat(IxpClient *c, char *path) {
 	if(dofcall(c, &fcall) == 0)
 		goto done;
 
-	msg = ixp_message(fcall.stat, fcall.nstat, MsgUnpack);
+	msg = ixp_message((char*)fcall.stat, fcall.nstat, MsgUnpack);
 
 	stat = emalloc(sizeof(*stat));
 	ixp_pstat(&msg, stat);
@@ -365,7 +365,7 @@ done:
 }
 
 static long
-_pread(IxpCFid *f, void *buf, long count, vlong offset) {
+_pread(IxpCFid *f, char *buf, long count, vlong offset) {
 	Fcall fcall;
 	int n, len;
 

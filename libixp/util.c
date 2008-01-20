@@ -53,7 +53,7 @@ mfatal(char *name, uint size) {
 	exit(1);
 }
 
-void *
+void*
 emalloc(uint size) {
 	void *ret = malloc(size);
 	if(!ret)
@@ -61,14 +61,14 @@ emalloc(uint size) {
 	return ret;
 }
 
-void *
+void*
 emallocz(uint size) {
 	void *ret = emalloc(size);
 	memset(ret, 0, size);
 	return ret;
 }
 
-void *
+void*
 erealloc(void *ptr, uint size) {
 	void *ret = realloc(ptr, size);
 	if(!ret)
@@ -76,7 +76,7 @@ erealloc(void *ptr, uint size) {
 	return ret;
 }
 
-char *
+char*
 estrdup(const char *str) {
 	void *ret = strdup(str);
 	if(!ret)
