@@ -12,6 +12,13 @@
 
 static long	lastid = 1;
 
+/**
+ * Function: ixp_msec
+ *
+ * Returns:
+ *	Returns the time since the Epoch in milliseconds.
+ * Be aware that this may overflow.
+ */
 long
 ixp_msec(void) {
 	timeval tv;
@@ -21,6 +28,23 @@ ixp_msec(void) {
 	return tv.tv_sec*1000 + tv.tv_usec/1000;
 }
 
+/**
+ * Function: ixp_settimer
+ *
+ * Params:
+ *	msec - The timeout in milliseconds.
+ *	fn - The function to call after P<msec> milliseconds
+ *	     have elapsed.
+ *	aux - An arbitrary argument to pass to P<fn> when it
+ *	      is called.
+ * 
+ * Initializes a callback-based timer to be triggerred after
+ * P<msec> milliseconds. The timer is passed its id number
+ * and the value of P<aux>.
+ *
+ * Returns:
+ *	Returns the new timer's unique id number.
+ */
 long
 ixp_settimer(IxpServer *s, long msec, void (*fn)(long, void*), void *aux) {
 	Timer **tp;
@@ -48,6 +72,18 @@ ixp_settimer(IxpServer *s, long msec, void (*fn)(long, void*), void *aux) {
 	return t->id;
 }
 
+/**
+ * Function: ixp_unsettimer
+ *
+ * Params:
+ *	id - The id number of the timer to void.
+ *
+ * Voids the timer identified by P<id>.
+ *
+ * Returns:
+ *	Returns true if a timer was stopped, false
+ * otherwise.
+ */
 int
 ixp_unsettimer(IxpServer *s, long id) {
 	Timer **tp;
@@ -65,6 +101,17 @@ ixp_unsettimer(IxpServer *s, long id) {
 	return t != nil;
 }
 
+/**
+ * Function: ixp_nexttimer
+ *
+ * Triggers any timers whose timeouts have ellapsed. This is
+ * primarilly intended to be called from libixp's select
+ * loop.
+ *
+ * Returns:
+ *	Returns the number of milliseconds until the next
+ * timer's timeout.
+ */
 long
 ixp_nexttimer(IxpServer *s) {
 	Timer *t;

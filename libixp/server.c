@@ -9,6 +9,28 @@
 #include <unistd.h>
 #include "ixp_local.h"
 
+/**
+ * Function: ixp_listen
+ *
+ * Params:
+ *	fs - The file descriptor on which to listen.
+ *	aux - A piece of data to store in the connection's
+ *	      T<IxpConn> data structure.
+ *	read - The function to call when the connection has
+ *	       data available to read.
+ *	close - A cleanup function to call when the
+ *	        connection is closed.
+ *
+ * Starts the server P<s> listening on P<fd>. The optional
+ * callbacks are called as described, with the connections
+ * T<IxpConn> data structure as their arguments.
+ *
+ * Returns:
+ *	Returns the connection's new T<IxpConn> data
+ * structure.
+ *
+ * S<IxpConn>
+ */
 IxpConn*
 ixp_listen(IxpServer *s, int fd, void *aux,
 		void (*read)(IxpConn *c),
@@ -26,6 +48,17 @@ ixp_listen(IxpServer *s, int fd, void *aux,
 	s->conn = c;
 	return c;
 }
+
+/**
+ * Function: ixp_hangup
+ * Function: ixp_server_close
+ *
+ * ixp_hangup closes a connection, and stops the server
+ * listening on it. It calls the connection's close
+ * function, if it exists. ixp_server_close calls ixp_hangup
+ * on all of the connections on which the server is
+ * listening.
+ */
 
 void
 ixp_hangup(IxpConn *c) {
@@ -46,6 +79,16 @@ ixp_hangup(IxpConn *c) {
 
 	close(c->fd);
 	free(c);
+}
+
+void
+ixp_server_close(IxpServer *s) {
+	IxpConn *c, *next;
+
+	for(c = s->conn; c; c = next) {
+		next = c->next;
+		ixp_hangup(c);
+	}
 }
 
 static void
@@ -70,6 +113,22 @@ handle_conns(IxpServer *s) {
 			c->read(c);
 	}
 }
+
+/**
+ * Function: ixp_serverloop
+ *
+ * Enters the main loop of the server. Exits when
+ * P<s>->running becomes false, or when select(2) returns an
+ * error other than EINTR.
+ *
+ * S<IxpServer>
+ *
+ * Returns:
+ *	Returns 0 when the loop exits normally, and 1 when
+ * it exits on error. V<errno> or the return value of
+ * ixp_errbuf(3) may be inspected.
+ *
+ */
 
 int
 ixp_serverloop(IxpServer *s) {
@@ -102,14 +161,5 @@ ixp_serverloop(IxpServer *s) {
 		handle_conns(s);
 	}
 	return 0;
-}
-
-void
-ixp_server_close(IxpServer *s) {
-	IxpConn *c, *next;
-	for(c = s->conn; c; c = next) {
-		next = c->next;
-		ixp_hangup(c);
-	}
 }
 

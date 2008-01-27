@@ -35,6 +35,33 @@ enum {
 	EPLAN9 = 0x19283745,
 };
 
+/**
+ * Function: ixp_errbuf
+ * Function: ixp_errstr
+ * Function: ixp_rerrstr
+ * Function: ixp_werrstr
+ *
+ * Params:
+ *	buf - The buffer to read and/or fill.
+ *	n - The size of the buffer.
+ *	fmt - A format string with which to write the *	errstr.
+ *	... - Arguments to P<fmt>.
+ *
+ * These functions simulate Plan 9's errstr functionality.
+ * They replace errno in libixp. Note that these functions
+ * are not internationalized.
+ *
+ * F<ixp_errbuf> returns the errstr buffer for the current
+ * thread. F<ixp_rerrstr> fills P<buf> with the data from
+ * the current thread's error buffer, while F<ixp_errstr>
+ * exchanges P<buf>'s contents with those of the current
+ * thread's error buffer. F<ixp_werrstr> is takes a format
+ * string from which to construct an errstr.
+ *
+ * Returns:
+ *	F<ixp_errbuf> returns the current thread's error
+ * string buffer.
+ */
 char*
 ixp_errbuf() {
 	char *errbuf;
