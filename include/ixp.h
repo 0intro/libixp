@@ -7,16 +7,14 @@
 #include <sys/types.h>
 #include <sys/select.h>
 
-#define IXP_API 86
+#define IXP_API 87
 
 /* Gunk */
-#ifdef IXP_NEEDAPI
-# if IXP_API < IXP_NEEDAPI
-#   error A newer version of libixp is needed for this compilation.
-# elif IXP_API > IXP_NEEDAPI && \
-       (defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(KENC))
-#   warning This version of libixp has a newer API than this compilation suggests.
-# endif
+#if defined(IXP_NEEDAPI) && IXP_API < IXP_NEEDAPI
+#  error A newer version of libixp is needed for this compilation.
+#endif
+#if defined(IXP_MAXAPI) && IXP_API > IXP_MAXAPI
+#  warning This version of libixp has a newer API than this compilation requires.
 #endif
 
 #undef	uchar
@@ -499,20 +497,21 @@ int ixp_pthread_init(void);
 #endif
 
 /* client.c */
+int		ixp_close(IxpCFid*);
+Stat*		ixp_fstat(IxpCFid*);
+long		ixp_pread(IxpCFid*, void*, long, vlong);
+int		ixp_print(IxpCFid*, const char*, ...);
+long		ixp_pwrite(IxpCFid*, const void*, long, vlong);
+long		ixp_read(IxpCFid*, void*, long);
+int		ixp_remove(IxpClient*, const char*);
+void		ixp_unmount(IxpClient*);
+int		ixp_vprint(IxpCFid*, const char*, va_list);
+long		ixp_write(IxpCFid*, const void*, long);
+IxpCFid*	ixp_create(IxpClient*, const char*, uint perm, uchar mode);
 IxpClient*	ixp_mount(char*);
 IxpClient*	ixp_mountfd(int);
-void		ixp_unmount(IxpClient*);
-IxpCFid*	ixp_create(IxpClient*, char*, uint perm, uchar mode);
-IxpCFid*	ixp_open(IxpClient*, char*, uchar);
-int		ixp_remove(IxpClient*, char*);
-IxpStat*	ixp_stat(IxpClient*, char*);
-long		ixp_read(IxpCFid*, void*, long);
-long		ixp_write(IxpCFid*, const void*, long);
-long		ixp_pread(IxpCFid*, void*, long, vlong);
-long		ixp_pwrite(IxpCFid*, const void*, long, vlong);
-int		ixp_close(IxpCFid*);
-int		ixp_print(IxpCFid*, const char*, ...);
-int		ixp_vprint(IxpCFid*, const char*, va_list);
+IxpCFid*	ixp_open(IxpClient*, const char*, uchar);
+IxpStat*	ixp_stat(IxpClient*, const char*);
 
 /* convert.c */
 void ixp_pu8(IxpMsg*, uchar*);
@@ -525,7 +524,7 @@ void ixp_pstrings(IxpMsg*, ushort*, char**);
 void ixp_pqid(IxpMsg*, IxpQid*);
 void ixp_pqids(IxpMsg*, ushort*, IxpQid*);
 void ixp_pstat(IxpMsg*, IxpStat*);
-void ixp_pfcall(IxpMsg*, Fcall*);
+void ixp_pfcall(IxpMsg*, IxpFcall*);
 
 /* error.h */
 char*	ixp_errbuf(void);
@@ -554,8 +553,8 @@ int	ixp_serverloop(IxpServer*);
 void	ixp_server_close(IxpServer*);
 
 /* socket.c */
-int ixp_dial(char*);
-int ixp_announce(char*);
+int ixp_dial(const char*);
+int ixp_announce(const char*);
 
 /* transport.c */
 uint ixp_sendmsg(int, IxpMsg*);

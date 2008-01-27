@@ -1,10 +1,27 @@
+FILTER = cat
+EXCFLAGS = -I$$(echo $(INCPATH)|sed 's/:/ -I/g') -D_XOPEN_SOURCE=600
+COMPILE= CC="$(CC)" CFLAGS="$(EXCFLAGS) $(CFLAGS)" $(ROOT)/util/compile
+COMPILEPIC= CC="$(CC)" CFLAGS="$(EXCFLAGS) $(CFLAGS) $(SOCFLAGS)" $(ROOT)/util/compile
+LINK= LD="$(LD)" LDFLAGS="$(LDFLAGS)" $(ROOT)/util/link
+LINKSO= LD="$(LD)" LDFLAGS="$(SOLDFLAGS) $(SHARED)" $(ROOT)/util/link
+CLEANNAME=$(ROOT)/util/cleanname
+SOEXT=so
+
+include $(ROOT)/config.mk
+
+# I hate this.
+MKCFGSH=if test -f $(ROOT)/config.local.mk; then echo $(ROOT)/config.local.mk; else echo /dev/null; fi
+MKCFG:=${shell $(MKCFGSH)}
+MKCFG!=${MKCFGSH}
+include $(MKCFG)
+
 .SILENT:
-.SUFFIXES: .O .o .o_pic .c .sh .rc .so .awk .1 .depend .install .uninstall .clean
+.SUFFIXES: .O .o .o_pic .c .sh .rc .$(SOEXT) .awk .1 .depend .install .uninstall .clean
 all:
 
 .c.depend:
 	echo MKDEP $<
-	$(MKDEP) $(CFLAGS) $< >>.depend
+	$(MKDEP) $(EXCFLAGS) $(CFLAGS) $< >>.depend
 
 .sh.depend .rc.depend .1.depend .awk.depend:
 	:
@@ -40,11 +57,11 @@ all:
 	echo UNINSTALL $$($(CLEANNAME) $(BASE)$*)
 	rm -f $(BIN)/$* 
 
-.a.install .so.install:
+.a.install .$(SOEXT).install:
 	echo INSTALL $$($(CLEANNAME) $(BASE)$<)
 	cp -f $< $(LIBDIR)/$<
 	chmod 0644 $(LIBDIR)/$<
-.a.uninstall .so.uninstall:
+.a.uninstall .$(SOEXT).uninstall:
 	echo UNINSTALL $$($(CLEANNAME) $(BASE)$<)
 	rm -f $(LIBDIR)/$<
 
@@ -65,9 +82,11 @@ all:
 	rm -f $(MAN)/man1/$<
 
 .O.clean:
+	echo CLEAN $$($(CLEANNAME) $(BASE)$<)
 	rm -f $< || true 2>/dev/null
 	rm -f $*.o || true 2>/dev/null
 .o.clean .o_pic.clean:
+	echo CLEAN $$($(CLEANNAME) $(BASE)$<)
 	rm -f $< || true 2>/dev/null
 
 printinstall:
@@ -76,21 +95,5 @@ clean:
 install: printinstall mkdirs
 depend: cleandep
 
-FILTER = cat
-COMPILE= CC="$(CC)" CFLAGS="$(CFLAGS)" $(ROOT)/util/compile
-COMPILEPIC= CC="$(CC)" CFLAGS="$(CFLAGS) $(SOCFLAGS)" $(ROOT)/util/compile
-LINK= LD="$(LD)" LDFLAGS="$(LDFLAGS)" $(ROOT)/util/link
-LINKSO= LD="$(LD)" LDFLAGS="$(SOLDFLAGS)" $(ROOT)/util/link
-CLEANNAME=$(ROOT)/util/cleanname
-
-include $(ROOT)/config.mk
-
-# I hate this.
-MKCFGSH=if test -f $(ROOT)/config.local.mk; then echo $(ROOT)/config.local.mk; else echo /dev/null; fi
-MKCFG:=${shell $(MKCFGSH)}
-MKCFG!=${MKCFGSH}
-include $(MKCFG)
-
-CFLAGS += -I$$(echo $(INCPATH)|sed 's/:/ -I/g')
 include $(ROOT)/mk/common.mk
 

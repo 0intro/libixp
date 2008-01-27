@@ -3,6 +3,7 @@
  */
 #include <assert.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -174,13 +175,14 @@ ixp_mount(char *address) {
 }
 
 static IxpCFid*
-walk(IxpClient *c, char *path) {
+walk(IxpClient *c, const char *path) {
 	IxpCFid *f;
+	char *p;
 	Fcall fcall;
 	int n;
 
-	path = estrdup(path);
-	n = tokenize(fcall.wname, nelem(fcall.wname), path, '/');
+	p = estrdup(path);
+	n = tokenize(fcall.wname, nelem(fcall.wname), p, '/');
 	f = getfid(c);
 
 	fcall.type = TWalk;
@@ -195,7 +197,7 @@ walk(IxpClient *c, char *path) {
 	f->qid = fcall.wqid[n-1];
 
 	ixp_freefcall(&fcall);
-	free(path);
+	free(p);
 	return f;
 fail:
 	putfid(f);
@@ -203,7 +205,7 @@ fail:
 }
 
 static IxpCFid*
-walkdir(IxpClient *c, char *path, char **rest) {
+walkdir(IxpClient *c, char *path, const char **rest) {
 	char *p;
 
 	p = path + strlen(path) - 1;
@@ -241,7 +243,7 @@ clunk(IxpCFid *f) {
 }
 
 int
-ixp_remove(IxpClient *c, char *path) {
+ixp_remove(IxpClient *c, const char *path) {
 	Fcall fcall;
 	IxpCFid *f;
 	int ret;
@@ -269,7 +271,7 @@ initfid(IxpCFid *f, Fcall *fcall) {
 }
 
 IxpCFid*
-ixp_create(IxpClient *c, char *name, uint perm, uchar mode) {
+ixp_create(IxpClient *c, const char *name, uint perm, uchar mode) {
 	Fcall fcall;
 	IxpCFid *f;
 	char *path;;
@@ -282,7 +284,7 @@ ixp_create(IxpClient *c, char *name, uint perm, uchar mode) {
 
 	fcall.type = TCreate;
 	fcall.fid = f->fid;
-	fcall.name = name;
+	fcall.name = (char*)(uintptr_t)name;
 	fcall.perm = perm;
 	fcall.mode = mode;
 
@@ -303,7 +305,7 @@ done:
 }
 
 IxpCFid*
-ixp_open(IxpClient *c, char *name, uchar mode) {
+ixp_open(IxpClient *c, const char *name, uchar mode) {
 	Fcall fcall;
 	IxpCFid *f;
 
@@ -332,36 +334,46 @@ ixp_close(IxpCFid *f) {
 	return clunk(f);
 }
 
-Stat*
-ixp_stat(IxpClient *c, char *path) {
+static Stat*
+_stat(IxpClient *c, ulong fid) {
 	IxpMsg msg;
 	Fcall fcall;
 	Stat *stat;
-	IxpCFid *f;
-
-	stat = nil;
-	f = walk(c, path);
-	if(f == nil)
-		return nil;
 
 	fcall.type = TStat;
-	fcall.fid = f->fid;
+	fcall.fid = fid;
 	if(dofcall(c, &fcall) == 0)
-		goto done;
+		return nil;
 
 	msg = ixp_message((char*)fcall.stat, fcall.nstat, MsgUnpack);
 
-	stat = emalloc(sizeof(*stat));
+	stat = emalloc(sizeof *stat);
 	ixp_pstat(&msg, stat);
 	ixp_freefcall(&fcall);
 	if(msg.pos > msg.end) {
 		free(stat);
-		stat = 0;
+		stat = nil;
 	}
+	return stat;
+}
 
-done:
+Stat*
+ixp_stat(IxpClient *c, const char *path) {
+	Stat *stat;
+	IxpCFid *f;
+
+	f = walk(c, path);
+	if(f == nil)
+		return nil;
+
+	stat = _stat(c, f->fid);
 	clunk(f);
 	return stat;
+}
+
+Stat*
+ixp_fstat(IxpCFid *f) {
+	return _stat(f->client, f->fid);
 }
 
 static long

@@ -24,7 +24,8 @@ char *argv0;
 #ifndef KENC
   static inline void _used(long a, ...) { if(a){} }
 # define USED(...) _used((long)__VA_ARGS__)
-# define SET(x) USED(&x)
+# define SET(x) (x = 0)
+/* # define SET(x) USED(&x) GCC 4 is 'too smart' for this. */
 #endif
 
 #undef nil

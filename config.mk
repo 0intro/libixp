@@ -18,7 +18,7 @@ LIBS = -L/usr/lib -lc
 
 # Flags
 include $(ROOT)/mk/gcc.mk
-CFLAGS += $(DEBUGCFLAGS) $(INCS)
+CFLAGS += $(DEBUGCFLAGS) -O0 $(INCS)
 LDFLAGS = -g $(LDLIBS) $(LIBS)
 
 # Compiler, Linker. Linker should usually *not* be ld.

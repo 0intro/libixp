@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -221,7 +222,7 @@ struct addrtab {
 };
 
 static int
-lookup(char *address, addrtab *tab) {
+lookup(const char *address, addrtab *tab) {
 	char *addr, *type;
 	int ret;
 
@@ -246,12 +247,12 @@ lookup(char *address, addrtab *tab) {
 }
 
 int
-ixp_dial(char *address) {
+ixp_dial(const char *address) {
 	return lookup(address, dtab);
 }
 
 int
-ixp_announce(char *address) {
+ixp_announce(const char *address) {
 	return lookup(address, atab);
 }
 
