@@ -100,7 +100,7 @@ insertkey(Intmap *map, ulong id, void *v) {
 		ov = f->aux;
 		f->aux = v;
 	}else{
-		f = emallocz(sizeof(*f));
+		f = emallocz(sizeof *f);
 		f->id = id;
 		f->aux = v;
 		h = hashid(map, id);

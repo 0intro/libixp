@@ -78,7 +78,7 @@ void
 errstr(char *buf, int n) {
 	char tmp[IXP_ERRMAX];
 
-	strncpy(tmp, buf, sizeof(tmp));
+	strncpy(tmp, buf, sizeof tmp);
 	rerrstr(buf, n);
 	strncpy(thread->errbuf(), tmp, IXP_ERRMAX);
 	errno = EPLAN9;
@@ -95,7 +95,7 @@ werrstr(const char *fmt, ...) {
 	va_list ap;
 
 	va_start(ap, fmt);
-	ixp_vsnprint(tmp, sizeof(tmp), fmt, ap);
+	ixp_vsnprint(tmp, sizeof tmp, fmt, ap);
 	va_end(ap);
 	strncpy(thread->errbuf(), tmp, IXP_ERRMAX);
 	errno = EPLAN9;

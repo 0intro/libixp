@@ -145,14 +145,26 @@ rwakeall(IxpRendez *r) {
 /* Yielding IO */
 static ssize_t
 _read(int fd, void *buf, size_t size) {
+	int n;
+
 	rb_thread_wait_fd(fd);
-	return read(fd, buf, size);
+	n = read(fd, buf, size);
+
+	if(n < 0 && errno == EINTR)
+		rb_thread_schedule();
+	return n;
 }
 
 static ssize_t
 _write(int fd, const void *buf, size_t size) {
+	int n;
+
 	rb_thread_fd_writable(fd);
-	return write(fd, buf, size);
+	n = write(fd, buf, size);
+
+	if(n < 0 && errno == EINTR)
+		rb_thread_schedule();
+	return n;
 }
 
 static IxpThread ixp_rthread = {

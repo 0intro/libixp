@@ -88,7 +88,7 @@ muxrecv(IxpClient *mux)
 	thread->lock(&mux->rlock);
 	if(ixp_recvmsg(mux->fd, &mux->rmsg) == 0)
 		goto fail;
-	f = emallocz(sizeof(Fcall));
+	f = emallocz(sizeof *f);
 	if(ixp_msg2fcall(&mux->rmsg, f) == 0) {
 		free(f);
 		f = nil;
@@ -214,10 +214,10 @@ gettag(IxpClient *mux, IxpRpc *r)
 					mw = 1;
 				else
 					mw <<= 1;
-				w = realloc(mux->wait, mw*sizeof(w[0]));
+				w = realloc(mux->wait, mw * sizeof *w);
 				if(w == nil)
 					return -1;
-				memset(w+mux->mwait, 0, (mw-mux->mwait)*sizeof(w[0]));
+				memset(w+mux->mwait, 0, (mw-mux->mwait) * sizeof *w);
 				mux->wait = w;
 				mux->freetag = mux->mwait;
 				mux->mwait = mw;

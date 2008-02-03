@@ -6,7 +6,121 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <pwd.h>
 #include "ixp_local.h"
+
+char*
+ixp_smprint(const char *fmt, ...) {
+	va_list ap;
+	char *s;
+
+	va_start(ap, fmt);
+	s = ixp_vsmprint(fmt, ap);
+	va_end(ap);
+	if(s == nil)
+		ixp_werrstr("no memory");
+	return s;
+}
+
+static char*
+_user(void) {
+	static char *user;
+	struct passwd *pw;
+
+	if(user == nil) {
+		pw = getpwuid(getuid());
+		if(pw)
+			user = strdup(pw->pw_name);
+	}
+	if(user == nil)
+		user = "none";
+	return user;
+}
+
+static int
+rmkdir(char *path, int mode) {
+	char *p;
+	int ret;
+	char c;
+
+	for(p = path+1; ; p++) {
+		c = *p;
+		if((c == '/') || (c == '\0')) {
+			*p = '\0';
+			ret = mkdir(path, mode);
+			if((ret == -1) && (errno != EEXIST)) {
+				ixp_werrstr("Can't create path '%s': %r", path);
+				return 0;
+			}
+			*p = c;
+		}
+		if(c == '\0')
+			break;
+	}
+	return 1;
+}
+
+static char*
+ns_display(void) {
+	char *path, *disp;
+	struct stat st;
+
+	disp = getenv("DISPLAY");
+	if(disp == nil || disp[0] == '\0') {
+		ixp_werrstr("$DISPLAY is unset");
+		return nil;
+	}
+
+	disp = estrdup(disp);
+	path = &disp[strlen(disp) - 2];
+	if(path > disp && !strcmp(path, ".0"))
+		*path = '\0';
+
+	path = ixp_smprint("/tmp/ns.%s.%s", _user(), disp);
+	free(disp);
+
+	if(!rmkdir(path, 0700))
+		;
+	else if(stat(path, &st))
+		ixp_werrstr("Can't stat ns_path '%s': %r", path);
+	else if(getuid() != st.st_uid)
+		ixp_werrstr("ns_path '%s' exists but is not owned by you", path);
+	else if((st.st_mode & 077) && chmod(path, st.st_mode & ~077))
+		ixp_werrstr("Namespace path '%s' exists, but has wrong permissions: %r", path);
+	else
+		return path;
+	free(path);
+	return nil;
+}
+
+/**
+ * Function: ixp_namespace
+ *
+ * Returns the path of the canonical 9p namespace directory.
+ * Either the value of $NAMESPACE, if it's set, or, roughly,
+ * /tmp/ns.${USER}.${DISPLAY:%.0=%}. In the latter case, the
+ * directory is created if it doesn't exist, and it is
+ * ensured to be owned by the current user, with no group or
+ * other permissions.
+ *
+ * Returns:
+ *   A statically allocated string which must not be freed
+ * or altered by the caller. The same value is returned
+ * upon successive calls.
+ */
+/* Not especially threadsafe. */
+char*
+ixp_namespace(void) {
+	static char *namespace;
+
+	if(namespace == nil)
+		namespace = getenv("NAMESPACE");
+	if(namespace == nil)
+		namespace = ns_display();
+	return namespace;
+}
 
 void
 eprint(const char *fmt, ...) {
@@ -38,7 +152,7 @@ mfatal(char *name, uint size) {
 	char sizestr[8];
 	int i;
 	
-	i = sizeof(sizestr);
+	i = sizeof sizestr;
 	do {
 		sizestr[--i] = '0' + (size%10);
 		size /= 10;
@@ -115,12 +229,12 @@ strlcat(char *dst, const char *src, uint size) {
 		d++;
 	len = n;
 
-	while(*s != '\0') {
-		if(n-- > 0)
-			*d++ = *s;
-		s++;
-	}
+	while(*s != '\0' && n-- > 0)
+		*d++ = *s++;
+	while(*s++ != '\0')
+		n--;
 	if(len > 0)
 		*d = '\0';
 	return size - n - 1;
 }
+

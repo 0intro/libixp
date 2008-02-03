@@ -77,7 +77,7 @@ dofcall(IxpClient *c, Fcall *fcall) {
 		werrstr("received mismatched fcall");
 		goto fail;
 	}
-	memcpy(fcall, ret, sizeof(*fcall));
+	memcpy(fcall, ret, sizeof *fcall);
 	free(ret);
 	return 1;
 fail:
@@ -121,15 +121,19 @@ allocmsg(IxpClient *c, int n) {
 /**
  * Function: ixp_mountfd
  * Function: ixp_mount
+ * Function: ixp_nsmount
  *
  * Params:
  *	fd - A file descriptor which is already connected
  *	     to a 9P server.
  *	address - An address (in Plan 9 resource fomat) on
  *	          which to connect to a 9P server.
+ *	name - The name of the socket in the process's canonical
+ *	       namespace directory.
  *
- * Initiate a 9P connection with the server at
- * P<address> or connected to on P<fd>.
+ * Initiate a 9P connection with the server at P<address>,
+ * connected to on P<fd>, or under the process's namespace
+ * directory as P<name>.
  *
  * Returns:
  *	A pointer to a new 9P client.
@@ -140,7 +144,7 @@ ixp_mountfd(int fd) {
 	IxpClient *c;
 	Fcall fcall;
 
-	c = emallocz(sizeof(*c));
+	c = emallocz(sizeof *c);
 	c->fd = fd;
 
 	muxinit(c);
@@ -187,13 +191,28 @@ ixp_mountfd(int fd) {
 }
 
 IxpClient*
-ixp_mount(char *address) {
+ixp_mount(const char *address) {
 	int fd;
 
 	fd = ixp_dial(address);
 	if(fd < 0)
 		return nil;
 	return ixp_mountfd(fd);
+}
+
+IxpClient*
+ixp_nsmount(const char *name) {
+	char *address;
+	IxpClient *c;
+
+	address = ixp_namespace();
+	if(address)
+		address = ixp_smprint("unix!%s/%s", address, name);
+	if(address == nil)
+		return nil;
+	c = ixp_mount(address);
+	free(address);
+	return c;
 }
 
 static IxpCFid*

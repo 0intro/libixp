@@ -24,7 +24,7 @@ mread(int fd, IxpMsg *msg, uint count) {
 	if(n > count)
 		n = count;
 
-	r = ixp_thread->read(fd, msg->pos, n);
+	r = thread->read(fd, msg->pos, n);
 	if(r > 0)
 		msg->pos += r;
 	return r;
@@ -41,7 +41,7 @@ readn(int fd, IxpMsg *msg, uint count) {
 		if(r == -1 && errno == EINTR)
 			continue;
 		if(r == 0) {
-			werrstr("broken pipe");
+			werrstr("broken pipe: %r");
 			return count - num;
 		}
 		num -= r;
@@ -55,11 +55,11 @@ ixp_sendmsg(int fd, IxpMsg *msg) {
 
 	msg->pos = msg->data;
 	while(msg->pos < msg->end) {
-		r = ixp_thread->write(fd, msg->pos, msg->end - msg->pos);
+		r = thread->write(fd, msg->pos, msg->end - msg->pos);
 		if(r < 1) {
 			if(errno == EINTR)
 				continue;
-			werrstr("broken pipe");
+			werrstr("broken pipe: %r");
 			return 0;
 		}
 		msg->pos += r;
@@ -94,3 +94,4 @@ ixp_recvmsg(int fd, IxpMsg *msg) {
 	msg->end = msg->pos;
 	return msize;
 }
+

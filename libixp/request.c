@@ -73,7 +73,7 @@ static void*
 createfid(Intmap *map, int fid, Ixp9Conn *pc) {
 	Fid *f;
 
-	f = emallocz(sizeof(Fid));
+	f = emallocz(sizeof *f);
 	pc->ref++;
 	f->conn = pc;
 	f->fid = fid;
@@ -116,7 +116,7 @@ handlefcall(IxpConn *c) {
 		goto Fail;
 	thread->unlock(&pc->rlock);
 
-	req = emallocz(sizeof(Ixp9Req));
+	req = emallocz(sizeof *req);
 	pc->ref++;
 	req->conn = pc;
 	req->srv = pc->srv;
@@ -425,7 +425,7 @@ voidrequest(void *t) {
 	pc = r->conn;
 	pc->ref++;
 
-	tr = emallocz(sizeof(Ixp9Req));
+	tr = emallocz(sizeof *tr);
 	tr->ifcall.type = TFlush;
 	tr->ifcall.tag = IXP_NOTAG;
 	tr->ifcall.oldtag = r->ifcall.tag;
@@ -444,7 +444,7 @@ voidfid(void *t) {
 	pc = f->conn;
 	pc->ref++;
 
-	tr = emallocz(sizeof(Ixp9Req));
+	tr = emallocz(sizeof *tr);
 	tr->ifcall.type = TClunk;
 	tr->ifcall.tag = IXP_NOTAG;
 	tr->ifcall.fid = f->fid;
@@ -476,7 +476,7 @@ serve_9pcon(IxpConn *c) {
 	if(fd < 0)
 		return;
 
-	pc = emallocz(sizeof(Ixp9Conn));
+	pc = emallocz(sizeof *pc);
 	pc->ref++;
 	pc->srv = c->aux;
 	pc->rmsg.size = 1024;

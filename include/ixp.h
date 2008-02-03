@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <sys/select.h>
 
-#define IXP_API 87
+#define IXP_API 89
 
 /* Gunk */
 #if defined(IXP_NEEDAPI) && IXP_API < IXP_NEEDAPI
@@ -498,7 +498,6 @@ int ixp_pthread_init(void);
 
 /* client.c */
 int		ixp_close(IxpCFid*);
-Stat*		ixp_fstat(IxpCFid*);
 long		ixp_pread(IxpCFid*, void*, long, vlong);
 int		ixp_print(IxpCFid*, const char*, ...);
 long		ixp_pwrite(IxpCFid*, const void*, long, vlong);
@@ -508,8 +507,10 @@ void		ixp_unmount(IxpClient*);
 int		ixp_vprint(IxpCFid*, const char*, va_list);
 long		ixp_write(IxpCFid*, const void*, long);
 IxpCFid*	ixp_create(IxpClient*, const char*, uint perm, uchar mode);
-IxpClient*	ixp_mount(char*);
+IxpStat*	ixp_fstat(IxpCFid*);
+IxpClient*	ixp_mount(const char*);
 IxpClient*	ixp_mountfd(int);
+IxpClient*	ixp_nsmount(const char*);
 IxpCFid*	ixp_open(IxpClient*, const char*, uchar);
 IxpStat*	ixp_stat(IxpClient*, const char*);
 
@@ -566,11 +567,14 @@ long	ixp_settimer(IxpServer*, long, void (*)(long, void*), void*);
 int	ixp_unsettimer(IxpServer*, long);
 
 /* util.c */
+void	ixp_cleanname(char*);
 void*	ixp_emalloc(uint);
 void*	ixp_emallocz(uint);
+void	ixp_eprint(const char*, ...);
 void*	ixp_erealloc(void*, uint);
 char*	ixp_estrdup(const char*);
-void	ixp_eprint(const char*, ...);
-uint	ixp_tokenize(char**, uint len, char*, char);
+char*	ixp_namespace(void);
+char*	ixp_smprint(const char*, ...);
 uint	ixp_strlcat(char*, const char*, uint);
+uint	ixp_tokenize(char**, uint len, char*, char);
 
