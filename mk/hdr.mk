@@ -59,8 +59,10 @@ all:
 
 .a.install .$(SOEXT).install:
 	echo INSTALL $$($(CLEANNAME) $(BASE)$<)
-	cp -f $< $(LIBDIR)/$<
-	chmod 0644 $(LIBDIR)/$<
+	set -e; \
+	file=$<; \
+	cp -f $< $(LIBDIR)/$${file##*/}; \
+	#chmod 0644 $(LIBDIR)/$${file##*/}
 .a.uninstall .$(SOEXT).uninstall:
 	echo UNINSTALL $$($(CLEANNAME) $(BASE)$<)
 	rm -f $(LIBDIR)/$<
