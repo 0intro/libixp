@@ -26,5 +26,4 @@ CFLAGS += \
 	-Wtrigraphs
 MKDEP = cpp -M
 SOCFLAGS += -fPIC
-SOLDFLAGS += -shared -Wl,-soname=$(SONAME)
 

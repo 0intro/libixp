@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <sys/select.h>
 
-#define IXP_API 89
+#define IXP_API 90
 
 /* Gunk */
 #if defined(IXP_NEEDAPI) && IXP_API < IXP_NEEDAPI
@@ -33,10 +33,11 @@
 #ifdef KENC
 #  define STRUCT(x) struct {x};
 #  define UNION(x) union {x};
-#elif defined(__GNUC__) && !defined(IXPlint)
+#elif defined(__GNUC__)
 #  define STRUCT(x) __extension__ struct {x};
 #  define UNION(x) __extension__ union {x};
 #else
+#  define IXP_NEEDAPI 89
 #  define STRUCT(x) x
 #  define UNION(x) x
 #endif
@@ -222,7 +223,6 @@ typedef struct Ixp9Srv Ixp9Srv;
 typedef struct IxpCFid IxpCFid;
 typedef struct IxpClient IxpClient;
 typedef struct IxpConn IxpConn;
-typedef struct IxpFcall IxpFcall;
 typedef struct IxpFid IxpFid;
 typedef struct IxpMsg IxpMsg;
 typedef struct IxpQid IxpQid;
@@ -271,7 +271,9 @@ struct IxpQid {
 	uchar	dir_type;
 };
 
+#if defined(IXP_NEEDAPI) && IXP_NEEDAPI <= 89
 /* from fcall(3) in plan9port */
+typedef struct IxpFcall IxpFcall;
 struct IxpFcall {
 	uchar type;
 	ushort tag;
@@ -325,6 +327,119 @@ struct IxpFcall {
 		)
 	)
 };
+#else
+typedef union IxpFcall		IxpFcall;
+typedef struct IxpFHdr		IxpFHdr;
+typedef struct IxpFError	IxpFError;
+typedef struct IxpFROpen	IxpFRAttach;
+typedef struct IxpFRAuth	IxpFRAuth;
+typedef struct IxpFROpen	IxpFRCreate;
+typedef struct IxpFROpen	IxpFROpen;
+typedef struct IxpFIO		IxpFRRead;
+typedef struct IxpFRStat	IxpFRStat;
+typedef struct IxpFVersion	IxpFRVersion;
+typedef struct IxpFRWalk	IxpFRWalk;
+typedef struct IxpFAttach	IxpFTAttach;
+typedef struct IxpFAttach	IxpFTAuth;
+typedef struct IxpFTCreate	IxpFTCreate;
+typedef struct IxpFTFlush	IxpFTFlush;
+typedef struct IxpFTCreate	IxpFTOpen;
+typedef struct IxpFIO		IxpFTRead;
+typedef struct IxpFVersion	IxpFTVersion;
+typedef struct IxpFTWalk	IxpFTWalk;
+typedef struct IxpFIO		IxpFTWrite;
+typedef struct IxpFRStat	IxpFTWstat;
+typedef struct IxpFAttach	IxpFAttach;
+typedef struct IxpFIO		IxpFIO;
+typedef struct IxpFVersion	IxpFVersion;
+
+struct IxpFHdr {
+	uchar type;
+	ushort tag;
+	ulong fid;
+};
+struct IxpFVersion {
+	IxpFHdr	hdr;
+	ulong	msize;
+	char*	version;
+};
+struct IxpFTFlush {
+	IxpFHdr	hdr;
+	ushort	oldtag;
+};
+struct IxpFError {
+	IxpFHdr	hdr;
+	char*	ename;
+};
+struct IxpFROpen {
+	IxpFHdr	hdr;
+	IxpQid	qid; /* +Rattach */
+	ulong	iounit;
+};
+struct IxpFRAuth {
+	IxpFHdr	hdr;
+	IxpQid	aqid;
+};
+struct IxpFAttach {
+	IxpFHdr	hdr;
+	ulong	afid;
+	char*	uname;
+	char*	aname;
+};
+struct IxpFTCreate {
+	IxpFHdr	hdr;
+	ulong	perm;
+	char*	name;
+	uchar	mode; /* +Topen */
+};
+struct IxpFTWalk {
+	IxpFHdr	hdr;
+	ulong	newfid;
+	ushort	nwname;
+	char*	wname[IXP_MAX_WELEM];
+};
+struct IxpFRWalk {
+	IxpFHdr	hdr;
+	ushort	nwqid;
+	IxpQid	wqid[IXP_MAX_WELEM];
+};
+struct IxpFIO {
+	IxpFHdr	hdr;
+	uvlong	offset; /* Tread, Twrite */
+	ulong	count; /* Tread, Twrite, Rread */
+	char*	data; /* Twrite, Rread */
+};
+struct IxpFRStat {
+	IxpFHdr	hdr;
+	ushort	nstat;
+	uchar*	stat;
+};
+union IxpFcall {
+	IxpFHdr		hdr;
+	IxpFVersion	version;
+	IxpFVersion	tversion;
+	IxpFVersion	rversion;
+	IxpFTFlush	tflush;
+	IxpFROpen	ropen;
+	IxpFROpen	rcreate;
+	IxpFROpen	rattach;
+	IxpFError	error;
+	IxpFRAuth	rauth;
+	IxpFAttach	tattach;
+	IxpFAttach	tauth;
+	IxpFTCreate	tcreate;
+	IxpFTCreate	topen;
+	IxpFTWalk	twalk;
+	IxpFRWalk	rwalk;
+	IxpFRStat	twstat;
+	IxpFRStat	rstat;
+	IxpFIO		twrite;
+	IxpFIO		rwrite;
+	IxpFIO		tread;
+	IxpFIO		rread;
+	IxpFIO		io;
+};
+#endif
 
 /* stat structure */
 struct IxpStat {
@@ -484,6 +599,7 @@ struct IxpThread {
 extern IxpThread *ixp_thread;
 extern int (*ixp_vsnprint)(char*, int, const char*, va_list);
 extern char* (*ixp_vsmprint)(const char*, va_list);
+extern void (*ixp_printfcall)(Fcall*);
 
 /* thread_*.c */
 int ixp_taskinit(void);
