@@ -41,22 +41,22 @@ ixp_freestat(Stat *s) {
 
 void
 ixp_freefcall(Fcall *fcall) {
-	switch(fcall->type) {
+	switch(fcall->hdr.type) {
 	case RStat:
-		free(fcall->stat);
-		fcall->stat = nil;
+		free(fcall->rstat.stat);
+		fcall->rstat.stat = nil;
 		break;
 	case RRead:
-		free(fcall->data);
-		fcall->data = nil;
+		free(fcall->rread.data);
+		fcall->rread.data = nil;
 		break;
 	case RVersion:
-		free(fcall->version);
-		fcall->version = nil;
+		free(fcall->version.version);
+		fcall->version.version = nil;
 		break;
 	case RError:
-		free(fcall->ename);
-		fcall->ename = nil;
+		free(fcall->error.ename);
+		fcall->error.ename = nil;
 		break;
 	}
 }
@@ -77,92 +77,92 @@ ixp_sizeof_stat(Stat * stat) {
 
 void
 ixp_pfcall(IxpMsg *msg, Fcall *fcall) {
-	ixp_pu8(msg, &fcall->type);
-	ixp_pu16(msg, &fcall->tag);
+	ixp_pu8(msg, &fcall->hdr.type);
+	ixp_pu16(msg, &fcall->hdr.tag);
 
-	switch (fcall->type) {
+	switch (fcall->hdr.type) {
 	case TVersion:
 	case RVersion:
-		ixp_pu32(msg, &fcall->msize);
-		ixp_pstring(msg, &fcall->version);
+		ixp_pu32(msg, &fcall->version.msize);
+		ixp_pstring(msg, &fcall->version.version);
 		break;
 	case TAuth:
-		ixp_pu32(msg, &fcall->afid);
-		ixp_pstring(msg, &fcall->uname);
-		ixp_pstring(msg, &fcall->aname);
+		ixp_pu32(msg, &fcall->tauth.afid);
+		ixp_pstring(msg, &fcall->tauth.uname);
+		ixp_pstring(msg, &fcall->tauth.aname);
 		break;
 	case RAuth:
-		ixp_pqid(msg, &fcall->aqid);
+		ixp_pqid(msg, &fcall->rauth.aqid);
 		break;
 	case RAttach:
-		ixp_pqid(msg, &fcall->qid);
+		ixp_pqid(msg, &fcall->rattach.qid);
 		break;
 	case TAttach:
-		ixp_pu32(msg, &fcall->fid);
-		ixp_pu32(msg, &fcall->afid);
-		ixp_pstring(msg, &fcall->uname);
-		ixp_pstring(msg, &fcall->aname);
+		ixp_pu32(msg, &fcall->hdr.fid);
+		ixp_pu32(msg, &fcall->tattach.afid);
+		ixp_pstring(msg, &fcall->tattach.uname);
+		ixp_pstring(msg, &fcall->tattach.aname);
 		break;
 	case RError:
-		ixp_pstring(msg, &fcall->ename);
+		ixp_pstring(msg, &fcall->error.ename);
 		break;
 	case TFlush:
-		ixp_pu16(msg, &fcall->oldtag);
+		ixp_pu16(msg, &fcall->tflush.oldtag);
 		break;
 	case TWalk:
-		ixp_pu32(msg, &fcall->fid);
-		ixp_pu32(msg, &fcall->newfid);
-		ixp_pstrings(msg, &fcall->nwname, fcall->wname);
+		ixp_pu32(msg, &fcall->hdr.fid);
+		ixp_pu32(msg, &fcall->twalk.newfid);
+		ixp_pstrings(msg, &fcall->twalk.nwname, fcall->twalk.wname);
 		break;
 	case RWalk:
-		ixp_pqids(msg, &fcall->nwqid, fcall->wqid);
+		ixp_pqids(msg, &fcall->rwalk.nwqid, fcall->rwalk.wqid);
 		break;
 	case TOpen:
-		ixp_pu32(msg, &fcall->fid);
-		ixp_pu8(msg, &fcall->mode);
+		ixp_pu32(msg, &fcall->hdr.fid);
+		ixp_pu8(msg, &fcall->topen.mode);
 		break;
 	case ROpen:
 	case RCreate:
-		ixp_pqid(msg, &fcall->qid);
-		ixp_pu32(msg, &fcall->iounit);
+		ixp_pqid(msg, &fcall->ropen.qid);
+		ixp_pu32(msg, &fcall->ropen.iounit);
 		break;
 	case TCreate:
-		ixp_pu32(msg, &fcall->fid);
-		ixp_pstring(msg, &fcall->name);
-		ixp_pu32(msg, &fcall->perm);
-		ixp_pu8(msg, &fcall->mode);
+		ixp_pu32(msg, &fcall->hdr.fid);
+		ixp_pstring(msg, &fcall->tcreate.name);
+		ixp_pu32(msg, &fcall->tcreate.perm);
+		ixp_pu8(msg, &fcall->tcreate.mode);
 		break;
 	case TRead:
-		ixp_pu32(msg, &fcall->fid);
-		ixp_pu64(msg, &fcall->offset);
-		ixp_pu32(msg, &fcall->count);
+		ixp_pu32(msg, &fcall->hdr.fid);
+		ixp_pu64(msg, &fcall->tread.offset);
+		ixp_pu32(msg, &fcall->tread.count);
 		break;
 	case RRead:
-		ixp_pu32(msg, &fcall->count);
-		ixp_pdata(msg, &fcall->data, fcall->count);
+		ixp_pu32(msg, &fcall->rread.count);
+		ixp_pdata(msg, &fcall->rread.data, fcall->rread.count);
 		break;
 	case TWrite:
-		ixp_pu32(msg, &fcall->fid);
-		ixp_pu64(msg, &fcall->offset);
-		ixp_pu32(msg, &fcall->count);
-		ixp_pdata(msg, &fcall->data, fcall->count);
+		ixp_pu32(msg, &fcall->hdr.fid);
+		ixp_pu64(msg, &fcall->twrite.offset);
+		ixp_pu32(msg, &fcall->twrite.count);
+		ixp_pdata(msg, &fcall->twrite.data, fcall->twrite.count);
 		break;
 	case RWrite:
-		ixp_pu32(msg, &fcall->count);
+		ixp_pu32(msg, &fcall->rwrite.count);
 		break;
 	case TClunk:
 	case TRemove:
 	case TStat:
-		ixp_pu32(msg, &fcall->fid);
+		ixp_pu32(msg, &fcall->hdr.fid);
 		break;
 	case RStat:
-		ixp_pu16(msg, &fcall->nstat);
-		ixp_pdata(msg, (char**)&fcall->stat, fcall->nstat);
+		ixp_pu16(msg, &fcall->rstat.nstat);
+		ixp_pdata(msg, (char**)&fcall->rstat.stat, fcall->rstat.nstat);
 		break;
 	case TWStat:
-		ixp_pu32(msg, &fcall->fid);
-		ixp_pu16(msg, &fcall->nstat);
-		ixp_pdata(msg, (char**)&fcall->stat, fcall->nstat);
+		ixp_pu32(msg, &fcall->hdr.fid);
+		ixp_pu16(msg, &fcall->twstat.nstat);
+		ixp_pdata(msg, (char**)&fcall->twstat.stat, fcall->twstat.nstat);
 		break;
 	}
 }
