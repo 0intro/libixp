@@ -10,7 +10,6 @@ OBJ =	client    \
 	error     \
 	intmap    \
 	message   \
-	print     \
 	request   \
 	rpc       \
 	server    \
