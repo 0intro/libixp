@@ -143,9 +143,6 @@ Fail:
 	return;
 }
 
-#include <fmt.h>
-int	Ffmt(Fmt*);
-int	Gfmt(Fmt*);
 static void
 handlereq(Ixp9Req *r) {
 	Ixp9Conn *pc;
