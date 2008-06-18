@@ -599,7 +599,7 @@ struct IxpThread {
 extern IxpThread *ixp_thread;
 extern int (*ixp_vsnprint)(char*, int, const char*, va_list);
 extern char* (*ixp_vsmprint)(const char*, va_list);
-extern void (*ixp_printfcall)(Fcall*);
+extern void (*ixp_printfcall)(IxpFcall*);
 
 /* thread_*.c */
 int ixp_taskinit(void);
