@@ -51,7 +51,7 @@ rmkdir(char *path, int mode) {
 			*p = '\0';
 			ret = mkdir(path, mode);
 			if((ret == -1) && (errno != EEXIST)) {
-				ixp_werrstr("Can't create path '%s': %r", path);
+				ixp_werrstr("Can't create path '%s': %s", path, ixp_errbuf());
 				return 0;
 			}
 			*p = c;
@@ -84,11 +84,11 @@ ns_display(void) {
 	if(!rmkdir(path, 0700))
 		;
 	else if(stat(path, &st))
-		ixp_werrstr("Can't stat ns_path '%s': %r", path);
+		ixp_werrstr("Can't stat ns_path '%s': %s", path, ixp_errbuf());
 	else if(getuid() != st.st_uid)
 		ixp_werrstr("ns_path '%s' exists but is not owned by you", path);
 	else if((st.st_mode & 077) && chmod(path, st.st_mode & ~077))
-		ixp_werrstr("Namespace path '%s' exists, but has wrong permissions: %r", path);
+		ixp_werrstr("Namespace path '%s' exists, but has wrong permissions: %s", path, ixp_errbuf());
 	else
 		return path;
 	free(path);

@@ -12,6 +12,7 @@ OBJ =	client    \
 	request   \
 	rpc       \
 	server    \
+	srv_util  \
 	socket    \
 	thread    \
 	timer     \

@@ -41,7 +41,7 @@ readn(int fd, IxpMsg *msg, uint count) {
 		if(r == -1 && errno == EINTR)
 			continue;
 		if(r == 0) {
-			werrstr("broken pipe: %r");
+			werrstr("broken pipe: %s", ixp_errbuf());
 			return count - num;
 		}
 		num -= r;
@@ -59,7 +59,7 @@ ixp_sendmsg(int fd, IxpMsg *msg) {
 		if(r < 1) {
 			if(errno == EINTR)
 				continue;
-			werrstr("broken pipe: %r");
+			werrstr("broken pipe: %s", ixp_errbuf());
 			return 0;
 		}
 		msg->pos += r;
