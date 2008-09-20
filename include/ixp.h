@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <sys/select.h>
 
-#define IXP_API 97
+#define IXP_API 105
 
 /* Gunk */
 #if defined(IXP_NEEDAPI) && IXP_API < IXP_NEEDAPI
@@ -271,6 +271,21 @@ struct IxpQid {
 	uchar	dir_type;
 };
 
+/* stat structure */
+struct IxpStat {
+	ushort	type;
+	ulong	dev;
+	IxpQid	qid;
+	ulong	mode;
+	ulong	atime;
+	ulong	mtime;
+	uvlong	length;
+	char*	name;
+	char*	uid;
+	char*	gid;
+	char*	muid;
+};
+
 typedef struct IxpFHdr		IxpFHdr;
 typedef struct IxpFError	IxpFError;
 typedef struct IxpFROpen	IxpFRAttach;
@@ -290,7 +305,7 @@ typedef struct IxpFIO		IxpFTRead;
 typedef struct IxpFVersion	IxpFTVersion;
 typedef struct IxpFTWalk	IxpFTWalk;
 typedef struct IxpFIO		IxpFTWrite;
-typedef struct IxpFRStat	IxpFTWstat;
+typedef struct IxpFTWStat	IxpFTWStat;
 typedef struct IxpFAttach	IxpFAttach;
 typedef struct IxpFIO		IxpFIO;
 typedef struct IxpFVersion	IxpFVersion;
@@ -356,6 +371,10 @@ struct IxpFRStat {
 	ushort	nstat;
 	uchar*	stat;
 };
+struct IxpFTWStat {
+	IxpFHdr	hdr;
+	IxpStat	stat;
+};
 #if defined(IXP_NEEDAPI) && IXP_NEEDAPI <= 89
 /* from fcall(3) in plan9port */
 typedef struct IxpFcall IxpFcall;
@@ -406,9 +425,12 @@ struct IxpFcall {
 			ulong	count; /* Tread, Twrite, Rread */
 			char	*data; /* Twrite, Rread */
 		)
-		STRUCT ( /* Twstat, Rstat */
+		STRUCT ( /* Rstat */
 			ushort	nstat;
 			uchar	*stat;
+		)
+		STRUCT ( /* Twstat */
+			IxpStat	st;
 		)
 	)
 };
@@ -431,7 +453,7 @@ union IxpFcall {
 	IxpFTCreate	topen;
 	IxpFTWalk	twalk;
 	IxpFRWalk	rwalk;
-	IxpFRStat	twstat;
+	IxpFTWStat	twstat;
 	IxpFRStat	rstat;
 	IxpFIO		twrite;
 	IxpFIO		rwrite;
@@ -440,21 +462,6 @@ union IxpFcall {
 	IxpFIO		io;
 };
 #endif
-
-/* stat structure */
-struct IxpStat {
-	ushort	type;
-	ulong	dev;
-	IxpQid	qid;
-	ulong	mode;
-	ulong	atime;
-	ulong	mtime;
-	uvlong	length;
-	char*	name;
-	char*	uid;
-	char*	gid;
-	char*	muid;
-};
 
 struct IxpConn {
 	IxpServer*	srv;
@@ -564,6 +571,7 @@ struct Ixp9Srv {
 	void (*stat)(Ixp9Req *r);
 	void (*walk)(Ixp9Req *r);
 	void (*write)(Ixp9Req *r);
+	void (*wstat)(Ixp9Req *r);
 	void (*freefid)(IxpFid *f);
 };
 

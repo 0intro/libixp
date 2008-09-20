@@ -159,11 +159,13 @@ ixp_pfcall(IxpMsg *msg, Fcall *fcall) {
 		ixp_pu16(msg, &fcall->rstat.nstat);
 		ixp_pdata(msg, (char**)&fcall->rstat.stat, fcall->rstat.nstat);
 		break;
-	case TWStat:
+	case TWStat: {
+		ushort size;
 		ixp_pu32(msg, &fcall->hdr.fid);
-		ixp_pu16(msg, &fcall->twstat.nstat);
-		ixp_pdata(msg, (char**)&fcall->twstat.stat, fcall->twstat.nstat);
+		ixp_pu16(msg, &size);
+		ixp_pstat(msg, &fcall->twstat.stat);
 		break;
+		}
 	}
 }
 

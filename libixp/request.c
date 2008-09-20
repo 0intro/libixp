@@ -310,7 +310,34 @@ handlereq(Ixp9Req *r) {
 		}
 		pc->srv->write(r);
 		break;
-	/* Still to be implemented: wstat, auth */
+	case TWStat:
+		if(!(r->fid = lookupkey(&pc->fidmap, r->ifcall.hdr.fid))) {
+			respond(r, Enofid);
+			return;
+		}
+		if((ushort)~r->ifcall.twstat.stat.type) {
+			respond(r, "wstat of type");
+			return;
+		}
+		if((uint)~r->ifcall.twstat.stat.dev) {
+			respond(r, "wstat of dev");
+			return;
+		}
+		if((uchar)~r->ifcall.twstat.stat.qid.type || (ulong)~r->ifcall.twstat.stat.qid.version || (uvlong)~r->ifcall.twstat.stat.qid.path) {
+			respond(r, "wstat of qid");
+			return;
+		}
+		if(r->ifcall.twstat.stat.muid && r->ifcall.twstat.stat.muid[0]) {
+			respond(r, "wstat of muid");
+			return;
+		}
+		if((ulong)~r->ifcall.twstat.stat.mode && ((r->ifcall.twstat.stat.mode&DMDIR)>>24) != r->fid->qid.type&QTDIR) {
+			respond(r, "wstat on DMDIR bit");
+			return;
+		}
+		pc->srv->wstat(r);
+		break;
+	/* Still to be implemented: auth */
 	}
 }
 
@@ -386,10 +413,13 @@ respond(Ixp9Req *r, const char *error) {
 		if((r->oldreq = lookupkey(&pc->tagmap, r->ifcall.tflush.oldtag)))
 			respond(r->oldreq, Eintr);
 		break;
+	case TWStat:
+		ixp_freestat(&r->ifcall.twstat.stat);
+		break;
 	case TRead:
 	case TStat:
-		break;
-	/* Still to be implemented: wstat, auth */
+		break;		
+	/* Still to be implemented: auth */
 	}
 
 	r->ofcall.hdr.tag = r->ifcall.hdr.tag;
