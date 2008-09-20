@@ -1,6 +1,6 @@
 MKSUBDIR = \
 	set -e;							\
-	targ=$@; targ=$${targ\#d};				\
+	targ=`echo $@ |sed 's/^d//'`;			\
 	for i in $$dirs; do					\
 		export BASE=$(BASE)$$i/;			\
 		if [ ! -d $$i ]; then				\
