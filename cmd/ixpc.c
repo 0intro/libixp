@@ -18,7 +18,7 @@ static IxpClient *client;
 static void
 usage(void) {
 	fprintf(stderr,
-		   "usage: %1$s [-a <address>] {create | read | ls [-ld] | remove | write} <file>\n"
+		   "usage: %1$s [-a <address>] {create | read | ls [-ld] | remove | write | append} <file>\n"
 		   "       %1$s [-a <address>] xwrite <file> <data>\n"
 		   "       %1$s -v\n", argv0);
 	exit(1);
@@ -97,6 +97,30 @@ print_stat(Stat *s, int details) {
 }
 
 /* Service Functions */
+static int
+xappend(int argc, char *argv[]) {
+	IxpCFid *fid;
+	IxpStat *stat;
+	char *file;
+
+	ARGBEGIN{
+	default:
+		usage();
+	}ARGEND;
+
+	file = EARGF(usage());
+	fid = ixp_open(client, file, P9_OWRITE);
+	if(fid == nil)
+		fatal("Can't open file '%s': %s\n", file, ixp_errbuf());
+	
+	stat = ixp_stat(client, file);
+	fid->offset = stat->length;
+	ixp_freestat(stat);
+	free(stat);
+	write_data(fid, file);
+	return 0;
+}
+
 static int
 xwrite(int argc, char *argv[]) {
 	IxpCFid *fid;
@@ -285,6 +309,7 @@ struct exectab {
 	char *cmd;
 	int (*fn)(int, char**);
 } etab[] = {
+	{"append", xappend},
 	{"write", xwrite},
 	{"xwrite", xawrite},
 	{"read", xread},
