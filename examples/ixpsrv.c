@@ -502,6 +502,9 @@ main(int argc, char *argv[]) {
 	if(!address)
 		fatal("$IXP_ADDRESS not set\n");
 
+	if(!(user = getenv("USER")))
+		fatal("$USER not set\n");
+
 	fd = ixp_announce(address);
 	if(fd < 0)
 		fatal("%s\n", errstr);
