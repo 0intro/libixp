@@ -119,15 +119,15 @@ isdir(char *path) {
 static void
 write_buf(Ixp9Req *r, char *buf, uint len) {
 
-	if(r->ifcall.offset >= len)
+	if(r->ifcall.tread.offset >= len)
 		return;
 
-	len -= r->ifcall.offset;
-	if(len > r->ifcall.count)
-		len = r->ifcall.count;
-	r->ofcall.data = ixp_emalloc(len);
-	memcpy(r->ofcall.data, buf + r->ifcall.offset, len);
-	r->ofcall.count = len;
+	len -= r->ifcall.tread.offset;
+	if(len > r->ifcall.tread.count)
+		len = r->ifcall.tread.count;
+	r->ofcall.rread.data = ixp_emalloc(len);
+	memcpy(r->ofcall.rread.data, buf + r->ifcall.tread.offset, len);
+	r->ofcall.rread.count = len;
 }
 
 
@@ -136,14 +136,14 @@ static void
 write_to_buf(Ixp9Req *r, void *buf, uint *len, uint max) {
 	uint offset, count;
 
-//	offset = (r->fid->omode&OAPPEND) ? *len : r->ifcall.offset;
-	offset = r->ifcall.offset;
-	if(offset > *len || r->ifcall.count == 0) {
-		r->ofcall.count = 0;
+//	offset = (r->fid->omode&OAPPEND) ? *len : r->ifcall.tread.offset;
+	offset = r->ifcall.tread.offset;
+	if(offset > *len || r->ifcall.tread.count == 0) {
+		r->ofcall.rread.count = 0;
 		return;
 	}
 
-	count = r->ifcall.count;
+	count = r->ifcall.tread.count;
 	if(max && (count > max - offset))
 		count = max - offset;
 
@@ -154,8 +154,8 @@ write_to_buf(Ixp9Req *r, void *buf, uint *len, uint max) {
 		buf = *(void **)buf;
 	}
 
-	memcpy((uchar*)buf + offset, r->ifcall.data, count);
-	r->ofcall.count = count;
+	memcpy((uchar*)buf + offset, r->ifcall.tread.data, count);
+	r->ofcall.rread.count = count;
 	((char *)buf)[offset+count] = '\0';
 }
 
@@ -200,7 +200,7 @@ fs_attach(Ixp9Req *r) {
 	r->fid->qid.type = QTDIR;
 	r->fid->qid.path = (uintptr_t)r->fid;
 	r->fid->aux = newfidaux("/");
-	r->ofcall.qid = r->fid->qid;
+	r->ofcall.rattach.qid = r->fid->qid;
 	respond(r, nil);
 }
 
@@ -222,20 +222,20 @@ fs_walk(Ixp9Req *r) {
 	}
 
 	/* build full path. Stat full path. Done */
-	for(i=0; i < r->ifcall.nwname; i++) {
+	for(i=0; i < r->ifcall.twalk.nwname; i++) {
 		strcat(name, "/");
-		strcat(name, r->ifcall.wname[i]);
+		strcat(name, r->ifcall.twalk.wname[i]);
 		if (stat(name, &buf) < 0){
 			respond(r, Enofile);
 			free(name);
 			return;
 		}
-		r->ofcall.wqid[i].type = buf.st_mode&S_IFMT;
-		r->ofcall.wqid[i].path = buf.st_ino;
+		r->ofcall.rwalk.wqid[i].type = buf.st_mode&S_IFMT;
+		r->ofcall.rwalk.wqid[i].path = buf.st_ino;
 	}
 
 	r->newfid->aux = newfidaux(name);
-	r->ofcall.nwqid = i;
+	r->ofcall.rwalk.nwqid = i;
 	free(name);
 	respond(r, nil);
 }
@@ -263,14 +263,14 @@ fs_stat(Ixp9Req *r) {
 
 	dostat(&s, name, &st);
 	r->fid->qid = s.qid;
-	r->ofcall.nstat = size = ixp_sizeof_stat(&s);
+	r->ofcall.rstat.nstat = size = ixp_sizeof_stat(&s);
 
 	buf = ixp_emallocz(size);
 
 	m = ixp_message(buf, size, MsgPack);
 	ixp_pstat(&m, &s);
 
-	r->ofcall.stat = m.data;
+	r->ofcall.rstat.stat = m.data;
 	respond(r, nil);
 }
 
@@ -290,7 +290,7 @@ fs_read(Ixp9Req *r) {
 		IxpMsg m;
 
 		offset = 0;
-		size = r->ifcall.count;
+		size = r->ifcall.tread.count;
 		buf = ixp_emallocz(size);
 		m = ixp_message((uchar*)buf, size, MsgPack);
 
@@ -309,18 +309,18 @@ fs_read(Ixp9Req *r) {
 				offset += n;
 			} else n = 0;
 		}
-		r->ofcall.count = n;
-		r->ofcall.data = (char*)m.data;
+		r->ofcall.rread.count = n;
+		r->ofcall.rread.data = (char*)m.data;
 		respond(r, nil);
 		return;
 	} else {
-		r->ofcall.data = ixp_emallocz(r->ifcall.count);
-		if (! r->ofcall.data) {
+		r->ofcall.rread.data = ixp_emallocz(r->ifcall.tread.count);
+		if (! r->ofcall.rread.data) {
 			respond(r, nil);
 			return;
 		}
-		r->ofcall.count = pread(f->fd, r->ofcall.data, r->ifcall.count, r->ifcall.offset);
-		if (r->ofcall.count < 0) 
+		r->ofcall.rread.count = pread(f->fd, r->ofcall.rread.data, r->ifcall.tread.count, r->ifcall.tread.offset);
+		if (r->ofcall.rread.count < 0) 
 			rerrno(r, Enoperm);
 		else
 			respond(r, nil);
@@ -340,7 +340,7 @@ fs_write(Ixp9Req *r) {
 
 	debug("fs_write(%p)\n", r);
 
-	if(r->ifcall.count == 0) {
+	if(r->ifcall.twrite.count == 0) {
 		respond(r, nil);
 		return;
 	}
