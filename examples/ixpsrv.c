@@ -250,10 +250,9 @@ fs_stat(Ixp9Req *r) {
 	FidAux *f;
 	int size;
 	
+	f = r->fid->aux;
 	debug("fs_stat(%p)\n", r);
 	debug("fs_stat %s\n", f->name);
-
-	f = r->fid->aux;
 
 	name = f->name;
 	if (stat(name, &st) < 0){
