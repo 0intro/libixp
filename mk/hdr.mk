@@ -14,9 +14,17 @@ MKCFGSH=if test -f $(ROOT)/config.local.mk; then echo $(ROOT)/config.local.mk; e
 MKCFG:=${shell $(MKCFGSH)}
 MKCFG!=${MKCFGSH}
 include $(MKCFG)
+# and this:
+# Try to find a sane shell. /bin/sh is a last resort, because it's
+# usually bash on Linux, which means, it's painfully slow.
+BINSH := $(shell \
+	   if [ -x /bin/dash ]; then echo /bin/dash; \
+	   elif [ -x /bin/ksh ]; then echo /bin/ksh; \
+	   else echo /bin/sh; fi)
+BINSH != echo /bin/sh
 
 .SILENT:
-.SUFFIXES: .O .o .o_pic .c .sh .rc .$(SOEXT) .awk .1 .depend .install .uninstall .clean
+.SUFFIXES: .out .o .o_pic .c .sh .rc .$(SOEXT) .awk .1 .man1 .depend .install .uninstall .clean
 all:
 
 .c.depend:
@@ -28,62 +36,64 @@ all:
 
 .c.o:
 	$(COMPILE) $@ $<
-
 .c.o_pic:
 	$(COMPILEPIC) $@ $<
 
-.o.O:
+.o.out:
 	$(LINK) $@ $<
-
-.c.O:
+.c.out:
 	$(COMPILE) ${<:.c=.o} $<
 	$(LINK) $@ ${<:.c=.o}
 
-.sh.O:
+.sh.out:
 	echo FILTER $(BASE)$<
 	$(FILTER) $< >$@
 	sh -n $@
 	chmod 0755 $@
-.rc.O .awk.O:
+.rc.out .awk.out:
 	echo FILTER $(BASE)$<
 	$(FILTER) $< >$@
 	chmod 0755 $@
+.man1.1:
+	echo TXT2TAGS $(BASE)$<
+	txt2tags -o- $< | $(FILTER) >$@
 
-.O.install:
+.out.install:
 	echo INSTALL $$($(CLEANNAME) $(BASE)$*)
-	cp -f $< $(BIN)/$*
-	chmod 0755 $(BIN)/$* 
-.O.uninstall:
+	cp -f $< $(DESTDIR)$(BIN)/$*
+	chmod 0755 $(DESTDIR)$(BIN)/$* 
+.out.uninstall:
 	echo UNINSTALL $$($(CLEANNAME) $(BASE)$*)
-	rm -f $(BIN)/$* 
+	rm -f $(DESTDIR)$(BIN)/$* 
 
 .a.install .$(SOEXT).install:
 	echo INSTALL $$($(CLEANNAME) $(BASE)$<)
-	set -e; \
-	file=$<; \
-	cp -f $< $(LIBDIR)/$${file##*/}; \
-	#chmod 0644 $(LIBDIR)/$${file##*/}
+	cp -f $< $(DESTDIR)$(LIBDIR)/$<
+	chmod 0644 $(DESTDIR)$(LIBDIR)/$<
 .a.uninstall .$(SOEXT).uninstall:
 	echo UNINSTALL $$($(CLEANNAME) $(BASE)$<)
-	rm -f $(LIBDIR)/$<
+	rm -f $(DESTDIR)$(LIBDIR)/$<
 
 .h.install:
 	echo INSTALL $$($(CLEANNAME) $(BASE)$<)
-	cp -f $< $(INCLUDE)/$<
-	chmod 0644 $(INCLUDE)/$<
+	cp -f $< $(DESTDIR)$(INCLUDE)/$<
+	chmod 0644 $(DESTDIR)$(INCLUDE)/$<
 .h.uninstall:
 	echo UNINSTALL $$($(CLEANNAME) $(BASE)$<)
-	rm -f $(INCLUDE)/$<
+	rm -f $(DESTDIR)$(INCLUDE)/$<
 
 .1.install:
-	echo INSTALL man $$($(CLEANNAME) $*'(1)')
-	$(FILTER) $< >$(MAN)/man1/$<
-	chmod 0644 $(MAN)/man1/$<
+	set -e; \
+	man=1; \
+	path="$(MAN)/man$$man/$*.$$man"; \
+	echo INSTALL man $$($(CLEANNAME) "$(BASE)/$*($$man)"); \
+	cp "$<" $(DESTDIR)"$$path"; \
+	chmod 0644 $(DESTDIR)"$$path"
 .1.uninstall:
 	echo UNINSTALL man $$($(CLEANNAME) $*'(1)')
-	rm -f $(MAN)/man1/$<
+	rm -f $(DESTDIR)$(MAN)/man1/$<
 
-.O.clean:
+.out.clean:
 	echo CLEAN $$($(CLEANNAME) $(BASE)$<)
 	rm -f $< || true 2>/dev/null
 	rm -f $*.o || true 2>/dev/null
