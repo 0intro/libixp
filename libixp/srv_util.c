@@ -32,6 +32,9 @@ struct IxpQueue {
 static IxpFileId*	free_fileid;
 
 /* Utility Functions */
+/**
+ * Obtain an empty, reference counted IxpFileId struct.
+ */
 IxpFileId*
 ixp_srv_getfile(void) {
 	IxpFileId *f;
@@ -55,6 +58,10 @@ ixp_srv_getfile(void) {
 	return f;
 }
 
+/**
+ * Decrease the reference count of the given IxpFileId,
+ * and push it onto the free list when it reaches 0;
+ */
 void
 ixp_srv_freefile(IxpFileId *f) {
 	if(--f->nref)
@@ -64,14 +71,16 @@ ixp_srv_freefile(IxpFileId *f) {
 	free_fileid = f;
 }
 
-/* Increase the reference counts of the IxpFileId list */
+/**
+ * Increase the reference count of every IxpFileId linked
+ * to 'f'.
+ */
 void
 ixp_srv_clonefiles(IxpFileId *f) {
 	for(; f; f=f->next)
 		assert(f->nref++);
 }
 
-/* This should be moved to libixp */
 void
 ixp_srv_readbuf(Ixp9Req *r, char *buf, uint len) {
 
@@ -86,7 +95,6 @@ ixp_srv_readbuf(Ixp9Req *r, char *buf, uint len) {
 	r->ofcall.io.count = len;
 }
 
-/* This should be moved to libixp */
 void
 ixp_srv_writebuf(Ixp9Req *r, char **buf, uint *len, uint max) {
 	IxpFileId *f;
@@ -118,6 +126,10 @@ ixp_srv_writebuf(Ixp9Req *r, char **buf, uint *len, uint max) {
 	p[offset+count] = '\0';
 }
 
+/**
+ * Ensure that the data member of 'r' is null terminated,
+ * removing any new line from its end.
+ */
 void
 ixp_srv_data2cstring(Ixp9Req *r) {
 	char *p, *q;
@@ -125,11 +137,11 @@ ixp_srv_data2cstring(Ixp9Req *r) {
 
 	i = r->ifcall.io.count;
 	p = r->ifcall.io.data;
-	q = memchr(p, '\0', i);
 	if(i && p[i - 1] == '\n')
 		i--;
-	if(q && q-p < i)
-		i = q-p;
+	q = memchr(p, '\0', i);
+	if(q)
+		i = q - p;
 
 	p = erealloc(r->ifcall.io.data, i+1);
 	p[i] = '\0';
@@ -285,15 +297,26 @@ ixp_pending_flush(Ixp9Req *r) {
 
 bool
 ixp_pending_clunk(Ixp9Req *r) {
+	IxpPending *p;
 	IxpFileId *f;
 	IxpPLink *pl;
+	IxpRLink *rl;
 	IxpQueue *qu;
 	bool more;
 
 	f = r->fid->aux;
 	pl = f->p;
+
+	p = pl->pending;
+	for(rl=p->req.next; rl != &p->req; rl=rl->next)
+		if(rl->req->fid == pl->fid) {
+			respond(r, "fid in use");
+			return true;
+		}
+
 	pl->prev->next = pl->next;
 	pl->next->prev = pl->prev;
+
 	while((qu = pl->queue)) {
 		pl->queue = qu->link;
 		free(qu->dat);
@@ -344,7 +367,7 @@ ixp_srv_readdir(Ixp9Req *r, IxpLookupFn lookup, void (*dostat)(IxpStat*, IxpFile
 
 	f = lookup(f, nil);
 	tf = f;
-	/* Note: f->tab.name == "." so we skip it */
+	/* Note: The first f is ".", so we skip it. */
 	offset = 0;
 	for(f=f->next; f; f=f->next) {
 		dostat(&s, f);

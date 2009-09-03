@@ -126,9 +126,9 @@ allocmsg(IxpClient *c, int n) {
  * Params:
  *	fd - A file descriptor which is already connected
  *	     to a 9P server.
- *	address - An address (in Plan 9 resource fomat) on
+ *	address - An address (in Plan 9 resource fomat) at
  *	          which to connect to a 9P server.
- *	name - The name of the socket in the process's canonical
+ *	name - The name of a socket in the process's canonical
  *	       namespace directory.
  *
  * Initiate a 9P connection with the server at P<address>,
@@ -247,6 +247,7 @@ walk(IxpClient *c, const char *path) {
 	return f;
 fail:
 	putfid(f);
+	free(p);
 	return nil;
 }
 

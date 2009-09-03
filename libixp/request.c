@@ -27,8 +27,9 @@ static char
 	Eduptag[] = "tag in use",
 	Edupfid[] = "fid in use",
 	Enofunc[] = "function not implemented",
-	Ebotch[] = "9P protocol botch",
+	Eopen[] = "fid is already open",
 	Enofile[] = "file does not exist",
+	Enoread[] = "file not open for reading",
 	Enofid[] = "fid does not exist",
 	Enotag[] = "tag does not exist",
 	Enotdir[] = "not a directory",
@@ -203,7 +204,7 @@ handlereq(Ixp9Req *r) {
 			return;
 		}
 		if(r->fid->omode != -1) {
-			respond(r, Ebotch);
+			respond(r, Eopen);
 			return;
 		}
 		if(!(r->fid->qid.type&QTDIR)) {
@@ -238,7 +239,7 @@ handlereq(Ixp9Req *r) {
 			return;
 		}
 		if(r->fid->omode == -1 || r->fid->omode == P9_OWRITE) {
-			respond(r, Ebotch);
+			respond(r, Enoread);
 			return;
 		}
 		if(!pc->srv->read) {
