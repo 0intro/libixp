@@ -216,7 +216,7 @@ enum {
 #  define IxpStat Stat
 #endif
 
-typedef struct Intmap Intmap;
+typedef struct IxpMap IxpMap;
 typedef struct Ixp9Conn Ixp9Conn;
 typedef struct Ixp9Req Ixp9Req;
 typedef struct Ixp9Srv Ixp9Srv;
@@ -543,7 +543,7 @@ struct IxpFid {
 
 	/* Implementation details */
 	Ixp9Conn*	conn;
-	Intmap*		map;
+	IxpMap*		map;
 };
 
 struct Ixp9Req {

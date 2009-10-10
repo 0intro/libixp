@@ -1,11 +1,21 @@
 FILTER = cat
-EXCFLAGS = -I$$(echo $(INCPATH)|sed 's/:/ -I/g') -D_XOPEN_SOURCE=600
-COMPILE= CC="$(CC)" CFLAGS="$(EXCFLAGS) $(CFLAGS)" $(ROOT)/util/compile
-COMPILEPIC= CC="$(CC)" CFLAGS="$(EXCFLAGS) $(CFLAGS) $(SOCFLAGS)" $(ROOT)/util/compile
-LINK= LD="$(LD)" LDFLAGS="$(LDFLAGS)" $(ROOT)/util/link
-LINKSO= LD="$(LD)" LDFLAGS="$(SOLDFLAGS) $(SHARED)" $(ROOT)/util/link
+
+EXCFLAGS = $(INCLUDES) -D_XOPEN_SOURCE=600
+
+COMPILE      = $(ROOT)/util/compile "$(CC)" "$(EXCFLAGS) $(CFLAGS) $$(pkg-config --cflags $(PACKAGES))"
+COMPILEPIC   = $(ROOT)/util/compile "$(CC)" "$(EXCFLAGS) $(CFLAGS) $$(pkg-config --cflags $(PACKAGES)) $(SOCFLAGS)"
+
+LINK      = $(ROOT)/util/link "$(LD)" "$$(pkg-config --libs $(PACKAGES)) $(LDFLAGS)"
+LINKSO    = $(ROOT)/util/link "$(LD)" "$$(pkg-config --libs $(PACKAGES)) $(SOLDFLAGS) $(SHARED)"
+
 CLEANNAME=$(ROOT)/util/cleanname
+
 SOEXT=so
+TAGFILES=
+
+CTAGS=ctags
+
+PACKAGES = 2>/dev/null
 
 include $(ROOT)/config.mk
 
@@ -14,9 +24,10 @@ MKCFGSH=if test -f $(ROOT)/config.local.mk; then echo $(ROOT)/config.local.mk; e
 MKCFG:=${shell $(MKCFGSH)}
 MKCFG!=${MKCFGSH}
 include $(MKCFG)
+
 # and this:
 # Try to find a sane shell. /bin/sh is a last resort, because it's
-# usually bash on Linux, which means, it's painfully slow.
+# usually bash on Linux, which means it's painfully slow.
 BINSH := $(shell \
 	   if [ -x /bin/dash ]; then echo /bin/dash; \
 	   elif [ -x /bin/ksh ]; then echo /bin/ksh; \
@@ -24,7 +35,7 @@ BINSH := $(shell \
 BINSH != echo /bin/sh
 
 .SILENT:
-.SUFFIXES: .out .o .o_pic .c .sh .rc .$(SOEXT) .awk .1 .man1 .depend .install .uninstall .clean
+.SUFFIXES: .out .o .o_pic .c .pdf .sh .rc .$(SOEXT) .awk .1 .man1 .depend .install .uninstall .clean
 all:
 
 .c.depend:
@@ -56,7 +67,7 @@ all:
 	chmod 0755 $@
 .man1.1:
 	echo TXT2TAGS $(BASE)$<
-	txt2tags -o- $< | $(FILTER) >$@
+	txt2tags -o- $< >$@
 
 .out.install:
 	echo INSTALL $$($(CLEANNAME) $(BASE)$*)
@@ -82,12 +93,20 @@ all:
 	echo UNINSTALL $$($(CLEANNAME) $(BASE)$<)
 	rm -f $(DESTDIR)$(INCLUDE)/$<
 
+.pdf.install:
+	echo INSTALL $$($(CLEANNAME) $(BASE)$<)
+	cp -f $< $(DESTDIR)$(DOC)/$<
+	chmod 0644 $(DESTDIR)$(DOC)/$<
+.pdf.uninstall:
+	echo UNINSTALL $$($(CLEANNAME) $(BASE)$<)
+	rm -f $(DESTDIR)$(DOC)/$<
+
 .1.install:
 	set -e; \
 	man=1; \
 	path="$(MAN)/man$$man/$*.$$man"; \
 	echo INSTALL man $$($(CLEANNAME) "$(BASE)/$*($$man)"); \
-	cp "$<" $(DESTDIR)"$$path"; \
+	$(FILTER) <"$<" >$(DESTDIR)"$$path"; \
 	chmod 0644 $(DESTDIR)"$$path"
 .1.uninstall:
 	echo UNINSTALL man $$($(CLEANNAME) $*'(1)')

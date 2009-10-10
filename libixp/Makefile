@@ -7,7 +7,7 @@ TARG =	libixp
 OBJ =	client    \
 	convert   \
 	error     \
-	intmap    \
+	map       \
 	message   \
 	request   \
 	rpc       \

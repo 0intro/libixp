@@ -1,6 +1,7 @@
 #define IXP_NO_P9_
 #define IXP_P9_STRUCTS
 #include <ixp.h>
+#include <stdbool.h>
 
 char *argv0;
 #define ARGBEGIN \
@@ -30,6 +31,7 @@ char *argv0;
 
 #undef nil
 #define nil ((void*)0)
+#define nelem(ary) (sizeof(ary) / sizeof(*ary))
 
 #define thread ixp_thread
 
@@ -45,29 +47,22 @@ char *argv0;
 #define muxfree ixp_muxfree
 #define muxrpc ixp_muxrpc
 
-#define initmap ixp_initmap
-#define incref ixp_incref
-#define decref ixp_decref
-#define freemap ixp_freemap
-#define execmap ixp_execmap
-#define lookupkey ixp_lookupkey
-#define insertkey ixp_insertkey
-#define deletekey ixp_deletekey
-#define caninsertkey ixp_caninsertkey
-
 #define errstr ixp_errstr
 #define rerrstr ixp_rerrstr
 #define werrstr ixp_werrstr
 
-typedef struct Intlist Intlist;
+typedef struct IxpMap Map;
+typedef struct MapEnt MapEnt;
+
 typedef IxpTimer Timer;
 
 typedef struct timeval timeval;
 
-struct Intmap {
-	ulong nhash;
-	Intlist	**hash;
-	IxpRWLock lk;
+struct IxpMap {
+	MapEnt**	bucket;
+	int		nhash;
+
+	IxpRWLock	lock;
 };
 
 struct IxpTimer {
@@ -78,16 +73,13 @@ struct IxpTimer {
 	void*	aux;
 };
 
-/* intmap.c */
-int	caninsertkey(Intmap*, ulong, void*);
-void	decref_map(Intmap*);
-void*	deletekey(Intmap*, ulong);
-void	execmap(Intmap*, void (*destroy)(void*));
-void	freemap(Intmap*, void (*destroy)(void*));
-void	incref_map(Intmap*);
-void	initmap(Intmap*, ulong, void*);
-void*	insertkey(Intmap*, ulong, void*);
-void*	lookupkey(Intmap*, ulong);
+/* map.c */
+void	ixp_mapfree(Map*, void(*)(void*));
+void	ixp_mapexec(Map*, void(*)(void*, void*), void*);
+void	ixp_mapinit(Map*, MapEnt**, int);
+bool	ixp_mapinsert(Map*, ulong, void*, bool);
+void*	ixp_mapget(Map*, ulong);
+void*	ixp_maprm(Map*, ulong);
 
 /* mux.c */
 void	muxfree(IxpClient*);

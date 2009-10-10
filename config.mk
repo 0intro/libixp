@@ -13,7 +13,7 @@ PREFIX = /usr/local
   INCLUDE = $(PREFIX)/include
 
 # Includes and libs
-INCPATH = .:$(ROOT)/include:$(INCLUDE):/usr/include
+INCLUDES = -I. -I$(ROOT)/include -I$(INCLUDE) -I/usr/include
 LIBS = -L/usr/lib -lc
 
 # Flags

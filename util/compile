@@ -1,5 +1,8 @@
 #!/bin/sh -f
 
+CC=$1
+CFLAGS=$2; shift 2
+
 outfile="$1"; shift
 bin="$(echo $0 | sed 's,/[^/]*$,,')"
 
@@ -9,7 +12,7 @@ xtmp=/tmp/cc.$$.$USER.out
 
 echo CC $($bin/cleanname ${BASE}$outfile)
 [ -n "$noisycc" ] && echo $CC -o $outfile $CFLAGS $@
-$CC -o $outfile $CFLAGS $@ >$xtmp 2>&1
+eval '$CC -o $outfile '"$CFLAGS"' $@ >$xtmp 2>&1'
 status=$?
 [ $? -eq 0 ] || echo $CC -o $outfile $CFLAGS $@ >&2
 
