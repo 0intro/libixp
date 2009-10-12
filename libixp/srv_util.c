@@ -37,25 +37,25 @@ static IxpFileId*	free_fileid;
  */
 IxpFileId*
 ixp_srv_getfile(void) {
-	IxpFileId *f;
+	IxpFileId *file;
 	int i;
 
 	if(!free_fileid) {
 		i = 15;
-		f = emallocz(i * sizeof *f);
+		file = emallocz(i * sizeof *file);
 		for(; i; i--) {
-			f->next = free_fileid;
-			free_fileid = f++;
+			file->next = free_fileid;
+			free_fileid = file++;
 		}
 	}
-	f = free_fileid;
-	free_fileid = f->next;
-	f->p = nil;
-	f->volatil = 0;
-	f->nref = 1;
-	f->next = nil;
-	f->pending = false;
-	return f;
+	file = free_fileid;
+	free_fileid = file->next;
+	file->p = nil;
+	file->volatil = 0;
+	file->nref = 1;
+	file->next = nil;
+	file->pending = false;
+	return file;
 }
 
 /**
@@ -82,37 +82,37 @@ ixp_srv_clonefiles(IxpFileId *f) {
 }
 
 void
-ixp_srv_readbuf(Ixp9Req *r, char *buf, uint len) {
+ixp_srv_readbuf(Ixp9Req *req, char *buf, uint len) {
 
-	if(r->ifcall.io.offset >= len)
+	if(req->ifcall.io.offset >= len)
 		return;
 
-	len -= r->ifcall.io.offset;
-	if(len > r->ifcall.io.count)
-		len = r->ifcall.io.count;
-	r->ofcall.io.data = emalloc(len);
-	memcpy(r->ofcall.io.data, buf + r->ifcall.io.offset, len);
-	r->ofcall.io.count = len;
+	len -= req->ifcall.io.offset;
+	if(len > req->ifcall.io.count)
+		len = req->ifcall.io.count;
+	req->ofcall.io.data = emalloc(len);
+	memcpy(req->ofcall.io.data, buf + req->ifcall.io.offset, len);
+	req->ofcall.io.count = len;
 }
 
 void
-ixp_srv_writebuf(Ixp9Req *r, char **buf, uint *len, uint max) {
-	IxpFileId *f;
+ixp_srv_writebuf(Ixp9Req *req, char **buf, uint *len, uint max) {
+	IxpFileId *file;
 	char *p;
 	uint offset, count;
 
-	f = r->fid->aux;
+	file = req->fid->aux;
 
-	offset = r->ifcall.io.offset;
-	if(f->tab.perm & DMAPPEND)
+	offset = req->ifcall.io.offset;
+	if(file->tab.perm & DMAPPEND)
 		offset = *len;
 
-	if(offset > *len || r->ifcall.io.count == 0) {
-		r->ofcall.io.count = 0;
+	if(offset > *len || req->ifcall.io.count == 0) {
+		req->ofcall.io.count = 0;
 		return;
 	}
 
-	count = r->ifcall.io.count;
+	count = req->ifcall.io.count;
 	if(max && (offset + count > max))
 		count = max - offset;
 
@@ -121,8 +121,8 @@ ixp_srv_writebuf(Ixp9Req *r, char **buf, uint *len, uint max) {
 		*buf = erealloc(*buf, *len + 1);
 	p = *buf;
 
-	memcpy(p+offset, r->ifcall.io.data, count);
-	r->ofcall.io.count = count;
+	memcpy(p+offset, req->ifcall.io.data, count);
+	req->ofcall.io.count = count;
 	p[offset+count] = '\0';
 }
 
@@ -131,33 +131,33 @@ ixp_srv_writebuf(Ixp9Req *r, char **buf, uint *len, uint max) {
  * removing any new line from its end.
  */
 void
-ixp_srv_data2cstring(Ixp9Req *r) {
+ixp_srv_data2cstring(Ixp9Req *req) {
 	char *p, *q;
 	uint i;
 
-	i = r->ifcall.io.count;
-	p = r->ifcall.io.data;
+	i = req->ifcall.io.count;
+	p = req->ifcall.io.data;
 	if(i && p[i - 1] == '\n')
 		i--;
 	q = memchr(p, '\0', i);
 	if(q)
 		i = q - p;
 
-	p = erealloc(r->ifcall.io.data, i+1);
+	p = erealloc(req->ifcall.io.data, i+1);
 	p[i] = '\0';
-	r->ifcall.io.data = p;
+	req->ifcall.io.data = p;
 }
 
 char*
-ixp_srv_writectl(Ixp9Req *r, char* (*fn)(void*, IxpMsg*)) {
+ixp_srv_writectl(Ixp9Req *req, char* (*fn)(void*, IxpMsg*)) {
 	char *err, *s, *p, c;
-	IxpFileId *f;
-	IxpMsg m;
+	IxpFileId *file;
+	IxpMsg msg;
 
-	f = r->fid->aux;
+	file = req->fid->aux;
 
-	ixp_srv_data2cstring(r);
-	s = r->ifcall.io.data;
+	ixp_srv_data2cstring(req);
+	s = req->ifcall.io.data;
 
 	err = nil;
 	c = *s;
@@ -170,8 +170,8 @@ ixp_srv_writectl(Ixp9Req *r, char* (*fn)(void*, IxpMsg*)) {
 		c = *p;
 		*p = '\0';
 
-		m = ixp_message(s, p-s, 0);
-		s = fn(f->p, &m);
+		msg = ixp_message(s, p-s, 0);
+		s = fn(file->p, &msg);
 		if(s)
 			err = s;
 		s = p + 1;
@@ -180,262 +180,272 @@ ixp_srv_writectl(Ixp9Req *r, char* (*fn)(void*, IxpMsg*)) {
 }
 
 void
-ixp_pending_respond(Ixp9Req *r) {
-	IxpFileId *f;
-	IxpPLink *p;
-	IxpRLink *rl;
-	IxpQueue *q;
+ixp_pending_respond(Ixp9Req *req) {
+	IxpFileId *file;
+	IxpPendingLink *p;
+	IxpRequestLink *req_link;
+	IxpQueue *queue;
 
-	f = r->fid->aux;
-	p = f->p;
-	assert(f->pending);
+	file = req->fid->aux;
+	assert(file->pending);
+	p = file->p;
 	if(p->queue) {
-		q = p->queue;
-		p->queue = q->link;
-		r->ofcall.io.data = q->dat;
-		r->ofcall.io.count = q->len;
-		if(r->aux) {
-			rl = r->aux;
-			rl->next->prev = rl->prev;
-			rl->prev->next = rl->next;
-			free(rl);
+		queue = p->queue;
+		p->queue = queue->link;
+		req->ofcall.io.data = queue->dat;
+		req->ofcall.io.count = queue->len;
+		if(req->aux) {
+			req_link = req->aux;
+			req_link->next->prev = req_link->prev;
+			req_link->prev->next = req_link->next;
+			free(req_link);
 		}
-		respond(r, nil);
-		free(q);
+		respond(req, nil);
+		free(queue);
 	}else {
-		rl = emallocz(sizeof *rl);
-		rl->req = r;
-		rl->next = &p->pending->req;
-		rl->prev = rl->next->prev;
-		rl->next->prev = rl;
-		rl->prev->next = rl;
-		r->aux = rl;
+		req_link = emallocz(sizeof *req_link);
+		req_link->req = req;
+		req_link->next = &p->pending->req;
+		req_link->prev = req_link->next->prev;
+		req_link->next->prev = req_link;
+		req_link->prev->next = req_link;
+		req->aux = req_link;
 	}
 }
 
 void
-ixp_pending_write(IxpPending *p, char *dat, long n) {
-	IxpRLink rl;
-	IxpQueue **qp, *q;
-	IxpPLink *pp;
-	IxpRLink *rp;
+ixp_pending_write(IxpPending *pending, char *dat, long n) {
+	IxpRequestLink req_link;
+	IxpQueue **qp, *queue;
+	IxpPendingLink *pp;
+	IxpRequestLink *rp;
 
 	if(n == 0)
 		return;
 
-	if(p->req.next == nil) {
-		p->req.next = &p->req;
-		p->req.prev = &p->req;
-		p->fids.prev = &p->fids;
-		p->fids.next = &p->fids;
+	if(pending->req.next == nil) {
+		pending->req.next = &pending->req;
+		pending->req.prev = &pending->req;
+		pending->fids.prev = &pending->fids;
+		pending->fids.next = &pending->fids;
 	}
 
-	for(pp=p->fids.next; pp != &p->fids; pp=pp->next) {
+	for(pp=pending->fids.next; pp != &pending->fids; pp=pp->next) {
 		for(qp=&pp->queue; *qp; qp=&qp[0]->link)
 			;
-		q = emallocz(sizeof *q);
-		q->dat = emalloc(n);
-		memcpy(q->dat, dat, n);
-		q->len = n;
-		*qp = q;
+		queue = emallocz(sizeof *queue);
+		queue->dat = emalloc(n);
+		memcpy(queue->dat, dat, n);
+		queue->len = n;
+		*qp = queue;
 	}
-	rl.next = &rl;
-	rl.prev = &rl;
-	if(p->req.next != &p->req) {
-		rl.next = p->req.next;
-		rl.prev = p->req.prev;
-		p->req.prev = &p->req;
-		p->req.next = &p->req;
+
+	req_link.next = &req_link;
+	req_link.prev = &req_link;
+	if(pending->req.next != &pending->req) {
+		req_link.next = pending->req.next;
+		req_link.prev = pending->req.prev;
+		pending->req.prev = &pending->req;
+		pending->req.next = &pending->req;
 	}
-	rl.prev->next = &rl;
-	rl.next->prev = &rl;
-	while((rp = rl.next) != &rl)
+	req_link.prev->next = &req_link;
+	req_link.next->prev = &req_link;
+
+	while((rp = req_link.next) != &req_link)
 		ixp_pending_respond(rp->req);
 }
 
 void
-ixp_pending_pushfid(IxpPending *p, IxpFid *f) {
-	IxpPLink *pl;
-	IxpFileId *fi;
+ixp_pending_pushfid(IxpPending *pending, IxpFid *fid) {
+	IxpPendingLink *pend_link;
+	IxpFileId *file;
 
-	if(p->req.next == nil) {
-		p->req.next = &p->req;
-		p->req.prev = &p->req;
-		p->fids.prev = &p->fids;
-		p->fids.next = &p->fids;
+	if(pending->req.next == nil) {
+		pending->req.next = &pending->req;
+		pending->req.prev = &pending->req;
+		pending->fids.prev = &pending->fids;
+		pending->fids.next = &pending->fids;
 	}
 
-	fi = f->aux;
-	pl = emallocz(sizeof *pl);
-	pl->fid = f;
-	pl->pending = p;
-	pl->next = &p->fids;
-	pl->prev = pl->next->prev;
-	pl->next->prev = pl;
-	pl->prev->next = pl;
-	fi->pending = true;
-	fi->p = pl;
+	file = fid->aux;
+	pend_link = emallocz(sizeof *pend_link);
+	pend_link->fid = fid;
+	pend_link->pending = pending;
+	pend_link->next = &pending->fids;
+	pend_link->prev = pend_link->next->prev;
+	pend_link->next->prev = pend_link;
+	pend_link->prev->next = pend_link;
+	file->pending = true;
+	file->p = pend_link;
+}
+
+static void
+pending_flush(Ixp9Req *req) {
+	IxpFileId *file;
+	IxpRequestLink *req_link;
+
+	file = req->fid->aux;
+	if(file->pending) {
+		req_link = req->aux;
+		if(req_link) {
+			req_link->prev->next = req_link->next;
+			req_link->next->prev = req_link->prev;
+			free(req_link);
+		}
+	}
 }
 
 void
-ixp_pending_flush(Ixp9Req *r) {
-	Ixp9Req *or;
-	IxpFileId *f;
-	IxpRLink *rl;
+ixp_pending_flush(Ixp9Req *req) {
 
-	or = r->oldreq;
-	f = or->fid->aux;
-	if(f->pending) {
-		rl = or->aux;
-		if(rl) {
-			rl->prev->next = rl->next;
-			rl->next->prev = rl->prev;
-			free(rl);
-		}
-	}
+	pending_flush(req->oldreq);
 }
 
 bool
-ixp_pending_clunk(Ixp9Req *r) {
-	IxpPending *p;
-	IxpFileId *f;
-	IxpPLink *pl;
-	IxpRLink *rl;
-	IxpQueue *qu;
+ixp_pending_clunk(Ixp9Req *req) {
+	IxpPending *pending;
+	IxpPendingLink *pend_link;
+	IxpRequestLink *req_link;
+	Ixp9Req *r;
+	IxpFileId *file;
+	IxpQueue *queue;
 	bool more;
 
-	f = r->fid->aux;
-	pl = f->p;
+	file = req->fid->aux;
+	pend_link = file->p;
 
-	p = pl->pending;
-	for(rl=p->req.next; rl != &p->req; rl=rl->next)
-		if(rl->req->fid == pl->fid) {
-			respond(r, "fid in use");
-			return true;
+	pending = pend_link->pending;
+	for(req_link=pending->req.next; req_link != &pending->req;) {
+		r = req_link->req;
+		req_link = req_link->next;
+		if(r->fid == pend_link->fid) {
+			pending_flush(r);
+			respond(r, "interrupted");
 		}
-
-	pl->prev->next = pl->next;
-	pl->next->prev = pl->prev;
-
-	while((qu = pl->queue)) {
-		pl->queue = qu->link;
-		free(qu->dat);
-		free(qu);
 	}
-	more = (pl->pending->fids.next == &pl->pending->fids);
-	free(pl);
-	respond(r, nil);
+
+	pend_link->prev->next = pend_link->next;
+	pend_link->next->prev = pend_link->prev;
+
+	while((queue = pend_link->queue)) {
+		pend_link->queue = queue->link;
+		free(queue->dat);
+		free(queue);
+	}
+	more = (pend_link->pending->fids.next == &pend_link->pending->fids);
+	free(pend_link);
+	respond(req, nil);
 	return more;
 }
 
 bool
-ixp_srv_verifyfile(IxpFileId *f, IxpLookupFn lookup) {
-	IxpFileId *nf;
+ixp_srv_verifyfile(IxpFileId *file, IxpLookupFn lookup) {
+	IxpFileId *tfile;
 	int ret;
 
-	if(!f->next)
+	if(!file->next)
 		return true;
 
 	ret = false;
-	if(ixp_srv_verifyfile(f->next, lookup)) {
-		nf = lookup(f->next, f->tab.name);
-		if(nf) {
-			if(!nf->volatil || nf->p == f->p)
+	if(ixp_srv_verifyfile(file->next, lookup)) {
+		tfile = lookup(file->next, file->tab.name);
+		if(tfile) {
+			if(!tfile->volatil || tfile->p == file->p)
 				ret = true;
-			ixp_srv_freefile(nf);
+			ixp_srv_freefile(tfile);
 		}
 	}
 	return ret;
 }
 
 void
-ixp_srv_readdir(Ixp9Req *r, IxpLookupFn lookup, void (*dostat)(IxpStat*, IxpFileId*)) {
-	IxpMsg m;
-	IxpFileId *f, *tf;
-	IxpStat s;
+ixp_srv_readdir(Ixp9Req *req, IxpLookupFn lookup, void (*dostat)(IxpStat*, IxpFileId*)) {
+	IxpMsg msg;
+	IxpFileId *file, *tfile;
+	IxpStat stat;
 	char *buf;
 	ulong size, n;
 	uvlong offset;
 
-	f = r->fid->aux;
+	file = req->fid->aux;
 
-	size = r->ifcall.io.count;
-	if(size > r->fid->iounit)
-		size = r->fid->iounit;
+	size = req->ifcall.io.count;
+	if(size > req->fid->iounit)
+		size = req->fid->iounit;
 	buf = emallocz(size);
-	m = ixp_message(buf, size, MsgPack);
+	msg = ixp_message(buf, size, MsgPack);
 
-	f = lookup(f, nil);
-	tf = f;
-	/* Note: The first f is ".", so we skip it. */
+	file = lookup(file, nil);
+	tfile = file;
+	/* Note: The first file is ".", so we skip it. */
 	offset = 0;
-	for(f=f->next; f; f=f->next) {
-		dostat(&s, f);
-		n = ixp_sizeof_stat(&s);
-		if(offset >= r->ifcall.io.offset) {
+	for(file=file->next; file; file=file->next) {
+		dostat(&stat, file);
+		n = ixp_sizeof_stat(&stat);
+		if(offset >= req->ifcall.io.offset) {
 			if(size < n)
 				break;
-			ixp_pstat(&m, &s);
+			ixp_pstat(&msg, &stat);
 			size -= n;
 		}
 		offset += n;
 	}
-	while((f = tf)) {
-		tf=tf->next;
-		ixp_srv_freefile(f);
+	while((file = tfile)) {
+		tfile=tfile->next;
+		ixp_srv_freefile(file);
 	}
-	r->ofcall.io.count = m.pos - m.data;
-	r->ofcall.io.data = m.data;
-	respond(r, nil);
+	req->ofcall.io.count = msg.pos - msg.data;
+	req->ofcall.io.data = msg.data;
+	respond(req, nil);
 }
 
 void
-ixp_srv_walkandclone(Ixp9Req *r, IxpLookupFn lookup) {
-	IxpFileId *f, *nf;
+ixp_srv_walkandclone(Ixp9Req *req, IxpLookupFn lookup) {
+	IxpFileId *file, *tfile;
 	int i;
 
-	f = r->fid->aux;
-	ixp_srv_clonefiles(f);
-	for(i=0; i < r->ifcall.twalk.nwname; i++) {
-		if(!strcmp(r->ifcall.twalk.wname[i], "..")) {
-			if(f->next) {
-				nf=f;
-				f=f->next;
-				ixp_srv_freefile(nf);
+	file = req->fid->aux;
+	ixp_srv_clonefiles(file);
+	for(i=0; i < req->ifcall.twalk.nwname; i++) {
+		if(!strcmp(req->ifcall.twalk.wname[i], "..")) {
+			if(file->next) {
+				tfile=file;
+				file=file->next;
+				ixp_srv_freefile(tfile);
 			}
 		}else{
-			nf = lookup(f, r->ifcall.twalk.wname[i]);
-			if(!nf)
+			tfile = lookup(file, req->ifcall.twalk.wname[i]);
+			if(!tfile)
 				break;
-			assert(!nf->next);
-			if(strcmp(r->ifcall.twalk.wname[i], ".")) {
-				nf->next = f;
-				f = nf;
+			assert(!tfile->next);
+			if(strcmp(req->ifcall.twalk.wname[i], ".")) {
+				tfile->next = file;
+				file = tfile;
 			}
 		}
-		r->ofcall.rwalk.wqid[i].type = f->tab.qtype;
-		r->ofcall.rwalk.wqid[i].path = QID(f->tab.type, f->id);
+		req->ofcall.rwalk.wqid[i].type = file->tab.qtype;
+		req->ofcall.rwalk.wqid[i].path = QID(file->tab.type, file->id);
 	}
 	/* There should be a way to do this on freefid() */
-	if(i < r->ifcall.twalk.nwname) {
-		while((nf = f)) {
-			f=f->next;
-			ixp_srv_freefile(nf);
+	if(i < req->ifcall.twalk.nwname) {
+		while((tfile = file)) {
+			file=file->next;
+			ixp_srv_freefile(tfile);
 		}
-		respond(r, Enofile);
+		respond(req, Enofile);
 		return;
 	}
-	/* Remove refs for r->fid if no new fid */
-	if(r->ifcall.hdr.fid == r->ifcall.twalk.newfid) {
-		nf = r->fid->aux;
-		r->fid->aux = f;
-		while((f = nf)) {
-			nf = nf->next;
-			ixp_srv_freefile(f);
+	/* Remove refs for req->fid if no new fid */
+	if(req->ifcall.hdr.fid == req->ifcall.twalk.newfid) {
+		tfile = req->fid->aux;
+		req->fid->aux = file;
+		while((file = tfile)) {
+			tfile = tfile->next;
+			ixp_srv_freefile(file);
 		}
 	}else
-		r->newfid->aux = f;
-	r->ofcall.rwalk.nwqid = i;
-	respond(r, nil);
+		req->newfid->aux = file;
+	req->ofcall.rwalk.nwqid = i;
+	respond(req, nil);
 }
 

@@ -1,30 +1,30 @@
 
 typedef struct IxpDirtab	IxpDirtab;
 typedef struct IxpFileId	IxpFileId;
-typedef struct IxpPLink		IxpPLink;
+typedef struct IxpPendingLink	IxpPendingLink;
 typedef struct IxpPending	IxpPending;
 typedef struct IxpQueue		IxpQueue;
-typedef struct IxpRLink		IxpRLink;
+typedef struct IxpRequestLink	IxpRequestLink;
 
 typedef IxpFileId* (*IxpLookupFn)(IxpFileId*, char*);
 
-struct IxpPLink {
-	IxpPLink*	next;
-	IxpPLink*	prev;
+struct IxpPendingLink {
+	IxpPendingLink*	next;
+	IxpPendingLink*	prev;
 	IxpFid*		fid;
 	IxpQueue*	queue;
 	IxpPending*	pending;
 };
 
-struct IxpRLink {
-	IxpRLink*	next;
-	IxpRLink*	prev;
+struct IxpRequestLink {
+	IxpRequestLink*	next;
+	IxpRequestLink*	prev;
 	Ixp9Req*	req;
 };
 
 struct IxpPending {
-	IxpRLink	req;
-	IxpPLink	fids;
+	IxpRequestLink	req;
+	IxpPendingLink	fids;
 };
 
 struct IxpDirtab {
