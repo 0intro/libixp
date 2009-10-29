@@ -337,6 +337,10 @@ handlereq(Ixp9Req *r) {
 			respond(r, "wstat on DMDIR bit");
 			return;
 		}
+		if(!p9conn->srv->wstat) {
+			respond(r, Enofunc);
+			return;
+		}
 		p9conn->srv->wstat(r);
 		break;
 	/* Still to be implemented: auth */
