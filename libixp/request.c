@@ -437,6 +437,8 @@ respond(Ixp9Req *r, const char *error) {
 		r->ofcall.error.ename = (char*)error;
 	}
 
+	ixp_printfcall(&r->ofcall);
+
 	ixp_maprm(&p9conn->tagmap, r->ifcall.hdr.tag);;
 
 	if(p9conn->conn) {
