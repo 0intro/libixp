@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <sys/select.h>
 
-#define IXP_API 105
+#define IXP_API 116
 
 /* Gunk */
 #if defined(IXP_NEEDAPI) && IXP_API < IXP_NEEDAPI

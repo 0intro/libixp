@@ -75,10 +75,17 @@ ixp_srv_freefile(IxpFileId *f) {
  * Increase the reference count of every IxpFileId linked
  * to 'f'.
  */
-void
+IxpFileId*
 ixp_srv_clonefiles(IxpFileId *f) {
-	for(; f; f=f->next)
+	IxpFileId *r;
+
+	r = emalloc(sizeof *r);
+	memcpy(r, f, sizeof *r);
+	r->tab.name = estrdup(r->tab.name);
+	r->nref = 1;
+	for(f=f->next; f; f=f->next)
 		assert(f->nref++);
+	return r;
 }
 
 void
@@ -404,8 +411,7 @@ ixp_srv_walkandclone(Ixp9Req *req, IxpLookupFn lookup) {
 	IxpFileId *file, *tfile;
 	int i;
 
-	file = req->fid->aux;
-	ixp_srv_clonefiles(file);
+	file = ixp_srv_clonefiles(req->fid->aux);
 	for(i=0; i < req->ifcall.twalk.nwname; i++) {
 		if(!strcmp(req->ifcall.twalk.wname[i], "..")) {
 			if(file->next) {

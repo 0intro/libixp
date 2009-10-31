@@ -55,7 +55,7 @@ void	ixp_pending_flush(Ixp9Req*);
 void	ixp_pending_pushfid(IxpPending*, IxpFid*);
 void	ixp_pending_respond(Ixp9Req*);
 void	ixp_pending_write(IxpPending*, char*, long);
-void	ixp_srv_clonefiles(IxpFileId*);
+IxpFileId*	ixp_srv_clonefiles(IxpFileId*);
 void	ixp_srv_data2cstring(Ixp9Req*);
 void	ixp_srv_freefile(IxpFileId*);
 void	ixp_srv_readbuf(Ixp9Req*, char*, uint);
