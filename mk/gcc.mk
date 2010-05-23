@@ -5,11 +5,10 @@ DEBUGCFLAGS = \
 	-fno-inline \
 	-fno-omit-frame-pointer \
 	-fno-optimize-sibling-calls \
-	-fno-unroll-loops \
-	-DIXPlint
+	-fno-unroll-loops
 CFLAGS += \
 	-std=c99 \
-	-pedantic \
+	-pedantic-errors \
 	-pipe \
 	-fno-strict-aliasing \
 	-Wall \

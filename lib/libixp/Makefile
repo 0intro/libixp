@@ -19,5 +19,5 @@ OBJ =	client    \
 	transport \
 	util
 
-include ${ROOT}/mk/lib.mk
+include $(ROOT)/mk/lib.mk
 

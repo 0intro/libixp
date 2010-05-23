@@ -1,5 +1,7 @@
 VERSION = 0.5
 
+COPYRIGHT = ©2010 Kris Maglione
+
 $(ROOT)/include/ixp.h: $(ROOT)/config.mk
-CFLAGS += '-DVERSION=\"$(VERSION)\"' -D_XOPEN_SOURCE=600
+CFLAGS += '-DVERSION=\"$(VERSION)\"' '-DCOPYRIGHT=\"$(COPYRIGHT)\"'
 

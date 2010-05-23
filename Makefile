@@ -1,10 +1,10 @@
 ROOT=.
-include ${ROOT}/mk/hdr.mk
+include $(ROOT)/mk/hdr.mk
 
 DIRS =	lib	\
 	cmd	\
 	include	\
 	man
 
-include ${ROOT}/mk/dir.mk
+include $(ROOT)/mk/dir.mk
 

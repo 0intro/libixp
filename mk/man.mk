@@ -1,5 +1,7 @@
-install: ${TARG:.1=.install}
-uninstall: ${TARG:.1=.uninstall}
+
+all: $(TARG)
+install: $(TARG:.1=.install)
+uninstall: $(TARG:.1=.uninstall)
 
 printinstall:
 	echo 'Install directories:'
