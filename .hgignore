@@ -1,0 +1,11 @@
+syntax: regexp
+(^|/)\.((.*\.)?sw.|depend|hgignore)$
+(^|/)(tags|mkfile|diff)$
+\.([oa]|out|o_pic|so|pyc|pyo|diff)$
+\.(diff|orig|rej|bak)$
+\.(aux|idx|ilg|ind|log|toc)$
+^(pkg|src)/
+/bak/
+syntax: glob
+config.local.mk
+*.pkg.tar.?z

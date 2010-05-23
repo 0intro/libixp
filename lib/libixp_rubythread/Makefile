@@ -1,10 +1,11 @@
-ROOT= ..
+ROOT= ../..
 include ${ROOT}/mk/hdr.mk
 include ${ROOT}/mk/ixp.mk
 
-TARG =	libixp_pthread
+CFLAGS += ${RUBYINC}
 
-OBJ =	thread_pthread
+TARG =	libixp_rubythread
+OBJ =	thread_ruby
 
 include ${ROOT}/mk/lib.mk
 

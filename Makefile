@@ -1,7 +1,7 @@
 ROOT=.
 include ${ROOT}/mk/hdr.mk
 
-DIRS =	${COMPONENTS}	\
+DIRS =	lib	\
 	cmd	\
 	include	\
 	man
