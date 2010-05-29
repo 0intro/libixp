@@ -153,7 +153,7 @@ ixp_pdata(IxpMsg *msg, char **data, uint len) {
 			memcpy(*data, msg->pos, len);
 		}else
 			memcpy(msg->pos, *data, len);
-	}
+		}
 	msg->pos += len;
 }
 

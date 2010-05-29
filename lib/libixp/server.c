@@ -151,6 +151,9 @@ ixp_serverloop(IxpServer *s) {
 			tvp = &tv;
 		}
 
+		if(!s->running)
+			break;
+
 		prepare_select(s);
 		r = thread->select(s->maxfd + 1, &s->rd, 0, 0, tvp);
 		if(r < 0) {
