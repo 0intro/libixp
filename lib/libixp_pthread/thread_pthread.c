@@ -1,4 +1,4 @@
-/* Written by Kris Maglione <fbsdaemon@gmail.com> */
+/* Written by Kris Maglione <maglione.k at Gmail> */
 /* Public domain */
 #define _XOPEN_SOURCE 600
 #include <errno.h>

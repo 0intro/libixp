@@ -1,4 +1,4 @@
-/* Copyright ©2007-2008 Kris Maglione <fbsdaemon@gmail.com>
+/* Copyright ©2007-2010 Kris Maglione <maglione.k at Gmail>
  * Copyright ©2004-2006 Anselm R. Garbe <garbeam at gmail dot com>
  * See LICENSE file for license details.
  */

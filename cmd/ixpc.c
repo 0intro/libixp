@@ -1,4 +1,4 @@
-/* Copyright ©2007 Kris Maglione <fbsdaemon@gmail.com>
+/* Copyright ©2007-2010 Kris Maglione <maglione.k at Gmail>
  * See LICENSE file for license details.
  */
 #define IXP_NO_P9_
