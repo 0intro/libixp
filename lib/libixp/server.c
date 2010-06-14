@@ -140,9 +140,6 @@ ixp_serverloop(IxpServer *s) {
 	s->running = 1;
 	thread->initmutex(&s->lk);
 	while(s->running) {
-		if(s->preselect)
-			s->preselect(s);
-
 		tvp = nil;
 		timeout = ixp_nexttimer(s);
 		if(timeout > 0) {
@@ -150,6 +147,9 @@ ixp_serverloop(IxpServer *s) {
 			tv.tv_usec = timeout%1000 * 1000;
 			tvp = &tv;
 		}
+
+		if(s->preselect)
+			s->preselect(s);
 
 		if(!s->running)
 			break;
