@@ -101,6 +101,8 @@ libixp Manual
 @{[strftime "%Y %b", localtime]}
 
 \%!includeconf: header.t2t
+\%# There's apparently no other way to do this.
+\%!postproc(man): "^(\.TH.*?) 1 "  "\\1 3 "
 
 EOF
 
