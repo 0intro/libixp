@@ -251,19 +251,20 @@ lookup(const char *address, addrtab *tab) {
  * Function: ixp_announce
  *
  * Params:
- *	address - An address on which to connect or listen,
- *		  specified in the Plan 9 resources
- *		  specification format
- *		  (<protocol>!address[!<port>])
+ *	address: An address on which to connect or listen,
+ *		 specified in the Plan 9 resources
+ *		 specification format
+ *		 (<protocol>!address[!<port>])
  *
  * These functions hide some of the ugliness of Berkely
  * Sockets. ixp_dial connects to the resource at P<address>,
  * while ixp_announce begins listening on P<address>.
  *
  * Returns:
- *	These functions return file descriptors on success,
- * and -1 on failure. ixp_errbuf(3) may be inspected on
- * failure.
+ *	These functions return file descriptors on success, and -1
+ *	on failure. ixp_errbuf(3) may be inspected on failure.
+ * See also:
+ *	socket(2)
  */
 
 int

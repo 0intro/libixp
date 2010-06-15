@@ -1,6 +1,6 @@
 DEBUGCFLAGS = \
 	-g \
-	-O1 \
+	-O0 \
 	-fno-builtin \
 	-fno-inline \
 	-fno-omit-frame-pointer \
@@ -8,7 +8,7 @@ DEBUGCFLAGS = \
 	-fno-unroll-loops
 CFLAGS += \
 	-std=c99 \
-	-pedantic-errors \
+	-pedantic \
 	-pipe \
 	-fno-strict-aliasing \
 	-Wall \

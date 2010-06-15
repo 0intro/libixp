@@ -23,13 +23,13 @@ FILTER = cat
 EXCFLAGS = $(INCLUDES) -D_XOPEN_SOURCE=600
 
 COMPILE_FLAGS = $(EXCFLAGS) $(CFLAGS) $$(pkg-config --cflags $(PACKAGES))
-COMPILE    = $(ROOT)/util/compile "$(CC)" "$(COMPILE_FLAGS)"
-COMPILEPIC = $(ROOT)/util/compile "$(CC)" "$(COMPILE_FLAGS) $(SOCFLAGS)"
+COMPILE    = $(SHELL) $(ROOT)/util/compile "$(CC)" "$(COMPILE_FLAGS)"
+COMPILEPIC = $(SHELL) $(ROOT)/util/compile "$(CC)" "$(COMPILE_FLAGS) $(SOCFLAGS)"
 
-LINK   = $(ROOT)/util/link "$(LD)" "$$(pkg-config --libs $(PACKAGES)) $(LDFLAGS) $(LIBS)"
-LINKSO = $(ROOT)/util/link "$(LD)" "$$(pkg-config --libs $(PACKAGES)) $(SOLDFLAGS) $(LIBS) $(SHARED)"
+LINK   = $(SHELL) $(ROOT)/util/link "$(LD)" "$$(pkg-config --libs $(PACKAGES)) $(LDFLAGS) $(LIBS)"
+LINKSO = $(SHELL) $(ROOT)/util/link "$(LD)" "$$(pkg-config --libs $(PACKAGES)) $(SOLDFLAGS) $(LIBS) $(SHARED)"
 
-CLEANNAME=$(ROOT)/util/cleanname
+CLEANNAME=$(SHELL) $(ROOT)/util/cleanname
 
 SOEXT=so
 TAGFILES=
@@ -56,7 +56,7 @@ MKCFG!=$(MKCFGSH)
 include $(MKCFG)
 
 .SILENT:
-.SUFFIXES: .out .o .o_pic .c .pdf .sh .rc .$(SOEXT) .awk .1 .man1 .depend .install .uninstall .clean
+.SUFFIXES: .out .o .o_pic .c .pdf .sh .rc .$(SOEXT) .awk .1 .3 .man1 .man3 .depend .install .uninstall .clean
 all:
 
 MAKEFILES=.depend
@@ -65,7 +65,7 @@ MAKEFILES=.depend
 	[ -n "$(noisycc)" ] && echo $(MKDEP) $(COMPILE_FLAGS) $< || true
 	eval "$(MKDEP) $(COMPILE_FLAGS)" $< >>.depend
 
-.sh.depend .rc.depend .1.depend .awk.depend:
+.sh.depend .rc.depend .1.depend .3.depend .awk.depend:
 	:
 
 .c.o:
@@ -87,7 +87,7 @@ MAKEFILES=.depend
 	$(FILTER) $< >$@; \
 	chmod 0755 $@
 
-.man1.1:
+.man1.1 .man3.3:
 	echo TXT2TAGS $(BASE)$<
 	[ -n "$(noisycc)" ] && set -x; \
 	txt2tags -o- $< >$@
@@ -106,9 +106,9 @@ INSTALL= _install() { set -e; \
 		 set +x; \
 	 }; _install
 UNINSTALL= _uninstall() { set -e; \
-	           echo UNINSTALL $$($(CLEANNAME) $(BASE)$$2); \
+	           echo UNINSTALL $$($(CLEANNAME) $(BASE)$$1); \
 		   [ -n "$(noisycc)" ] && set -x; \
-		   rm -f $(DESTDIR)$$3/$$(basename $$4); \
+		   rm -f $(DESTDIR)$$2/$$(basename $$3); \
 	   }; _uninstall
 
 .out.install:
@@ -137,7 +137,7 @@ MANSECTIONS=1 2 3 4 5 6 7 8 9
 $(MANSECTIONS:%=.%.install):
 	$(INSTALMAN) $<
 $(MANSECTIONS:%=.%.uninstall):
-	$(UNINSTALL) $<
+	$(UNINSTALLMAN) $<
 
 .out.clean:
 	echo CLEAN $$($(CLEANNAME) $(BASE)$<)

@@ -42,10 +42,10 @@ enum {
  * Function: ixp_werrstr
  *
  * Params:
- *	buf - The buffer to read and/or fill.
- *	n - The size of the buffer.
- *	fmt - A format string with which to write the *	errstr.
- *	... - Arguments to P<fmt>.
+ *	buf:  The buffer to read and/or fill.
+ *	size: The size of the buffer.
+ *	fmt:  A format string with which to write the errstr.
+ *	...:  Arguments to P<fmt>.
  *
  * These functions simulate Plan 9's errstr functionality.
  * They replace errno in libixp. Note that these functions
@@ -55,12 +55,15 @@ enum {
  * thread. F<ixp_rerrstr> fills P<buf> with the data from
  * the current thread's error buffer, while F<ixp_errstr>
  * exchanges P<buf>'s contents with those of the current
- * thread's error buffer. F<ixp_werrstr> is takes a format
- * string from which to construct an errstr.
+ * thread's error buffer. F<ixp_werrstr> formats the given
+ * format string, P<fmt>, via V<ixp_vsmprint> and writes it to
+ * the error buffer.
  *
  * Returns:
  *	F<ixp_errbuf> returns the current thread's error
- * string buffer.
+ *	string buffer.
+ * See also:
+ *	V<ixp_vsmprint>
  */
 char*
 ixp_errbuf() {
@@ -75,18 +78,18 @@ ixp_errbuf() {
 }
 
 void
-errstr(char *buf, int n) {
+errstr(char *buf, int size) {
 	char tmp[IXP_ERRMAX];
 
 	strncpy(tmp, buf, sizeof tmp);
-	rerrstr(buf, n);
+	rerrstr(buf, size);
 	strncpy(thread->errbuf(), tmp, IXP_ERRMAX);
 	errno = EPLAN9;
 }
 
 void
-rerrstr(char *buf, int n) {
-	strncpy(buf, ixp_errbuf(), n);
+rerrstr(char *buf, int size) {
+	strncpy(buf, ixp_errbuf(), size);
 }
 
 void

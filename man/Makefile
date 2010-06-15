@@ -2,6 +2,10 @@ ROOT=..
 include $(ROOT)/mk/hdr.mk
 include $(ROOT)/mk/ixp.mk
 
-TARG =	ixpc.1
+include targets.mk
+MANPAGES += ixpc.1
 
 include $(ROOT)/mk/man.mk
+
+$(TARG): Makefile $(ROOT)/mk/ixp.mk header.t2t
+

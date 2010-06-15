@@ -1,0 +1,123 @@
+#!/usr/bin/env perl
+use warnings;
+use strict;
+use POSIX qw(strftime);
+use Data::Dumper;
+
+sub subst(&$_) {
+    my ($fn, $re, $str) = @_;
+    $str =~ s{$re}{$fn->()}ge;
+    return $str;
+}
+
+sub detab(_) {
+    my ($text) = @_;
+    1 while $text =~ s/^(.*?)\t/$1 . " " x (8 - length($1) % 8)/me;
+    return $text;
+}
+
+my @c = grep /\.c$/, @ARGV;
+my @h = grep /\.h$/, @ARGV;
+
+my %protos;
+open(my $stderr, '>&', \*STDERR);
+open STDERR, '>', '/dev/null';
+
+open my $fd, '-|', 'cproto', '-I./include', @c;
+for(<$fd>) {
+    chomp;
+    s/\b_ixp//g;
+    if(m/(\w+)\(/) {
+        push @{$protos{$1}}, $_;
+    }
+}
+open STDERR, '>&', $stderr;
+
+@ARGV = @h;
+$_ = join "", map detab, <>;
+
+while(m/^typedef\b.*?(\w+);/gm) {
+    push @{$protos{$1}}, $& unless $& =~ m{\Q/* Deprecated */};
+}
+while(m/^(?:enum|struct)\s+(\w+).*?^\}/gsm) {
+    my $proto = \@{$protos{$1}};
+    push @$proto, subst {"$1$2$1..."} qr[(^ +)(\Q/* Private members */\E\n).*(?=\n\})]sm, $&
+        unless $& =~ m{\Q/* Deprecated */};
+}
+
+@ARGV = @c;
+$_ .= join "", map detab, <>;
+
+sub section($$) {
+    my ($sect, $text) = @_;
+    $text =~ s/^\s+|\s+$//g;
+    $text =~ s/[^:`]$/$&\n/;
+    print "= $sect =\n\n$text\n";
+}
+
+print "MANPAGES =";
+while(m{(?<=/\*\*\n)(?:[^*]|\*[^/])+}g) {
+    local $_ = $&;
+    chop;
+
+    my @names;
+    my %section;
+    my $header = '';
+    s/ \* ?//gm;
+
+    s{^(\w+:.*?)\n\n}{
+        $header = $1;
+        $header =~ s{^(?:Function|Type|Variable): (\w+)}{
+            push @names, $1;
+            join("\n", @{$protos{$1} or [$1]}) . "\n"
+        }gem;
+        "";
+    }se;
+
+    unless(@names) {
+        print STDERR $_;
+        next;
+    }
+
+    sub despace {
+        my ($space) = m/^(\s*)/;
+        s/^$space//gm;
+        $_
+    }
+
+    s{^((?:\w.+):\n(?:.|\n)*?)(?:\n\n|\Z)}{
+        %section = (%section, '', map despace, split /\n?^(\w.+):\n/m, $1);
+        "";
+    }gem;
+
+    print " \\\n\t'", (join " ", map {"$_.3"} @names), "'";
+
+    open my $stdout, ">&", STDOUT;
+    open STDOUT, '>', "man/$names[0].man3";
+
+    print <<EOF;
+@{[uc $names[0]]}
+libixp Manual
+@{[strftime "%Y %b", localtime]}
+
+\%!includeconf: header.t2t
+
+EOF
+
+    section 'NAME', join ", ", @names;
+
+    section 'SYNOPSIS', "```\n$header```";
+
+    section 'PARAMETERS', subst {": $2\n" . (' ' x length $1)} qr/^(\s*(.*):)/m, $section{Params} . "\n:"
+        if exists $section{Params};
+
+    section 'DESCRIPTION', $_;
+    section 'RETURN VALUE', $section{Returns} if exists $section{Returns};
+    section 'BUGS', $section{Bugs} if exists $section{Bugs};
+    section 'SEE ALSO', subst {"$1(3)"} qr/\b[FSTV]<(.*?)>/, $section{'See also'}
+        if exists $section{'See also'};
+    open STDOUT, ">&", $stdout
+}
+print "\n";
+
+# vim:se sts=4 sw=4 et tw=0:

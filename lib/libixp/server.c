@@ -1,3 +1,4 @@
+/* Copyright ©2006-2010 Kris Maglione <maglione.k at Gmail>
 /* Copyright ©2004-2006 Anselm R. Garbe <garbeam at gmail dot com>
  * See LICENSE file for license details.
  */
@@ -11,41 +12,40 @@
 
 /**
  * Function: ixp_listen
+ * Type: IxpConn
  *
  * Params:
- *	fs - The file descriptor on which to listen.
- *	aux - A piece of data to store in the connection's
- *	      T<IxpConn> data structure.
- *	read - The function to call when the connection has
+ *	fs:    The file descriptor on which to listen.
+ *	aux:   A piece of data to store in the connection's
+ *	       S<IxpConn> data structure.
+ *	read:  The function to call when the connection has
  *	       data available to read.
- *	close - A cleanup function to call when the
- *	        connection is closed.
+ *	close: A cleanup function to call when the
+ *	       connection is closed.
  *
- * Starts the server P<s> listening on P<fd>. The optional
+ * Starts the server P<srv> listening on P<fd>. The optional
  * callbacks are called as described, with the connections
- * T<IxpConn> data structure as their arguments.
+ * S<IxpConn> data structure as their arguments.
  *
  * Returns:
- *	Returns the connection's new T<IxpConn> data
- * structure.
- *
- * S<IxpConn>
+ *	Returns the connection's new S<IxpConn> data
+ *	structure.
  */
 IxpConn*
-ixp_listen(IxpServer *s, int fd, void *aux,
-		void (*read)(IxpConn *c),
-		void (*close)(IxpConn *c)
+ixp_listen(IxpServer *srv, int fd, void *aux,
+		void (*read)(IxpConn*),
+		void (*close)(IxpConn*)
 		) {
 	IxpConn *c;
 
 	c = emallocz(sizeof *c);
 	c->fd = fd;
 	c->aux = aux;
-	c->srv = s;
+	c->srv = srv;
 	c->read = read;
 	c->close = close;
-	c->next = s->conn;
-	s->conn = c;
+	c->next = srv->conn;
+	srv->conn = c;
 	return c;
 }
 
@@ -58,6 +58,9 @@ ixp_listen(IxpServer *s, int fd, void *aux,
  * function, if it exists. ixp_server_close calls ixp_hangup
  * on all of the connections on which the server is
  * listening.
+ *
+ * See also:
+ *	F<ixp_listen>, S<IxpServer>, S<IxpConn>
  */
 
 void
@@ -116,52 +119,52 @@ handle_conns(IxpServer *s) {
 
 /**
  * Function: ixp_serverloop
+ * Type: IxpServer
  *
  * Enters the main loop of the server. Exits when
- * P<s>->running becomes false, or when select(2) returns an
+ * P<srv>->running becomes false, or when select(2) returns an
  * error other than EINTR.
- *
- * S<IxpServer>
  *
  * Returns:
  *	Returns 0 when the loop exits normally, and 1 when
- * it exits on error. V<errno> or the return value of
- * ixp_errbuf(3) may be inspected.
- *
+ *	it exits on error. V<errno> or the return value of
+ *	F<ixp_errbuf> may be inspected.
+ * See also:
+ *	F<ixp_listen>
  */
 
 int
-ixp_serverloop(IxpServer *s) {
+ixp_serverloop(IxpServer *srv) {
 	timeval *tvp;
 	timeval tv;
 	long timeout;
 	int r;
 
-	s->running = 1;
-	thread->initmutex(&s->lk);
-	while(s->running) {
+	srv->running = 1;
+	thread->initmutex(&srv->lk);
+	while(srv->running) {
 		tvp = nil;
-		timeout = ixp_nexttimer(s);
+		timeout = ixp_nexttimer(srv);
 		if(timeout > 0) {
 			tv.tv_sec = timeout/1000;
 			tv.tv_usec = timeout%1000 * 1000;
 			tvp = &tv;
 		}
 
-		if(s->preselect)
-			s->preselect(s);
+		if(srv->preselect)
+			srv->preselect(srv);
 
-		if(!s->running)
+		if(!srv->running)
 			break;
 
-		prepare_select(s);
-		r = thread->select(s->maxfd + 1, &s->rd, 0, 0, tvp);
+		prepare_select(srv);
+		r = thread->select(srv->maxfd + 1, &srv->rd, 0, 0, tvp);
 		if(r < 0) {
 			if(errno == EINTR)
 				continue;
 			return 1;
 		}
-		handle_conns(s);
+		handle_conns(srv);
 	}
 	return 0;
 }

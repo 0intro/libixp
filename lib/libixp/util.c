@@ -1,4 +1,4 @@
-/* Written by Kris Maglione <fbsdaemon at gmail dot com> */
+/* Written by Kris Maglione <maglione.k at Gmail> */
 /* Public domain */
 #include <errno.h>
 #include <stdarg.h>
@@ -84,9 +84,9 @@ ns_display(void) {
 	if(!rmkdir(path, 0700))
 		;
 	else if(stat(path, &st))
-		ixp_werrstr("Can't stat ns_path '%s': %s", path, ixp_errbuf());
+		ixp_werrstr("Can't stat Namespace path '%s': %s", path, ixp_errbuf());
 	else if(getuid() != st.st_uid)
-		ixp_werrstr("ns_path '%s' exists but is not owned by you", path);
+		ixp_werrstr("Namespace path '%s' exists but is not owned by you", path);
 	else if((st.st_mode & 077) && chmod(path, st.st_mode & ~077))
 		ixp_werrstr("Namespace path '%s' exists, but has wrong permissions: %s", path, ixp_errbuf());
 	else
@@ -106,9 +106,12 @@ ns_display(void) {
  * other permissions.
  *
  * Returns:
- *   A statically allocated string which must not be freed
- * or altered by the caller. The same value is returned
- * upon successive calls.
+ *	A statically allocated string which must not be freed
+ *	or altered by the caller. The same value is returned
+ *	upon successive calls.
+ * Bugs:
+ *	This function is not thread safe until after its first
+ *	call.
  */
 /* Not especially threadsafe. */
 char*

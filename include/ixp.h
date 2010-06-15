@@ -66,7 +66,8 @@ enum {
 };
 
 /* 9P message types */
-enum {	P9_TVersion = 100,
+enum IxpFType {
+	P9_TVersion = 100,
 	P9_RVersion,
 	P9_TAuth = 102,
 	P9_RAuth,
@@ -97,7 +98,8 @@ enum {	P9_TVersion = 100,
 };
 
 /* from libc.h in p9p */
-enum {	P9_OREAD	= 0,	/* open for read */
+enum IxpOMode {
+	P9_OREAD	= 0,	/* open for read */
 	P9_OWRITE	= 1,	/* write */
 	P9_ORDWR	= 2,	/* read and write */
 	P9_OEXEC	= 3,	/* execute, == read but check execute permission */
@@ -111,8 +113,9 @@ enum {	P9_OREAD	= 0,	/* open for read */
 	P9_OAPPEND	= 0x4000	/* or'ed in, append only */
 };
 
-/* bits in Qid.type */
-enum {	P9_QTDIR	= 0x80,	/* type bit for directories */
+/* bits in IxpQid.type */
+enum IxpQType {
+	P9_QTDIR	= 0x80,	/* type bit for directories */
 	P9_QTAPPEND	= 0x40,	/* type bit for append only files */
 	P9_QTEXCL	= 0x20,	/* type bit for exclusive use files */
 	P9_QTMOUNT	= 0x10,	/* type bit for mounted channel */
@@ -122,14 +125,12 @@ enum {	P9_QTDIR	= 0x80,	/* type bit for directories */
 	P9_QTFILE	= 0x00	/* type bits for plain file */
 };
 
-/* bits in Dir.mode */
-enum {
+/* bits in IxpStat.mode */
+enum IxpDMode {
 	P9_DMEXEC	= 0x1,		/* mode bit for execute permission */
 	P9_DMWRITE	= 0x2,		/* mode bit for write permission */
 	P9_DMREAD	= 0x4,		/* mode bit for read permission */
-};
 
-/* Larger than int, can't be enum */
 #define P9_DMDIR	0x80000000	/* mode bit for directories */
 #define P9_DMAPPEND	0x40000000	/* mode bit for append only files */
 #define P9_DMEXCL	0x20000000	/* mode bit for exclusive use files */
@@ -142,6 +143,7 @@ enum {
 #define P9_DMSOCKET	0x00100000	/* mode bit for socket (Unix, 9P2000.u) */
 #define P9_DMSETUID	0x00080000	/* mode bit for setuid (Unix, 9P2000.u) */
 #define P9_DMSETGID	0x00040000	/* mode bit for setgid (Unix, 9P2000.u) */
+};
 
 #ifdef IXP_NO_P9_
 #  define TVersion P9_TVersion
@@ -267,7 +269,7 @@ struct IxpQid {
 	uchar	type;
 	ulong	version;
 	uvlong	path;
-	/* internal use only */
+	/* Private members */
 	uchar	dir_type;
 };
 
@@ -377,8 +379,8 @@ struct IxpFTWStat {
 };
 #if defined(IXP_NEEDAPI) && IXP_NEEDAPI <= 89
 /* from fcall(3) in plan9port */
-typedef struct IxpFcall IxpFcall;
-struct IxpFcall {
+typedef struct IxpFcall IxpFcall; /* Deprecated */
+struct IxpFcall {		  /* Deprecated */
 	uchar type;
 	ushort tag;
 	ulong fid;
@@ -471,7 +473,7 @@ struct IxpConn {
 	void		(*close)(IxpConn *);
 	char		closed;
 
-	/* Implementation details, do not use */
+	/* Private members */
 	IxpConn		*next;
 };
 
@@ -502,7 +504,7 @@ struct IxpClient {
 	uint	msize;
 	uint	lastfid;
 
-	/* Implementation details */
+	/* Private members */
 	uint		nwait;
 	uint		mwait;
 	uint		freetag;
@@ -528,7 +530,8 @@ struct IxpCFid {
 	uint		iounit;
 	uvlong		offset;
 	IxpClient*	client;
-	/* internal use only */
+
+	/* Private members */
 	IxpCFid*	next;
 	IxpMutex	iolock;
 };
@@ -541,7 +544,7 @@ struct IxpFid {
 	signed char	omode;
 	uint		iounit;
 
-	/* Implementation details */
+	/* Private members */
 	Ixp9Conn*	conn;
 	IxpMap*		map;
 };
@@ -555,7 +558,7 @@ struct Ixp9Req {
 	IxpFcall	ofcall;
 	void*		aux;
 
-	/* Implementation details */
+	/* Private members */
 	Ixp9Conn *conn;
 };
 

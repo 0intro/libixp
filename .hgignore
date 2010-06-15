@@ -1,10 +1,10 @@
 syntax: regexp
 (^|/)\.((.*\.)?sw.|depend|hgignore)$
 (^|/)(tags|mkfile|diff)$
-\.([oa]|out|o_pic|so|pyc|pyo|diff)$
+\.([oa]|out|o_pic|so|pyc|pyo|diff|man3)$
 \.(diff|orig|rej|bak)$
 \.(aux|idx|ilg|ind|log|toc)$
-^(pkg|src)/
+^(pkg|src|doc)/
 /bak/
 syntax: glob
 config.local.mk

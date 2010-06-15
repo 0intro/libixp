@@ -149,8 +149,8 @@ threadmain(int argc, char *argv[]) {
 	arg2 *a;
 	char *address;
 
-	USED(argc, argv);
-	address = "unix!/tmp/ns.kris.:0/wmii";
+	USED(argc);
+	USED(argv);
 	address = "tcp!localhost!6663";
 	path = "/n/local/var/log/messages";
 

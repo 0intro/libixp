@@ -89,25 +89,28 @@ fail:
 /**
  * Function: ixp_unmount
  *
- * Unmounts the client P<c> and frees its data structures.
+ * Unmounts the client P<client> and frees its data structures.
+ *
+ * See also:
+ *	F<ixp_mount>
  */
 void
-ixp_unmount(IxpClient *c) {
+ixp_unmount(IxpClient *client) {
 	IxpCFid *f;
 
-	shutdown(c->fd, SHUT_RDWR);
-	close(c->fd);
+	shutdown(client->fd, SHUT_RDWR);
+	close(client->fd);
 
-	muxfree(c);
+	muxfree(client);
 
-	while((f = c->freefid)) {
-		c->freefid = f->next;
+	while((f = client->freefid)) {
+		client->freefid = f->next;
 		thread->mdestroy(&f->iolock);
 		free(f);
 	}
-	free(c->rmsg.data);
-	free(c->wmsg.data);
-	free(c);
+	free(client->rmsg.data);
+	free(client->wmsg.data);
+	free(client);
 }
 
 static void
@@ -119,17 +122,18 @@ allocmsg(IxpClient *c, int n) {
 }
 
 /**
- * Function: ixp_mountfd
  * Function: ixp_mount
+ * Function: ixp_mountfd
  * Function: ixp_nsmount
+ * Type: IxpClient
  *
  * Params:
- *	fd - A file descriptor which is already connected
- *	     to a 9P server.
- *	address - An address (in Plan 9 resource fomat) at
- *	          which to connect to a 9P server.
- *	name - The name of a socket in the process's canonical
- *	       namespace directory.
+ *	fd:      A file descriptor which is already connected
+ *	         to a 9P server.
+ *	address: An address (in Plan 9 resource fomat) at
+ *	         which to connect to a 9P server.
+ *	name:    The name of a socket in the process's canonical
+ *	         namespace directory.
  *
  * Initiate a 9P connection with the server at P<address>,
  * connected to on P<fd>, or under the process's namespace
@@ -137,6 +141,8 @@ allocmsg(IxpClient *c, int n) {
  *
  * Returns:
  *	A pointer to a new 9P client.
+ * See also:
+ *	F<ixp_unmount>
  */
 
 IxpClient*
@@ -293,12 +299,14 @@ clunk(IxpCFid *f) {
  * Function: ixp_remove
  *
  * Params:
- *	path - The path of the file to remove.
+ *	path: The path of the file to remove.
  *
  * Removes a file or directory from the remote server.
  *
  * Returns:
  *	ixp_remove returns 0 on failure, 1 on success.
+ * See also:
+ *	F<ixp_mount>
  */
 
 int
@@ -330,25 +338,30 @@ initfid(IxpCFid *f, Fcall *fcall) {
 }
 
 /**
- * Function: ixp_create
  * Function: ixp_open
+ * Function: ixp_create
+ * Type: IxpCFid
+ * Type: IxpOMode
  *
  * Params:
- *	path - The path of the file to open or create.
- *	perm - The permissions with which to create the new
- *	       file. These will be ANDed with those of the
- *	       parent directory by the server.
- *	mode - The file's open mode.
+ *	path: The path of the file to open or create.
+ *	perm: The permissions with which to create the new
+ *	      file. These will be ANDed with those of the
+ *	      parent directory by the server.
+ *	mode: The file's open mode.
  *
  * ixp_open and ixp_create each open a file at P<path>.
  * P<mode> must include OREAD, OWRITE, or ORDWR, and may
- * include any of the modes specified in 9pmodes(3).
+ * include any of the modes specified in T<IxpOMode>.
  * ixp_create, additionally, creates a file at P<path> if it
  * doesn't already exist.
  *
  * Returns:
  *	A pointer on which to operate on the newly
- * opened file.
+ *      opened file.
+ *
+ * See also:
+ *	F<ixp_mount>, F<ixp_read>, F<ixp_write>, F<ixp_close>
  */
 
 IxpCFid*
@@ -418,6 +431,8 @@ ixp_open(IxpClient *c, const char *path, uchar mode) {
  *
  * Returns:
  *	Returns 1 on success, and zero on failure.
+ * See also:
+ *	F<ixp_mount>, F<ixp_open>
  */
 
 int
@@ -451,18 +466,22 @@ _stat(IxpClient *c, ulong fid) {
 /**
  * Function: ixp_stat
  * Function: ixp_fstat
+ * Type: IxpStat
+ * Type: IxpQid
+ * Type: IxpQType
+ * Type: IxpDMode
  *
  * Params:
- *	path - The path of the file to stat.
- *	f - A CFid of an open file to stat.
+ *	path: The path of the file to stat.
+ *	fid:  An open file descriptor to stat.
  *
- * Stats the file at P<path> or pointed to by P<f>.
+ * Stats the file at P<path> or pointed to by P<fid>.
  *
  * Returns:
- *	Returns a Stat structure, which must be freed by
- * the caller with free(3).
- *
- * S<Stat>
+ *	Returns an IxpStat structure, which must be freed by
+ *	the caller with free(3).
+ * See also:
+ *	F<ixp_mount>, F<ixp_open>
  */
 
 Stat*
@@ -480,8 +499,8 @@ ixp_stat(IxpClient *c, const char *path) {
 }
 
 Stat*
-ixp_fstat(IxpCFid *f) {
-	return _stat(f->client, f->fid);
+ixp_fstat(IxpCFid *fid) {
+	return _stat(fid->client, fid->fid);
 }
 
 static long
@@ -518,40 +537,42 @@ _pread(IxpCFid *f, char *buf, long count, vlong offset) {
  * Function: ixp_pread
  *
  * Params:
- *	buf - A buffer in which to store the read data.
- *	count - The number of bytes to read.
- *	offset - The offset at which to begin reading.
+ *	buf:    A buffer in which to store the read data.
+ *	count:  The number of bytes to read.
+ *	offset: The offset at which to begin reading.
  *
  * ixp_read and ixp_pread each read P<count> bytes of data
- * from the file pointed to by P<f>, into P<buf>. ixp_read
+ * from the file pointed to by P<fid>, into P<buf>. ixp_read
  * begins reading at its stored offset, and increments it by
  * the number of bytes read. ixp_pread reads beginning at
- * P<offset> and does not alter C<f>'s stored offset.
+ * P<offset> and does not alter P<fid>'s stored offset.
  *
  * Returns:
  *	These functions return the number of bytes read on
- * success and -1 on failure.
+ *	success and -1 on failure.
+ * See also:
+ *	F<ixp_mount>, F<ixp_open>, F<ixp_write>
  */
 
 long
-ixp_read(IxpCFid *f, void *buf, long count) {
+ixp_read(IxpCFid *fid, void *buf, long count) {
 	int n;
 
-	thread->lock(&f->iolock);
-	n = _pread(f, buf, count, f->offset);
+	thread->lock(&fid->iolock);
+	n = _pread(fid, buf, count, fid->offset);
 	if(n > 0)
-		f->offset += n;
-	thread->unlock(&f->iolock);
+		fid->offset += n;
+	thread->unlock(&fid->iolock);
 	return n;
 }
 
 long
-ixp_pread(IxpCFid *f, void *buf, long count, vlong offset) {
+ixp_pread(IxpCFid *fid, void *buf, long count, vlong offset) {
 	int n;
 
-	thread->lock(&f->iolock);
-	n = _pread(f, buf, count, offset);
-	thread->unlock(&f->iolock);
+	thread->lock(&fid->iolock);
+	n = _pread(fid, buf, count, offset);
+	thread->unlock(&fid->iolock);
 	return n;
 }
 
@@ -586,41 +607,43 @@ _pwrite(IxpCFid *f, const void *buf, long count, vlong offset) {
  * Function: ixp_pwrite
  *
  * Params:
- *	buf - A buffer holding the contents to store.
- *	count - The number of bytes to store.
- *	offset - The offset at which to write the data.
+ *	buf:    A buffer holding the contents to store.
+ *	count:  The number of bytes to store.
+ *	offset: The offset at which to write the data.
  *
  * ixp_write and ixp_pwrite each write P<count> bytes of
- * data stored in P<buf> to the file pointed to by C<f>.
+ * data stored in P<buf> to the file pointed to by C<fid>.
  * ixp_write writes its data at its stored offset, and
  * increments it by P<count>. ixp_pwrite writes its data a
- * P<offset> and does not alter C<f>'s stored offset.
+ * P<offset> and does not alter C<fid>'s stored offset.
  *
  * Returns:
  *	These functions return the number of bytes actually
- * written. Any value less than P<count> must be considered
- * a failure.
+ *	written. Any value less than P<count> must be considered
+ *	a failure.
+ * See also:
+ *	F<ixp_mount>, F<ixp_open>, F<ixp_read>
  */
 
 long
-ixp_write(IxpCFid *f, const void *buf, long count) {
+ixp_write(IxpCFid *fid, const void *buf, long count) {
 	int n;
 
-	thread->lock(&f->iolock);
-	n = _pwrite(f, buf, count, f->offset);
+	thread->lock(&fid->iolock);
+	n = _pwrite(fid, buf, count, fid->offset);
 	if(n > 0)
-		f->offset += n;
-	thread->unlock(&f->iolock);
+		fid->offset += n;
+	thread->unlock(&fid->iolock);
 	return n;
 }
 
 long
-ixp_pwrite(IxpCFid *f, const void *buf, long count, vlong offset) {
+ixp_pwrite(IxpCFid *fid, const void *buf, long count, vlong offset) {
 	int n;
 
-	thread->lock(&f->iolock);
-	n = _pwrite(f, buf, count, offset);
-	thread->unlock(&f->iolock);
+	thread->lock(&fid->iolock);
+	n = _pwrite(fid, buf, count, offset);
+	thread->unlock(&fid->iolock);
 	return n;
 }
 
@@ -630,45 +653,52 @@ ixp_pwrite(IxpCFid *f, const void *buf, long count, vlong offset) {
  * Variable: ixp_vsmprint
  *
  * Params:
- *	fmt - The string with which to format the data.
- *	ap - A va_list holding the arguments to the format
- *	     string.
- *	... - The arguments to the format string.
+ *      fid:  An open IxpCFid to which to write the result.
+ *	fmt:  The string with which to format the data.
+ *	args: A va_list holding the arguments to the format
+ *	      string.
+ *	...:  The arguments to the format string.
  *
  * These functions act like the standard formatted IO
  * functions. They write the result of the formatting to the
- * file pointed to by C<f>.
+ * file pointed to by C<fid>.
  *
  * V<ixp_vsmprint> may be set to a function which will
- * format its arguments and return a null terminated string
- * allocated with malloc(3).
+ * format its arguments and return a nul-terminated string
+ * allocated by malloc(3). The default formats its arguments as
+ * printf(3). The function must format '%s' as a nul-terminated
+ * string and may not consume any arguments not specified by a
+ * %-prefixed format specifier, but may otherwise behave in any
+ * manner chosen by the user.
  *
  * Returns:
  *	These functions return the number of bytes written.
- * There is currently no way to detect failure.
+ *	There is currently no way to detect failure.
+ * See also:
+ *	F<ixp_mount>, F<ixp_open>, printf(3)
  */
 
 int
-ixp_vprint(IxpCFid *f, const char *fmt, va_list ap) {
+ixp_vprint(IxpCFid *fid, const char *fmt, va_list args) {
 	char *buf;
 	int n;
 
-	buf = ixp_vsmprint(fmt, ap);
+	buf = ixp_vsmprint(fmt, args);
 	if(buf == nil)
 		return -1;
 
-	n = ixp_write(f, buf, strlen(buf));
+	n = ixp_write(fid, buf, strlen(buf));
 	free(buf);
 	return n;
 }
 
 int
-ixp_print(IxpCFid *f, const char *fmt, ...) {
+ixp_print(IxpCFid *fid, const char *fmt, ...) {
 	va_list ap;
 	int n;
 
 	va_start(ap, fmt);
-	n = ixp_vprint(f, fmt, ap);
+	n = ixp_vprint(fid, fmt, ap);
 	va_end(ap);
 
 	return n;

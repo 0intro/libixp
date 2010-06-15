@@ -33,7 +33,13 @@ static IxpFileId*	free_fileid;
 
 /* Utility Functions */
 /**
+ * Function: ixp_srv_getfile
+ * Type: IxpFileId
+ *
  * Obtain an empty, reference counted IxpFileId struct.
+ *
+ * See also:
+ *	F<ixp_srv_clonefiles>, F<ixp_srv_freefile>
  */
 IxpFileId*
 ixp_srv_getfile(void) {
@@ -59,32 +65,42 @@ ixp_srv_getfile(void) {
 }
 
 /**
+ * Function: ixp_srv_freefile
+ *
  * Decrease the reference count of the given IxpFileId,
  * and push it onto the free list when it reaches 0;
+ *
+ * See also:
+ *	F<ixp_srv_getfile>
  */
 void
-ixp_srv_freefile(IxpFileId *f) {
-	if(--f->nref)
+ixp_srv_freefile(IxpFileId *fileid) {
+	if(--fileid->nref)
 		return;
-	free(f->tab.name);
-	f->next = free_fileid;
-	free_fileid = f;
+	free(fileid->tab.name);
+	fileid->next = free_fileid;
+	free_fileid = fileid;
 }
 
 /**
+ * Function: ixp_srv_clonefiles
+ *
  * Increase the reference count of every IxpFileId linked
- * to 'f'.
+ * to P<fileid>.
+ *
+ * See also:
+ *	F<ixp_srv_getfile>
  */
 IxpFileId*
-ixp_srv_clonefiles(IxpFileId *f) {
+ixp_srv_clonefiles(IxpFileId *fileid) {
 	IxpFileId *r;
 
 	r = emalloc(sizeof *r);
-	memcpy(r, f, sizeof *r);
+	memcpy(r, fileid, sizeof *r);
 	r->tab.name = estrdup(r->tab.name);
 	r->nref = 1;
-	for(f=f->next; f; f=f->next)
-		assert(f->nref++);
+	for(fileid=fileid->next; fileid; fileid=fileid->next)
+		assert(fileid->nref++);
 	return r;
 }
 
@@ -134,8 +150,13 @@ ixp_srv_writebuf(Ixp9Req *req, char **buf, uint *len, uint max) {
 }
 
 /**
- * Ensure that the data member of 'r' is null terminated,
+ * Function: ixp_srv_data2cstring
+ *
+ * Ensure that the data member of P<req> is null terminated,
  * removing any new line from its end.
+ *
+ * See also:
+ *	S<Ixp9Req>
  */
 void
 ixp_srv_data2cstring(Ixp9Req *req) {

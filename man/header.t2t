@@ -1,0 +1,13 @@
+%!target: man
+%!encoding: UTF-8
+
+%!preproc: \bPROVISIONAL\b  **PROVISIONAL**
+%!preproc: [FSTV]<(.*?)>    **\1(3)**
+%!preproc: [P]<(.*?)>       //\1//
+
+%!postproc(man): (\[.*?\])       \\fI\1\\fR
+%!postproc(man): \+$             \n.P
+%!postproc(man): (\$[a-zA-Z_]+)  \\fB\1\\fR
+%!postproc(man): (\${[a-zA-Z_]+)(.*?)} \\fB\1\\fR\2\\fB}\\fR
+%!postproc(man): ^\.\.\.$        .RB ...
+

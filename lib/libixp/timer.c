@@ -6,8 +6,9 @@
 #include <sys/time.h>
 #include "ixp_local.h"
 
-/* This really needn't be threadsafe, as it has little use in
- * threaded programs, but it is, nonetheless.
+/* 
+ * This really needn't be threadsafe, as it has little use in
+ * threaded programs, but it nonetheless is.
  */
 
 static long	lastid = 1;
@@ -15,8 +16,7 @@ static long	lastid = 1;
 /**
  * Function: ixp_msec
  *
- * Returns:
- *	Returns the time since the Epoch in milliseconds.
+ * Returns the time since the Epoch in milliseconds.
  * Be aware that this may overflow.
  */
 long
@@ -32,10 +32,10 @@ ixp_msec(void) {
  * Function: ixp_settimer
  *
  * Params:
- *	msec - The timeout in milliseconds.
- *	fn - The function to call after P<msec> milliseconds
- *	     have elapsed.
- *	aux - An arbitrary argument to pass to P<fn> when it
+ *	msec: The timeout in milliseconds.
+ *	fn:   The function to call after P<msec> milliseconds
+ *	      have elapsed.
+ *	aux:  An arbitrary argument to pass to P<fn> when it
  *	      is called.
  * 
  * Initializes a callback-based timer to be triggerred after
@@ -44,9 +44,11 @@ ixp_msec(void) {
  *
  * Returns:
  *	Returns the new timer's unique id number.
+ * See also:
+ *	F<ixp_unsettimer>, F<ixp_serverloop>
  */
 long
-ixp_settimer(IxpServer *s, long msec, void (*fn)(long, void*), void *aux) {
+ixp_settimer(IxpServer *srv, long msec, void (*fn)(long, void*), void *aux) {
 	Timer **tp;
 	Timer *t;
 	long time;
@@ -57,18 +59,18 @@ ixp_settimer(IxpServer *s, long msec, void (*fn)(long, void*), void *aux) {
 	msec += time;
 
 	t = emallocz(sizeof *t);
-	thread->lock(&s->lk);
+	thread->lock(&srv->lk);
 	t->id = lastid++;
 	t->msec = msec;
 	t->fn = fn;
 	t->aux = aux;
 
-	for(tp=&s->timer; *tp; tp=&tp[0]->link)
+	for(tp=&srv->timer; *tp; tp=&tp[0]->link)
 		if(tp[0]->msec < msec)
 			break;
 	t->link = *tp;
 	*tp = t;
-	thread->unlock(&s->lk);
+	thread->unlock(&srv->lk);
 	return t->id;
 }
 
@@ -76,28 +78,30 @@ ixp_settimer(IxpServer *s, long msec, void (*fn)(long, void*), void *aux) {
  * Function: ixp_unsettimer
  *
  * Params:
- *	id - The id number of the timer to void.
+ *	id: The id number of the timer to void.
  *
  * Voids the timer identified by P<id>.
  *
  * Returns:
  *	Returns true if a timer was stopped, false
- * otherwise.
+ *	otherwise.
+ * See also:
+ *	F<ixp_settimer>, F<ixp_serverloop>
  */
 int
-ixp_unsettimer(IxpServer *s, long id) {
+ixp_unsettimer(IxpServer *srv, long id) {
 	Timer **tp;
 	Timer *t;
 
-	thread->lock(&s->lk);
-	for(tp=&s->timer; (t=*tp); tp=&t->link)
+	thread->lock(&srv->lk);
+	for(tp=&srv->timer; (t=*tp); tp=&t->link)
 		if(t->id == id)
 			break;
 	if(t) {
 		*tp = t->link;
 		free(t);
 	}
-	thread->unlock(&s->lk);
+	thread->unlock(&srv->lk);
 	return t != nil;
 }
 
@@ -105,35 +109,37 @@ ixp_unsettimer(IxpServer *s, long id) {
  * Function: ixp_nexttimer
  *
  * Triggers any timers whose timeouts have ellapsed. This is
- * primarilly intended to be called from libixp's select
+ * primarily intended to be called from libixp's select
  * loop.
  *
  * Returns:
  *	Returns the number of milliseconds until the next
- * timer's timeout.
+ *	timer's timeout.
+ * See also:
+ *	F<ixp_settimer>, F<ixp_serverloop>
  */
 long
-ixp_nexttimer(IxpServer *s) {
+ixp_nexttimer(IxpServer *srv) {
 	Timer *t;
 	long time, ret;
 
 	SET(time);
-	thread->lock(&s->lk);
-	while((t = s->timer)) {
+	thread->lock(&srv->lk);
+	while((t = srv->timer)) {
 		time = ixp_msec();
 		if(t->msec > time)
 			break;
-		s->timer = t->link;
+		srv->timer = t->link;
 
-		thread->unlock(&s->lk);
+		thread->unlock(&srv->lk);
 		t->fn(t->id, t->aux);
 		free(t);
-		thread->lock(&s->lk);
+		thread->lock(&srv->lk);
 	}
 	ret = 0;
 	if(t)
 		ret = t->msec - time;
-	thread->unlock(&s->lk);
+	thread->unlock(&srv->lk);
 	return ret;
 }
 
