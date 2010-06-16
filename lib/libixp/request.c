@@ -21,7 +21,7 @@ static void handlereq(Ixp9Req *r);
  * See also:
  *	F<ixp_respond>, F<ixp_serve9conn>
  */
-void (*ixp_printfcall)(Fcall*);
+void (*ixp_printfcall)(IxpFcall*);
 
 static int
 min(int a, int b) {
@@ -118,7 +118,7 @@ destroyfid(Ixp9Conn *p9conn, ulong fid) {
 
 static void
 handlefcall(IxpConn *c) {
-	Fcall fcall = {0};
+	IxpFcall fcall = {0};
 	Ixp9Conn *p9conn;
 	Ixp9Req *req;
 

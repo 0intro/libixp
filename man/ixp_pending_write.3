@@ -10,7 +10,7 @@ ixp_pending_write, ixp_pending_pushfid, ixp_pending_clunk, ixp_pending_flush, ix
   
   void ixp_pending_write(IxpPending *pending, char *dat, long ndat);
   
-  void ixp_pending_pushfid(IxpPending *pending, Fid *fid);
+  void ixp_pending_pushfid(IxpPending *pending, IxpFid *fid);
   
   bool ixp_pending_clunk(Ixp9Req *req);
   

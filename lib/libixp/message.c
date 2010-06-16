@@ -62,6 +62,9 @@ ixp_message(char *data, uint length, uint mode) {
  * These functions free malloc(3) allocated data in the members
  * of the passed structures and set those members to nil. They
  * do not free the structures themselves.
+ *
+ * See also:
+ *	S<IxpFcall>, S<IxpStat>
  */
 void
 ixp_freestat(IxpStat *s) {
@@ -217,7 +220,7 @@ ixp_pfcall(IxpMsg *msg, IxpFcall *fcall) {
  *	F<IxpMsg>, F<ixp_pfcall>
  */
 uint
-ixp_fcall2msg(IxpMsg *msg, Fcall *fcall) {
+ixp_fcall2msg(IxpMsg *msg, IxpFcall *fcall) {
 	uint32_t size;
 
 	msg->end = msg->data + msg->size;
@@ -239,7 +242,7 @@ ixp_fcall2msg(IxpMsg *msg, Fcall *fcall) {
 }
 
 uint
-ixp_msg2fcall(IxpMsg *msg, Fcall *fcall) {
+ixp_msg2fcall(IxpMsg *msg, IxpFcall *fcall) {
 	msg->pos = msg->data + SDWord;
 	msg->mode = MsgUnpack;
 	ixp_pfcall(msg, fcall);

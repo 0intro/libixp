@@ -10,7 +10,7 @@ ixp_srv_walkandclone, ixp_srv_readdir, ixp_srv_verifyfile, IxpLookupFn
   
   void ixp_srv_walkandclone(Ixp9Req *req, IxpLookupFn lookup);
   
-  void ixp_srv_readdir(Ixp9Req *req, IxpLookupFn lookup, void (*dostat)(Stat *, IxpFileId *));
+  void ixp_srv_readdir(Ixp9Req *req, IxpLookupFn lookup, void (*dostat)(IxpStat *, IxpFileId *));
   
   bool ixp_srv_verifyfile(IxpFileId *file, IxpLookupFn lookup);
   

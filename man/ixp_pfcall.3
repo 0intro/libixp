@@ -8,15 +8,15 @@ ixp_pfcall, ixp_pqid, ixp_pqids, ixp_pstat, ixp_sizeof_stat
 .nf
   #include <ixp.h>
   
-  void ixp_pfcall(IxpMsg *msg, Fcall *fcall);
+  void ixp_pfcall(IxpMsg *msg, IxpFcall *fcall);
   
-  void ixp_pqid(IxpMsg *msg, Qid *qid);
+  void ixp_pqid(IxpMsg *msg, IxpQid *qid);
   
-  void ixp_pqids(IxpMsg *msg, uint16_t *num, Qid qid\fI[]\fR, uint max);
+  void ixp_pqids(IxpMsg *msg, uint16_t *num, IxpQid qid\fI[]\fR, uint max);
   
-  void ixp_pstat(IxpMsg *msg, Stat *stat);
+  void ixp_pstat(IxpMsg *msg, IxpStat *stat);
   
-  uint16_t ixp_sizeof_stat(Stat *stat);
+  uint16_t ixp_sizeof_stat(IxpStat *stat);
 .fi
 
 .SH DESCRIPTION

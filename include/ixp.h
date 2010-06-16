@@ -1,5 +1,4 @@
-/* Copyright ©2004-2006 Anselm R. Garbe <garbeam at gmail dot com>
- * Copyright ©2006-2010 Kris Maglione <maglione.k at Gmail>
+/* Copyright ©2006-2010 Kris Maglione <maglione.k at Gmail>
  * See LICENSE file for license details.
  */
 
@@ -209,13 +208,6 @@ enum IxpDMode {
 #  define DMSOCKET P9_DMSOCKET
 #  define DMSETUID P9_DMSETUID
 #  define DMSETGID P9_DMSETGID
-#endif
-
-#ifdef IXP_P9_STRUCTS
-#  define IxpFcall Fcall
-#  define IxpFid Fid
-#  define IxpQid Qid
-#  define IxpStat Stat
 #endif
 
 typedef struct IxpMap IxpMap;
@@ -500,6 +492,13 @@ union IxpFcall {
 	IxpFIO		rread;
 	IxpFIO		io;
 };
+#endif
+
+#ifdef IXP_P9_STRUCTS
+typedef IxpFcall	Fcall;
+typedef IxpFid		Fid;
+typedef IxpQid		Qid;
+typedef IxpStat		Stat;
 #endif
 
 struct IxpConn {

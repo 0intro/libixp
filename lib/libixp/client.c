@@ -63,8 +63,8 @@ putfid(IxpCFid *f) {
 }
 
 static int
-dofcall(IxpClient *c, Fcall *fcall) {
-	Fcall *ret;
+dofcall(IxpClient *c, IxpFcall *fcall) {
+	IxpFcall *ret;
 
 	ret = muxrpc(c, fcall);
 	if(ret == nil)
@@ -148,7 +148,7 @@ allocmsg(IxpClient *c, int n) {
 IxpClient*
 ixp_mountfd(int fd) {
 	IxpClient *c;
-	Fcall fcall;
+	IxpFcall fcall;
 
 	c = emallocz(sizeof *c);
 	c->fd = fd;
@@ -226,7 +226,7 @@ static IxpCFid*
 walk(IxpClient *c, const char *path) {
 	IxpCFid *f;
 	char *p;
-	Fcall fcall;
+	IxpFcall fcall;
 	int n;
 
 	p = estrdup(path);
@@ -281,7 +281,7 @@ walkdir(IxpClient *c, char *path, const char **rest) {
 static int
 clunk(IxpCFid *f) {
 	IxpClient *c;
-	Fcall fcall;
+	IxpFcall fcall;
 	int ret;
 
 	c = f->client;
@@ -311,7 +311,7 @@ clunk(IxpCFid *f) {
 
 int
 ixp_remove(IxpClient *c, const char *path) {
-	Fcall fcall;
+	IxpFcall fcall;
 	IxpCFid *f;
 	int ret;
 
@@ -328,7 +328,7 @@ ixp_remove(IxpClient *c, const char *path) {
 }
 
 static void
-initfid(IxpCFid *f, Fcall *fcall) {
+initfid(IxpCFid *f, IxpFcall *fcall) {
 	f->open = 1;
 	f->offset = 0;
 	f->iounit = fcall->ropen.iounit;
@@ -366,7 +366,7 @@ initfid(IxpCFid *f, Fcall *fcall) {
 
 IxpCFid*
 ixp_create(IxpClient *c, const char *path, uint perm, uchar mode) {
-	Fcall fcall;
+	IxpFcall fcall;
 	IxpCFid *f;
 	char *tpath;;
 
@@ -400,7 +400,7 @@ done:
 
 IxpCFid*
 ixp_open(IxpClient *c, const char *path, uchar mode) {
-	Fcall fcall;
+	IxpFcall fcall;
 	IxpCFid *f;
 
 	f = walk(c, path);
@@ -440,11 +440,11 @@ ixp_close(IxpCFid *f) {
 	return clunk(f);
 }
 
-static Stat*
+static IxpStat*
 _stat(IxpClient *c, ulong fid) {
 	IxpMsg msg;
-	Fcall fcall;
-	Stat *stat;
+	IxpFcall fcall;
+	IxpStat *stat;
 
 	fcall.hdr.type = TStat;
 	fcall.hdr.fid = fid;
@@ -484,9 +484,9 @@ _stat(IxpClient *c, ulong fid) {
  *	F<ixp_mount>, F<ixp_open>
  */
 
-Stat*
+IxpStat*
 ixp_stat(IxpClient *c, const char *path) {
-	Stat *stat;
+	IxpStat *stat;
 	IxpCFid *f;
 
 	f = walk(c, path);
@@ -498,14 +498,14 @@ ixp_stat(IxpClient *c, const char *path) {
 	return stat;
 }
 
-Stat*
+IxpStat*
 ixp_fstat(IxpCFid *fid) {
 	return _stat(fid->client, fid->fid);
 }
 
 static long
 _pread(IxpCFid *f, char *buf, long count, int64_t offset) {
-	Fcall fcall;
+	IxpFcall fcall;
 	int n, len;
 
 	len = 0;
@@ -578,7 +578,7 @@ ixp_pread(IxpCFid *fid, void *buf, long count, int64_t offset) {
 
 static long
 _pwrite(IxpCFid *f, const void *buf, long count, int64_t offset) {
-	Fcall fcall;
+	IxpFcall fcall;
 	int n, len;
 
 	len = 0;

@@ -8,9 +8,9 @@ ixp_stat, ixp_fstat, IxpStat, IxpQid, IxpQType, IxpDMode
 .nf
   #include <ixp.h>
   
-  Stat *ixp_stat(IxpClient *c, const char *path);
+  IxpStat *ixp_stat(IxpClient *c, const char *path);
   
-  Stat *ixp_fstat(IxpCFid *fid);
+  IxpStat *ixp_fstat(IxpCFid *fid);
   
   typedef struct IxpStat IxpStat;
   struct IxpStat {

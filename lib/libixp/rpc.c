@@ -52,7 +52,7 @@ freemuxrpc(IxpRpc *r)
 }
 
 static int
-sendrpc(IxpRpc *r, Fcall *f)
+sendrpc(IxpRpc *r, IxpFcall *f)
 {
 	int ret;
 	IxpClient *mux;
@@ -79,10 +79,10 @@ sendrpc(IxpRpc *r, Fcall *f)
 	return ret;
 }
 
-static Fcall*
+static IxpFcall*
 muxrecv(IxpClient *mux)
 {
-	Fcall *f;
+	IxpFcall *f;
 
 	f = nil;
 	thread->lock(&mux->rlock);
@@ -99,7 +99,7 @@ fail:
 }
 
 static void
-dispatchandqlock(IxpClient *mux, Fcall *f)
+dispatchandqlock(IxpClient *mux, IxpFcall *f)
 {
 	int tag;
 	IxpRpc *r2;
@@ -141,11 +141,11 @@ electmuxer(IxpClient *mux)
 	mux->muxer = nil;
 }
 
-Fcall*
-muxrpc(IxpClient *mux, Fcall *tx)
+IxpFcall*
+muxrpc(IxpClient *mux, IxpFcall *tx)
 {
 	IxpRpc r;
-	Fcall *p;
+	IxpFcall *p;
 
 	initrpc(mux, &r);
 	if(sendrpc(&r, tx) < 0)

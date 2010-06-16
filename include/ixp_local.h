@@ -1,5 +1,4 @@
 #define IXP_NO_P9_
-#define IXP_P9_STRUCTS
 #include <ixp.h>
 #include <stdbool.h>
 
@@ -94,7 +93,7 @@ void*	ixp_maprm(IxpMap*, ulong);
 /* mux.c */
 void	muxfree(IxpClient*);
 void	muxinit(IxpClient*);
-Fcall*	muxrpc(IxpClient*, Fcall*);
+IxpFcall*	muxrpc(IxpClient*, IxpFcall*);
 
 /* timer.c */
 long	ixp_nexttimer(IxpServer*);
