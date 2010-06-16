@@ -4,10 +4,11 @@
  */
 
 #include <stdarg.h>
+#include <stdint.h>
 #include <sys/types.h>
 #include <sys/select.h>
 
-#define IXP_API 116
+#define IXP_API 127
 
 /* Gunk */
 #if defined(IXP_NEEDAPI) && IXP_API < IXP_NEEDAPI
@@ -17,18 +18,29 @@
 #  warning This version of libixp has a newer API than this compilation requires.
 #endif
 
+#if defined(IXP_NEEDAPI) && IXP_NEEDAPI < 127
+# undef	ushort
+# undef	ulong
+# undef	vlong
+# undef	uvlong
+# define	ushort	_ixpushort
+# define	ulong	_ixpulong
+# define	vlong	_ixpvlong
+# define	uvlong	_ixpuvlong
+
+typedef uint16_t	ushort;
+typedef uint32_t	ulong;
+typedef uint64_t	uvlong;
+
+typedef int64_t		vlong;
+#endif
+
 #undef	uchar
-#undef	ushort
 #undef	uint
-#undef	ulong
-#undef	vlong
-#undef	uvlong
-#define	uchar	_ixpuchar
-#define	ushort	_ixpushort
-#define	uint	_ixpuint
-#define	ulong	_ixpulong
-#define	vlong	_ixpvlong
-#define	uvlong	_ixpuvlong
+#define	uchar		_ixpuchar
+#define	uint		_ixpuint
+typedef unsigned char	uchar;
+typedef unsigned int	uint;
 
 #ifdef KENC
 #  define STRUCT(x) struct {x};
@@ -36,23 +48,11 @@
 #elif defined(__GNUC__)
 #  define STRUCT(x) __extension__ struct {x};
 #  define UNION(x) __extension__ union {x};
-#else
-#  define IXP_NEEDAPI 89
-#  define STRUCT(x) x
-#  define UNION(x) x
 #endif
 /* End Gunk */
 
-typedef unsigned char		uchar;
-typedef unsigned short		ushort;
-typedef unsigned int		uint;
-typedef unsigned long		ulong;
-typedef unsigned long long	uvlong;
-
-typedef long long	vlong;
-
 #define IXP_VERSION	"9P2000"
-#define IXP_NOTAG	((ushort)~0)	/* Dummy tag */
+#define IXP_NOTAG	((uint16_t)~0)	/* Dummy tag */
 #define IXP_NOFID	(~0U)
 
 enum {
@@ -244,44 +244,47 @@ enum {
 };
 
 struct IxpMutex {
-	void* aux;
-};
-
-struct IxpRWLock {
-	void* aux;
-};
-
-struct IxpRendez {
-	IxpMutex* mutex;
 	void*	aux;
 };
 
-enum { MsgPack, MsgUnpack, };
+struct IxpRendez {
+	IxpMutex*	mutex;
+	void*	aux;
+};
+
+struct IxpRWLock {
+	void*	aux;
+};
+
+enum IxpMsgMode {
+	MsgPack,
+	MsgUnpack,
+};
 struct IxpMsg {
-	char*	data;
-	char*	pos;
-	char*	end;
-	uint	size;
-	uint	mode;
+	char*	data; /* Begining of buffer. */
+	char*	pos;  /* Current position in buffer. */
+	char*	end;  /* End of message. */ 
+	uint	size; /* Size of buffer. */
+	uint	mode; /* MsgPack or MsgUnpack. */
 };
 
 struct IxpQid {
-	uchar	type;
-	ulong	version;
-	uvlong	path;
+	uint8_t		type;
+	uint32_t	version;
+	uint64_t	path;
 	/* Private members */
-	uchar	dir_type;
+	uint8_t		dir_type;
 };
 
 /* stat structure */
 struct IxpStat {
-	ushort	type;
-	ulong	dev;
-	IxpQid	qid;
-	ulong	mode;
-	ulong	atime;
-	ulong	mtime;
-	uvlong	length;
+	uint16_t	type;
+	uint32_t	dev;
+	IxpQid		qid;
+	uint32_t	mode;
+	uint32_t	atime;
+	uint32_t	mtime;
+	uint64_t	length;
 	char*	name;
 	char*	uid;
 	char*	gid;
@@ -313,122 +316,122 @@ typedef struct IxpFIO		IxpFIO;
 typedef struct IxpFVersion	IxpFVersion;
 
 struct IxpFHdr {
-	uchar type;
-	ushort tag;
-	ulong fid;
+	uint8_t		type;
+	uint16_t	tag;
+	uint32_t	fid;
 };
 struct IxpFVersion {
-	IxpFHdr	hdr;
-	ulong	msize;
-	char*	version;
+	IxpFHdr		hdr;
+	uint32_t	msize;
+	char*		version;
 };
 struct IxpFTFlush {
-	IxpFHdr	hdr;
-	ushort	oldtag;
+	IxpFHdr		hdr;
+	uint16_t	oldtag;
 };
 struct IxpFError {
-	IxpFHdr	hdr;
-	char*	ename;
+	IxpFHdr		hdr;
+	char*		ename;
 };
 struct IxpFROpen {
-	IxpFHdr	hdr;
-	IxpQid	qid; /* +Rattach */
-	ulong	iounit;
+	IxpFHdr		hdr;
+	IxpQid		qid; /* +Rattach */
+	uint32_t	iounit;
 };
 struct IxpFRAuth {
-	IxpFHdr	hdr;
-	IxpQid	aqid;
+	IxpFHdr		hdr;
+	IxpQid		aqid;
 };
 struct IxpFAttach {
-	IxpFHdr	hdr;
-	ulong	afid;
-	char*	uname;
-	char*	aname;
+	IxpFHdr		hdr;
+	uint32_t	afid;
+	char*		uname;
+	char*		aname;
 };
 struct IxpFTCreate {
-	IxpFHdr	hdr;
-	ulong	perm;
-	char*	name;
-	uchar	mode; /* +Topen */
+	IxpFHdr		hdr;
+	uint32_t	perm;
+	char*		name;
+	uint8_t		mode; /* +Topen */
 };
 struct IxpFTWalk {
 	IxpFHdr	hdr;
-	ulong	newfid;
-	ushort	nwname;
-	char*	wname[IXP_MAX_WELEM];
+	uint32_t	newfid;
+	uint16_t	nwname;
+	char*		wname[IXP_MAX_WELEM];
 };
 struct IxpFRWalk {
-	IxpFHdr	hdr;
-	ushort	nwqid;
-	IxpQid	wqid[IXP_MAX_WELEM];
+	IxpFHdr		hdr;
+	uint16_t	nwqid;
+	IxpQid		wqid[IXP_MAX_WELEM];
 };
 struct IxpFIO {
-	IxpFHdr	hdr;
-	uvlong	offset; /* Tread, Twrite */
-	ulong	count; /* Tread, Twrite, Rread */
-	char*	data; /* Twrite, Rread */
+	IxpFHdr		hdr;
+	uint64_t	offset; /* Tread, Twrite */
+	uint32_t	count; /* Tread, Twrite, Rread */
+	char*		data; /* Twrite, Rread */
 };
 struct IxpFRStat {
-	IxpFHdr	hdr;
-	ushort	nstat;
-	uchar*	stat;
+	IxpFHdr		hdr;
+	uint16_t	nstat;
+	uchar*		stat;
 };
 struct IxpFTWStat {
-	IxpFHdr	hdr;
-	IxpStat	stat;
+	IxpFHdr		hdr;
+	IxpStat		stat;
 };
 #if defined(IXP_NEEDAPI) && IXP_NEEDAPI <= 89
 /* from fcall(3) in plan9port */
 typedef struct IxpFcall IxpFcall; /* Deprecated */
 struct IxpFcall {		  /* Deprecated */
-	uchar type;
-	ushort tag;
-	ulong fid;
+	uint8_t type;
+	uint16_t tag;
+	uint32_t fid;
 
 	UNION (
 		STRUCT ( /* Tversion, Rversion */
-			ulong	msize;
+			uint32_t	msize;
 			char	*version;
 		)
 		STRUCT ( /* Tflush */
-			ushort	oldtag;
+			uint16_t	oldtag;
 		)
 		STRUCT ( /* Rerror */
 			char	*ename;
 		)
 		STRUCT ( /* Ropen, Rcreate */
 			IxpQid	qid; /* +Rattach */
-			ulong	iounit;
+			uint32_t	iounit;
 		)
 		STRUCT ( /* Rauth */
 			IxpQid	aqid;
 		)
 		STRUCT ( /* Tauth, Tattach */
-			ulong	afid;
+			uint32_t	afid;
 			char	*uname;
 			char	*aname;
 		)
 		STRUCT ( /* Tcreate */
-			ulong	perm;
+			uint32_t	perm;
 			char	*name;
-			uchar	mode; /* +Topen */
+			uint8_t	mode; /* +Topen */
 		)
 		STRUCT ( /* Twalk */
-			ulong	newfid;
-			ushort	nwname;
+			uint32_t	newfid;
+			uint16_t	nwname;
 			char	*wname[IXP_MAX_WELEM];
 		)
 		STRUCT ( /* Rwalk */
-			ushort	nwqid;
+			uint16_t	nwqid;
 			IxpQid	wqid[IXP_MAX_WELEM];
 		)
 		STRUCT (
-			uvlong	offset; /* Tread, Twrite */
-			ulong	count; /* Tread, Twrite, Rread */
+			uint64_t	offset; /* Tread, Twrite */
+			uint32_t	count; /* Tread, Twrite, Rread */
 			char	*data; /* Twrite, Rread */
 		)
 		STRUCT ( /* Rstat */
-			ushort	nstat;
+			uint16_t	nstat;
 			uchar	*stat;
 		)
 		STRUCT ( /* Twstat */
@@ -437,7 +440,41 @@ struct IxpFcall {		  /* Deprecated */
 	)
 };
 #else
-typedef union IxpFcall		IxpFcall;
+/**
+ * Type: IxpFcall
+ * Type: IxpFType
+ * Type: IxpFAttach
+ * Type: IxpFError
+ * Type: IxpFHdr
+ * Type: IxpFIO
+ * Type: IxpFRAuth
+ * Type: IxpFROpen
+ * Type: IxpFRStat
+ * Type: IxpFRWalk
+ * Type: IxpFTCreate
+ * Type: IxpFTFlush
+ * Type: IxpFTWStat
+ * Type: IxpFTWalk
+ * Type: IxpFVersion
+ *
+ * The IxpFcall structure represents a 9P protocol message. The
+ * P<hdr> element is common to all Fcall types, and may be used to
+ * determine the type and tag of the message. The IxpFcall type is
+ * used heavily in server applications, where it both presents a
+ * request to handler functions and returns a response to the
+ * client.
+ *
+ * Each member of the IxpFcall structure represents a certain
+ * message type, which can be discerned from the P<hdr.type> field.
+ * This value corresponds to one of the IxpFType constants. Types
+ * with significant overlap use the same structures, thus TRead and
+ * RWrite are both represented by IxpFIO and can be accessed via the
+ * P<io> member as well as P<tread> and P<rwrite> respectively.
+ *
+ * See also:
+ *	T<Ixp9Srv>, T<Ixp9Req>
+ */
+typedef union IxpFcall	IxpFcall;
 union IxpFcall {
 	IxpFHdr		hdr;
 	IxpFVersion	version;
@@ -467,11 +504,11 @@ union IxpFcall {
 
 struct IxpConn {
 	IxpServer*	srv;
-	void*		aux;
-	int		fd;
+	void*		aux;	/* Arbitrary pointer, to be used by handlers. */
+	int		fd;	/* The file descriptor of the connection. */
 	void		(*read)(IxpConn *);
 	void		(*close)(IxpConn *);
-	char		closed;
+	char		closed;	/* Non-zero when P<fd> has been closed. */
 
 	/* Private members */
 	IxpConn		*next;
@@ -523,12 +560,12 @@ struct IxpClient {
 };
 
 struct IxpCFid {
-	uint		fid;
+	uint32_t	fid;
 	IxpQid		qid;
-	uchar		mode;
+	uint8_t		mode;
 	uint		open;
 	uint		iounit;
-	uvlong		offset;
+	uint32_t	offset;
 	IxpClient*	client;
 
 	/* Private members */
@@ -536,13 +573,26 @@ struct IxpCFid {
 	IxpMutex	iolock;
 };
 
+/**
+ * Type: IxpFid
+ *
+ * Represents an open file for a 9P connection. The same
+ * structure persists as long as the file remains open, and is
+ * installed in the T<Ixp9Req> structure for any request Fcall
+ * which references it. Handlers may use the P<aux> member to
+ * store any data which must persist for the life of the open
+ * file.
+ *
+ * See also:
+ *	T<Ixp9Req>, T<IxpQid>, T<IxpOMode>
+ */
 struct IxpFid {
-	char*		uid;
-	void*		aux;
-	ulong		fid;
-	IxpQid		qid;
-	signed char	omode;
-	uint		iounit;
+	char*		uid;	/* The uid of the file opener. */
+	void*		aux;    /* Arbitrary pointer, to be used by handlers. */
+	uint32_t		fid;    /* The ID number of the fid. */
+	IxpQid		qid;    /* The filesystem-unique QID of the file. */
+	signed char	omode;  /* The open mode of the file. */
+	uint		iounit; /* The maximum size of any IO request. */
 
 	/* Private members */
 	Ixp9Conn*	conn;
@@ -551,12 +601,12 @@ struct IxpFid {
 
 struct Ixp9Req {
 	Ixp9Srv*	srv;
-	IxpFid*		fid;
-	IxpFid*		newfid;
-	Ixp9Req*	oldreq;
-	IxpFcall	ifcall;
-	IxpFcall	ofcall;
-	void*		aux;
+	IxpFid*		fid;    /* Fid structure corresponding to IxpFHdr.fid */
+	IxpFid*		newfid; /* Corresponds to IxpFTWStat.newfid */
+	Ixp9Req*	oldreq; /* For TFlush requests, the original request. */
+	IxpFcall	ifcall; /* The incoming request fcall. */
+	IxpFcall	ofcall; /* The response fcall, to be filled by handler. */
+	void*		aux;    /* Arbitrary pointer, to be used by handlers. */
 
 	/* Private members */
 	Ixp9Conn *conn;
@@ -564,22 +614,44 @@ struct Ixp9Req {
 
 struct Ixp9Srv {
 	void* aux;
-	void (*attach)(Ixp9Req *r);
-	void (*clunk)(Ixp9Req *r);
-	void (*create)(Ixp9Req *r);
-	void (*flush)(Ixp9Req *r);
-	void (*open)(Ixp9Req *r);
-	void (*read)(Ixp9Req *r);
-	void (*remove)(Ixp9Req *r);
-	void (*stat)(Ixp9Req *r);
-	void (*walk)(Ixp9Req *r);
-	void (*write)(Ixp9Req *r);
-	void (*wstat)(Ixp9Req *r);
-	void (*freefid)(IxpFid *f);
+	void (*attach)(Ixp9Req*);
+	void (*clunk)(Ixp9Req*);
+	void (*create)(Ixp9Req*);
+	void (*flush)(Ixp9Req*);
+	void (*open)(Ixp9Req*);
+	void (*read)(Ixp9Req*);
+	void (*remove)(Ixp9Req*);
+	void (*stat)(Ixp9Req*);
+	void (*walk)(Ixp9Req*);
+	void (*write)(Ixp9Req*);
+	void (*wstat)(Ixp9Req*);
+	void (*freefid)(IxpFid*);
 };
 
+/**
+ * Type: IxpThread
+ * Type: IxpMutex
+ * Type: IxpRWLock
+ * Type: IxpRendez
+ * Variable: ixp_thread
+ *
+ * The IxpThread structure is used to adapt libixp to any of the
+ * myriad threading systems it may be used with. Before any
+ * other of libixp's functions is called, ixp_thread may be set
+ * to a structure filled with implementations of various locking
+ * primitives, along with primitive IO functions which may
+ * perform context switches until data is available.
+ *
+ * The names of the functions should be fairly self-explanitory.
+ * Read/write locks should allow multiple readers and a single
+ * writer of a shared resource, but should not allow new readers
+ * while a writer is waitng for a lock. Mutexes should allow
+ * only one accessor at a time. Rendezvous points are similar to
+ * pthread condition types. P<errbuf> should return a
+ * thread-local buffer or the size IXP_ERRMAX.
+ */
 struct IxpThread {
-	/* RWLock */
+	/* Read/write lock */
 	int	(*initrwlock)(IxpRWLock*);
 	void	(*rlock)(IxpRWLock*);
 	int	(*canrlock)(IxpRWLock*);
@@ -594,23 +666,23 @@ struct IxpThread {
 	int	(*canlock)(IxpMutex*);
 	void	(*unlock)(IxpMutex*);
 	void	(*mdestroy)(IxpMutex*);
-	/* Rendez */
+	/* Rendezvous point */
 	int	(*initrendez)(IxpRendez*);
 	void	(*sleep)(IxpRendez*);
 	int	(*wake)(IxpRendez*);
 	int	(*wakeall)(IxpRendez*);
 	void	(*rdestroy)(IxpRendez*);
 	/* Other */
-	char	*(*errbuf)(void);
+	char*	(*errbuf)(void);
 	ssize_t	(*read)(int, void*, size_t);
 	ssize_t	(*write)(int, const void*, size_t);
 	int	(*select)(int, fd_set*, fd_set*, fd_set*, struct timeval*);
 };
 
-extern IxpThread *ixp_thread;
-extern int (*ixp_vsnprint)(char*, int, const char*, va_list);
-extern char* (*ixp_vsmprint)(const char*, va_list);
-extern void (*ixp_printfcall)(IxpFcall*);
+extern IxpThread*	ixp_thread;
+extern int	(*ixp_vsnprint)(char *buf, int nbuf, const char *fmt, va_list);
+extern char*	(*ixp_vsmprint)(const char *fmt, va_list);
+extern void	(*ixp_printfcall)(IxpFcall*);
 
 /* thread_*.c */
 int ixp_taskinit(void);
@@ -624,15 +696,15 @@ int ixp_pthread_init(void);
 #endif
 
 /* client.c */
-int		ixp_close(IxpCFid*);
-long		ixp_pread(IxpCFid*, void*, long, vlong);
-int		ixp_print(IxpCFid*, const char*, ...);
-long		ixp_pwrite(IxpCFid*, const void*, long, vlong);
-long		ixp_read(IxpCFid*, void*, long);
-int		ixp_remove(IxpClient*, const char*);
-void		ixp_unmount(IxpClient*);
-int		ixp_vprint(IxpCFid*, const char*, va_list);
-long		ixp_write(IxpCFid*, const void*, long);
+int	ixp_close(IxpCFid*);
+long	ixp_pread(IxpCFid*, void*, long, int64_t);
+int	ixp_print(IxpCFid*, const char*, ...);
+long	ixp_pwrite(IxpCFid*, const void*, long, int64_t);
+long	ixp_read(IxpCFid*, void*, long);
+int	ixp_remove(IxpClient*, const char*);
+void	ixp_unmount(IxpClient*);
+int	ixp_vprint(IxpCFid*, const char*, va_list);
+long	ixp_write(IxpCFid*, const void*, long);
 IxpCFid*	ixp_create(IxpClient*, const char*, uint perm, uchar mode);
 IxpStat*	ixp_fstat(IxpCFid*);
 IxpClient*	ixp_mount(const char*);
@@ -642,15 +714,15 @@ IxpCFid*	ixp_open(IxpClient*, const char*, uchar);
 IxpStat*	ixp_stat(IxpClient*, const char*);
 
 /* convert.c */
-void ixp_pu8(IxpMsg*, uchar*);
-void ixp_pu16(IxpMsg*, ushort*);
-void ixp_pu32(IxpMsg*, ulong*);
-void ixp_pu64(IxpMsg*, uvlong*);
+void ixp_pu8(IxpMsg*, uint8_t*);
+void ixp_pu16(IxpMsg*, uint16_t*);
+void ixp_pu32(IxpMsg*, uint32_t*);
+void ixp_pu64(IxpMsg*, uint64_t*);
 void ixp_pdata(IxpMsg*, char**, uint);
 void ixp_pstring(IxpMsg*, char**);
-void ixp_pstrings(IxpMsg*, ushort*, char**);
+void ixp_pstrings(IxpMsg*, uint16_t*, char**, uint);
 void ixp_pqid(IxpMsg*, IxpQid*);
-void ixp_pqids(IxpMsg*, ushort*, IxpQid*);
+void ixp_pqids(IxpMsg*, uint16_t*, IxpQid*, uint);
 void ixp_pstat(IxpMsg*, IxpStat*);
 void ixp_pfcall(IxpMsg*, IxpFcall*);
 
@@ -661,11 +733,16 @@ void	ixp_rerrstr(char*, int);
 void	ixp_werrstr(const char*, ...);
 
 /* request.c */
-void respond(Ixp9Req*, const char *err);
-void serve_9pcon(IxpConn*);
+void ixp_respond(Ixp9Req*, const char *err);
+void ixp_serve9conn(IxpConn*);
+
+#if defined(IXP_NEEDAPI) && IXP_NEEDAPI < 127
+# define respond ixp_respond
+# define serve_9pcon ixp_serve9pconn
+#endif
 
 /* message.c */
-ushort	ixp_sizeof_stat(IxpStat*);
+uint16_t	ixp_sizeof_stat(IxpStat*);
 IxpMsg	ixp_message(char*, uint len, uint mode);
 void	ixp_freestat(IxpStat*);
 void	ixp_freefcall(IxpFcall*);

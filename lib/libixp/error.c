@@ -7,8 +7,8 @@
 #include "ixp_local.h"
 
 static int
-_vsnprint(char *buf, int n, const char *fmt, va_list ap) {
-	return vsnprintf(buf, n, fmt, ap);
+_vsnprint(char *buf, int nbuf, const char *fmt, va_list ap) {
+	return vsnprintf(buf, nbuf, fmt, ap);
 }
 
 static char*
@@ -40,10 +40,11 @@ enum {
  * Function: ixp_errstr
  * Function: ixp_rerrstr
  * Function: ixp_werrstr
+ * Variable: ixp_vsnprint
  *
  * Params:
  *	buf:  The buffer to read and/or fill.
- *	size: The size of the buffer.
+ *	nbuf: The size of the buffer.
  *	fmt:  A format string with which to write the errstr.
  *	...:  Arguments to P<fmt>.
  *
@@ -56,12 +57,16 @@ enum {
  * the current thread's error buffer, while F<ixp_errstr>
  * exchanges P<buf>'s contents with those of the current
  * thread's error buffer. F<ixp_werrstr> formats the given
- * format string, P<fmt>, via V<ixp_vsmprint> and writes it to
+ * format string, P<fmt>, via V<ixp_vsnprint> and writes it to
  * the error buffer.
  *
- * Returns:
- *	F<ixp_errbuf> returns the current thread's error
- *	string buffer.
+ * V<ixp_vsnprint> may be set to a function which will format
+ * its arguments write the result to the P<nbuf> length buffer
+ * V<buf>. The default value is F<vsnprintf>. The function must
+ * format '%s' as a nul-terminated string and may not consume
+ * any arguments not indicated by a %-prefixed format specifier,
+ * but may otherwise behave in any manner chosen by the user.
+ *
  * See also:
  *	V<ixp_vsmprint>
  */
@@ -78,18 +83,18 @@ ixp_errbuf() {
 }
 
 void
-errstr(char *buf, int size) {
+errstr(char *buf, int nbuf) {
 	char tmp[IXP_ERRMAX];
 
 	strncpy(tmp, buf, sizeof tmp);
-	rerrstr(buf, size);
+	rerrstr(buf, nbuf);
 	strncpy(thread->errbuf(), tmp, IXP_ERRMAX);
 	errno = EPLAN9;
 }
 
 void
-rerrstr(char *buf, int size) {
-	strncpy(buf, ixp_errbuf(), size);
+rerrstr(char *buf, int nbuf) {
+	strncpy(buf, ixp_errbuf(), nbuf);
 }
 
 void

@@ -26,7 +26,7 @@ insert(MapEnt **e, ulong val, const char *key) {
 }
 
 static MapEnt**
-map_getp(Map *map, ulong val, bool create, bool *exists) {
+map_getp(IxpMap *map, ulong val, bool create, bool *exists) {
 	MapEnt **e;
 
 	e = &map->bucket[val%map->nhash];
@@ -45,7 +45,7 @@ map_getp(Map *map, ulong val, bool create, bool *exists) {
 }
 
 void
-ixp_mapfree(Map *map, void (*destroy)(void*)) {
+ixp_mapfree(IxpMap *map, void (*destroy)(void*)) {
 	int i;
 	MapEnt *e;
 
@@ -62,7 +62,7 @@ ixp_mapfree(Map *map, void (*destroy)(void*)) {
 }
 
 void
-ixp_mapexec(Map *map, void (*run)(void*, void*), void *context) {
+ixp_mapexec(IxpMap *map, void (*run)(void*, void*), void *context) {
 	int i;
 	MapEnt *e;
 
@@ -74,7 +74,7 @@ ixp_mapexec(Map *map, void (*run)(void*, void*), void *context) {
 }
 
 void
-ixp_mapinit(Map *map, MapEnt **buckets, int nbuckets) {
+ixp_mapinit(IxpMap *map, MapEnt **buckets, int nbuckets) {
 
 	map->bucket = buckets;
 	map->nhash = nbuckets;
@@ -83,7 +83,7 @@ ixp_mapinit(Map *map, MapEnt **buckets, int nbuckets) {
 }
 
 bool
-ixp_mapinsert(Map *map, ulong key, void *val, bool overwrite) {
+ixp_mapinsert(IxpMap *map, ulong key, void *val, bool overwrite) {
 	MapEnt *e;
 	bool existed, res;
 	
@@ -99,7 +99,7 @@ ixp_mapinsert(Map *map, ulong key, void *val, bool overwrite) {
 }
 
 void*
-ixp_mapget(Map *map, ulong val) {
+ixp_mapget(IxpMap *map, ulong val) {
 	MapEnt *e;
 	void *res;
 	
@@ -111,7 +111,7 @@ ixp_mapget(Map *map, ulong val) {
 }
 
 void*
-ixp_maprm(Map *map, ulong val) {
+ixp_maprm(IxpMap *map, ulong val) {
 	MapEnt **e, *te;
 	void *ret;
 	

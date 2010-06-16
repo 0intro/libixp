@@ -6,6 +6,8 @@ ixp_settimer
 
 .SH SYNOPSIS
 .nf
+  #include <ixp.h>
+  
   long ixp_settimer(IxpServer *srv, long msec, void (*fn)(long, void *), void *aux);
 .fi
 

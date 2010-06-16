@@ -6,19 +6,21 @@ ixp_stat, ixp_fstat, IxpStat, IxpQid, IxpQType, IxpDMode
 
 .SH SYNOPSIS
 .nf
+  #include <ixp.h>
+  
   Stat *ixp_stat(IxpClient *c, const char *path);
   
   Stat *ixp_fstat(IxpCFid *fid);
   
   typedef struct IxpStat IxpStat;
   struct IxpStat {
-          ushort  type;
-          ulong   dev;
-          IxpQid  qid;
-          ulong   mode;
-          ulong   atime;
-          ulong   mtime;
-          uvlong  length;
+          uint16_t        type;
+          uint32_t        dev;
+          IxpQid          qid;
+          uint32_t        mode;
+          uint32_t        atime;
+          uint32_t        mtime;
+          uint64_t        length;
           char*   name;
           char*   uid;
           char*   gid;
@@ -27,9 +29,9 @@ ixp_stat, ixp_fstat, IxpStat, IxpQid, IxpQType, IxpDMode
   
   typedef struct IxpQid IxpQid;
   struct IxpQid {
-          uchar   type;
-          ulong   version;
-          uvlong  path;
+          uint8_t         type;
+          uint32_t        version;
+          uint64_t        path;
           /* Private members */
           ...
   }

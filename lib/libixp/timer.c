@@ -51,7 +51,7 @@ long
 ixp_settimer(IxpServer *srv, long msec, void (*fn)(long, void*), void *aux) {
 	Timer **tp;
 	Timer *t;
-	long time;
+	uint32_t time;
 
 	time = ixp_msec();
 	if(time == -1)
@@ -105,7 +105,7 @@ ixp_unsettimer(IxpServer *srv, long id) {
 	return t != nil;
 }
 
-/**
+/*
  * Function: ixp_nexttimer
  *
  * Triggers any timers whose timeouts have ellapsed. This is
@@ -121,7 +121,7 @@ ixp_unsettimer(IxpServer *srv, long id) {
 long
 ixp_nexttimer(IxpServer *srv) {
 	Timer *t;
-	long time, ret;
+	uint32_t time, ret;
 
 	SET(time);
 	thread->lock(&srv->lk);

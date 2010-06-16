@@ -504,7 +504,7 @@ ixp_fstat(IxpCFid *fid) {
 }
 
 static long
-_pread(IxpCFid *f, char *buf, long count, vlong offset) {
+_pread(IxpCFid *f, char *buf, long count, int64_t offset) {
 	Fcall fcall;
 	int n, len;
 
@@ -567,7 +567,7 @@ ixp_read(IxpCFid *fid, void *buf, long count) {
 }
 
 long
-ixp_pread(IxpCFid *fid, void *buf, long count, vlong offset) {
+ixp_pread(IxpCFid *fid, void *buf, long count, int64_t offset) {
 	int n;
 
 	thread->lock(&fid->iolock);
@@ -577,7 +577,7 @@ ixp_pread(IxpCFid *fid, void *buf, long count, vlong offset) {
 }
 
 static long
-_pwrite(IxpCFid *f, const void *buf, long count, vlong offset) {
+_pwrite(IxpCFid *f, const void *buf, long count, int64_t offset) {
 	Fcall fcall;
 	int n, len;
 
@@ -638,7 +638,7 @@ ixp_write(IxpCFid *fid, const void *buf, long count) {
 }
 
 long
-ixp_pwrite(IxpCFid *fid, const void *buf, long count, vlong offset) {
+ixp_pwrite(IxpCFid *fid, const void *buf, long count, int64_t offset) {
 	int n;
 
 	thread->lock(&fid->iolock);
@@ -648,8 +648,8 @@ ixp_pwrite(IxpCFid *fid, const void *buf, long count, vlong offset) {
 }
 
 /**
- * Function: ixp_vprint
  * Function: ixp_print
+ * Function: ixp_vprint
  * Variable: ixp_vsmprint
  *
  * Params:
@@ -666,10 +666,7 @@ ixp_pwrite(IxpCFid *fid, const void *buf, long count, vlong offset) {
  * V<ixp_vsmprint> may be set to a function which will
  * format its arguments and return a nul-terminated string
  * allocated by malloc(3). The default formats its arguments as
- * printf(3). The function must format '%s' as a nul-terminated
- * string and may not consume any arguments not specified by a
- * %-prefixed format specifier, but may otherwise behave in any
- * manner chosen by the user.
+ * printf(3).
  *
  * Returns:
  *	These functions return the number of bytes written.

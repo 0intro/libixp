@@ -20,10 +20,11 @@ my @c = grep /\.c$/, @ARGV;
 my @h = grep /\.h$/, @ARGV;
 
 my %protos;
+my %headers;
 open(my $stderr, '>&', \*STDERR);
 open STDERR, '>', '/dev/null';
 
-open my $fd, '-|', 'cproto', '-I./include', @c;
+open my $fd, '-|', 'cproto', '-DCPROTO', '-I./include', @c, '/dev/null';
 for(<$fd>) {
     chomp;
     s/\b_ixp//g;
@@ -33,20 +34,41 @@ for(<$fd>) {
 }
 open STDERR, '>&', $stderr;
 
-@ARGV = @h;
-$_ = join "", map detab, <>;
+my @txt;
+@ARGV = (@h, '/dev/null');
+for my $f(@h) {
+    open my $fd, '<', $f;
+    $_ = join "", map detab, <$fd>;
+    push @txt, $_;
 
-while(m/^typedef\b.*?(\w+);/gm) {
-    push @{$protos{$1}}, $& unless $& =~ m{\Q/* Deprecated */};
-}
-while(m/^(?:enum|struct)\s+(\w+).*?^\}/gsm) {
-    my $proto = \@{$protos{$1}};
-    push @$proto, subst {"$1$2$1..."} qr[(^ +)(\Q/* Private members */\E\n).*(?=\n\})]sm, $&
-        unless $& =~ m{\Q/* Deprecated */};
+    $f =~ s|^(\./)?include/||;
+
+    my $junk = qr/(?:\[.*\]|\)\(.*\))?/;
+    while(m/^extern\s+(.*\b(\w+)$junk;)$/gm) {
+        $headers{$2} = $f;
+        push @{$protos{$2}}, $1;
+    }
+    while(m/^(?!extern)[a-z][^(]+\b(\w+)\(/gmi) {
+        my $id = $1;
+        $headers{$id} = $f unless $& =~ m{^\s*(?:#|//|/\*|\*)};
+    }
+    while(m/^typedef\b.*?\b(\w+)$junk;/gm) {
+        $headers{$1} = $f;
+        push @{$protos{$1}}, $& unless $& =~ m{\Q/* Deprecated */};
+    }
+    while(m/^(?:enum|struct|union)\s+(\w+).*?^\}/gsm) {
+        $headers{$1} = $f;
+        my $proto = \@{$protos{$1}};
+        push @$proto, subst {"$1$2$1..."} qr[(^ +)(\Q/* Private members */\E\n).*(?=\n\})]sm, $&
+            unless $& =~ m{\Q/* Deprecated */};
+    }
 }
 
-@ARGV = @c;
-$_ .= join "", map detab, <>;
+# print Data::Dumper->Dump([\%protos], ['%protos']);
+# print Data::Dumper->Dump([\%headers], ['%headers']);
+
+@ARGV = (@c, '/dev/null');
+$_ = join "", @txt, map detab, <>;
 
 sub section($$) {
     my ($sect, $text) = @_;
@@ -78,6 +100,10 @@ while(m{(?<=/\*\*\n)(?:[^*]|\*[^/])+}g) {
         print STDERR $_;
         next;
     }
+
+    my %hdrs = map {($headers{$_}, "")} @names;
+    my $includes = join "", map {"#include <$_>\n"} sort keys %hdrs;
+    $header = "$includes\n$header" if $includes;
 
     sub despace {
         my ($space) = m/^(\s*)/;

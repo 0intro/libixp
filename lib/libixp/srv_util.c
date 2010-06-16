@@ -1,4 +1,4 @@
-/* Copyright ©2006-2010 Kris Maglione <fbsdaemon at gmail dot com>
+/* Copyright ©2006-2010 Kris Maglione <maglione.k at Gmail>
  * See LICENSE file for license details.
  */
 #include <assert.h>
@@ -24,14 +24,10 @@ struct IxpQueue {
 	long		len;
 };
 
-/* Macros */
-#define QID(t, i) (((vlong)((t)&0xFF)<<32)|((i)&0xFFFFFFFF))
+#define QID(t, i) (((int64_t)((t)&0xFF)<<32)|((i)&0xFFFFFFFF))
 
-/* Global Vars */
-/***************/
 static IxpFileId*	free_fileid;
 
-/* Utility Functions */
 /**
  * Function: ixp_srv_getfile
  * Type: IxpFileId
@@ -103,6 +99,28 @@ ixp_srv_clonefiles(IxpFileId *fileid) {
 		assert(fileid->nref++);
 	return r;
 }
+
+/**
+ * Function: ixp_srv_readbuf
+ * Function: ixp_srv_writebuf
+ *
+ * Utility functions for handling TRead and TWrite requests for
+ * files backed by in-memory buffers. For both functions, P<buf>
+ * points to a buffer and P<len> specifies the length of the
+ * buffer. In the case of ixp_srv_writebuf, these values add a
+ * level of pointer indirection, and updates the values if they
+ * change.
+ *
+ * If P<max> has a value other than 0, ixp_srv_writebuf will
+ * truncate any writes to that point in the buffer. Otherwise,
+ * P<*buf> is assumed to be malloc(3) allocated, and is
+ * reallocated to fit the new data as necessary. The buffer is
+ * is always left nul-terminated.
+ *
+ * Bugs:
+ *	ixp_srv_writebuf always truncates its buffer to the end
+ *	of the most recent write.
+ */
 
 void
 ixp_srv_readbuf(Ixp9Req *req, char *buf, uint len) {
@@ -176,6 +194,18 @@ ixp_srv_data2cstring(Ixp9Req *req) {
 	req->ifcall.io.data = p;
 }
 
+/**
+ * Function: ixp_srv_writectl
+ *
+ * This utility function is meant to simplify the writing of
+ * pseudo files to which single-lined commands are written.
+ * In order to use this function, the P<aux> member of
+ * P<req>->fid must be nul or an S<IxpFileId>.  Each line of the
+ * written data is stripped of its trailing newline,
+ * nul-terminated, and stored in an S<IxpMsg>. For each line
+ * thus prepared, P<fn> is called with the IxpMsg pointer and
+ * the the P<p> member of the IxpFileId.
+ */
 char*
 ixp_srv_writectl(Ixp9Req *req, char* (*fn)(void*, IxpMsg*)) {
 	char *err, *s, *p, c;
@@ -207,6 +237,41 @@ ixp_srv_writectl(Ixp9Req *req, char* (*fn)(void*, IxpMsg*)) {
 	return err;
 }
 
+/**
+ * Function: ixp_pending_write
+ * Function: ixp_pending_pushfid
+ * Function: ixp_pending_clunk
+ * Function: ixp_pending_flush
+ * Function: ixp_pending_respond
+ * Type: IxpPending
+ *
+ * These functions aid in writing virtual files used for
+ * broadcasting events or writing data when it becomes
+ * available. When a file to be used with these functions is
+ * opened, ixp_pending_pushfid should be called with its
+ * S<IxpFid> as an argument. This sets the IxpFid's P<pending>
+ * member to true.  Thereafter, for each file with its
+ * P<pending> member set, ixp_pending_respond should be called
+ * for each TRead request, ixp_pending_clunk for each TClunk
+ * request, and ixp_pending_flush for each TFlush request.
+ *
+ * ixp_pending_write queues the data in P<dat> of length P<ndat>
+ * to be written to each currently pending fid in P<pending>. If
+ * there is a read request pending for a given fid, the data is
+ * written immediately. Otherwise, it is written the next time
+ * ixp_pending_respond is called. Likewise, if there is data
+ * queued when ixp_pending_respond is called, it is written
+ * immediately, otherwise the request is queued.
+ *
+ * The IxpPending data structure is opaque and should be
+ * initialized zeroed before using these functions for the first
+ * time.
+ *
+ * Returns:
+ *	ixp_pending_clunk returns true if P<pending> has any
+ *	more pending IxpFids.
+ */
+
 void
 ixp_pending_respond(Ixp9Req *req) {
 	IxpFileId *file;
@@ -228,7 +293,7 @@ ixp_pending_respond(Ixp9Req *req) {
 			req_link->prev->next = req_link->next;
 			free(req_link);
 		}
-		respond(req, nil);
+		ixp_respond(req, nil);
 		free(queue);
 	}else {
 		req_link = emallocz(sizeof *req_link);
@@ -242,13 +307,13 @@ ixp_pending_respond(Ixp9Req *req) {
 }
 
 void
-ixp_pending_write(IxpPending *pending, char *dat, long n) {
+ixp_pending_write(IxpPending *pending, char *dat, long ndat) {
 	IxpRequestLink req_link;
 	IxpQueue **qp, *queue;
 	IxpPendingLink *pp;
 	IxpRequestLink *rp;
 
-	if(n == 0)
+	if(ndat == 0)
 		return;
 
 	if(pending->req.next == nil) {
@@ -262,9 +327,9 @@ ixp_pending_write(IxpPending *pending, char *dat, long n) {
 		for(qp=&pp->queue; *qp; qp=&qp[0]->link)
 			;
 		queue = emallocz(sizeof *queue);
-		queue->dat = emalloc(n);
-		memcpy(queue->dat, dat, n);
-		queue->len = n;
+		queue->dat = emalloc(ndat);
+		memcpy(queue->dat, dat, ndat);
+		queue->len = ndat;
 		*qp = queue;
 	}
 
@@ -348,7 +413,7 @@ ixp_pending_clunk(Ixp9Req *req) {
 		req_link = req_link->next;
 		if(r->fid == pend_link->fid) {
 			pending_flush(r);
-			respond(r, "interrupted");
+			ixp_respond(r, "interrupted");
 		}
 	}
 
@@ -362,10 +427,45 @@ ixp_pending_clunk(Ixp9Req *req) {
 	}
 	more = (pend_link->pending->fids.next == &pend_link->pending->fids);
 	free(pend_link);
-	respond(req, nil);
+	ixp_respond(req, nil);
 	return more;
 }
 
+/**
+ * Function: ixp_srv_walkandclone
+ * Function: ixp_srv_readdir
+ * Function: ixp_srv_verifyfile
+ * Type: IxpLookupFn
+ *
+ * These convenience functions simplify the writing of basic and
+ * static file servers. They use a generic file lookup function
+ * to simplify the process of walking, cloning, and returning
+ * directory listings. Given the S<IxpFileId> of a directory and a
+ * filename name should return a new IxpFileId (allocated via
+ * F<ixp_srv_getfile>) for the matching directory entry, or null
+ * if there is no match. If the passed name is null, P<lookup>
+ * should return a linked list of IxpFileIds, one for each child
+ * directory entry.
+ *
+ * ixp_srv_walkandclone handles the moderately complex process
+ * of walking from a directory entry and cloning fids, and calls
+ * F<ixp_respond>. It should be called in response to a TWalk
+ * request.
+ *
+ * ixp_srv_readdir should be called to handle read requests on
+ * directories. It prepares a stat for each child of the
+ * directory, taking into account the requested offset, and
+ * calls F<ixp_respond>. The P<dostat> parameter must be a
+ * function which fills the passed S<IxpStat> pointer based on
+ * the contents of the passed IxpFileId.
+ *
+ * ixp_srv_verifyfile returns whether a file still exists in the
+ * filesystem, and should be used by filesystems that invalidate
+ * files once they have been deleted.
+ *
+ * See also:
+ *	S<IxpFileId>, S<ixp_getfile>, S<ixp_freefile>
+ */
 bool
 ixp_srv_verifyfile(IxpFileId *file, IxpLookupFn lookup) {
 	IxpFileId *tfile;
@@ -393,7 +493,7 @@ ixp_srv_readdir(Ixp9Req *req, IxpLookupFn lookup, void (*dostat)(IxpStat*, IxpFi
 	IxpStat stat;
 	char *buf;
 	ulong size, n;
-	uvlong offset;
+	uint64_t offset;
 
 	file = req->fid->aux;
 
@@ -424,7 +524,7 @@ ixp_srv_readdir(Ixp9Req *req, IxpLookupFn lookup, void (*dostat)(IxpStat*, IxpFi
 	}
 	req->ofcall.io.count = msg.pos - msg.data;
 	req->ofcall.io.data = msg.data;
-	respond(req, nil);
+	ixp_respond(req, nil);
 }
 
 void
@@ -436,8 +536,8 @@ ixp_srv_walkandclone(Ixp9Req *req, IxpLookupFn lookup) {
 	for(i=0; i < req->ifcall.twalk.nwname; i++) {
 		if(!strcmp(req->ifcall.twalk.wname[i], "..")) {
 			if(file->next) {
-				tfile=file;
-				file=file->next;
+				tfile = file;
+				file = file->next;
 				ixp_srv_freefile(tfile);
 			}
 		}else{
@@ -459,7 +559,7 @@ ixp_srv_walkandclone(Ixp9Req *req, IxpLookupFn lookup) {
 			file=file->next;
 			ixp_srv_freefile(tfile);
 		}
-		respond(req, Enofile);
+		ixp_respond(req, Enofile);
 		return;
 	}
 	/* Remove refs for req->fid if no new fid */
@@ -473,6 +573,6 @@ ixp_srv_walkandclone(Ixp9Req *req, IxpLookupFn lookup) {
 	}else
 		req->newfid->aux = file;
 	req->ofcall.rwalk.nwqid = i;
-	respond(req, nil);
+	ixp_respond(req, nil);
 }
 

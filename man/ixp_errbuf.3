@@ -2,17 +2,21 @@
 
 .SH NAME
 .P
-ixp_errbuf, ixp_errstr, ixp_rerrstr, ixp_werrstr
+ixp_errbuf, ixp_errstr, ixp_rerrstr, ixp_werrstr, ixp_vsnprint
 
 .SH SYNOPSIS
 .nf
+  #include <ixp.h>
+  
   char *ixp_errbuf(void);
   
-  void ixp_errstr(char *buf, int size);
+  void ixp_errstr(char *buf, int nbuf);
   
-  void ixp_rerrstr(char *buf, int size);
+  void ixp_rerrstr(char *buf, int nbuf);
   
   void ixp_werrstr(const char *fmt, ...);
+  
+  int      (*ixp_vsnprint)(char *buf, int nbuf, const char *fmt, va_list);
 .fi
 
 .SH PARAMETERS
@@ -20,7 +24,7 @@ ixp_errbuf, ixp_errstr, ixp_rerrstr, ixp_werrstr
 buf
 The buffer to read and/or fill.
 .TP
-size
+nbuf
 The size of the buffer.
 .TP
 fmt
@@ -41,13 +45,16 @@ thread. \fBixp_rerrstr(3)\fR fills \fIbuf\fR with the data from
 the current thread's error buffer, while \fBixp_errstr(3)\fR
 exchanges \fIbuf\fR's contents with those of the current
 thread's error buffer. \fBixp_werrstr(3)\fR formats the given
-format string, \fIfmt\fR, via \fBixp_vsmprint(3)\fR and writes it to
+format string, \fIfmt\fR, via \fBixp_vsnprint(3)\fR and writes it to
 the error buffer.
 
-.SH RETURN VALUE
 .P
-\fBixp_errbuf(3)\fR returns the current thread's error
-string buffer.
+\fBixp_vsnprint(3)\fR may be set to a function which will format
+its arguments write the result to the \fInbuf\fR length buffer
+\fBbuf(3)\fR. The default value is \fBvsnprintf(3)\fR. The function must
+format '%s' as a nul\-terminated string and may not consume
+any arguments not indicated by a %\-prefixed format specifier,
+but may otherwise behave in any manner chosen by the user.
 
 .SH SEE ALSO
 .P

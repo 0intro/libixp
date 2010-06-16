@@ -17,19 +17,18 @@
  * Params:
  *	fs:    The file descriptor on which to listen.
  *	aux:   A piece of data to store in the connection's
- *	       S<IxpConn> data structure.
- *	read:  The function to call when the connection has
+ *	       P<aux> member of the IxpConn data structure.
+ *	read:  The function called when the connection has
  *	       data available to read.
- *	close: A cleanup function to call when the
+ *	close: A cleanup function called when the
  *	       connection is closed.
  *
  * Starts the server P<srv> listening on P<fd>. The optional
- * callbacks are called as described, with the connections
- * S<IxpConn> data structure as their arguments.
+ * P<read> and P<close> callbacks are called with the IxpConn
+ * structure for the connection as their sole argument.
  *
  * Returns:
- *	Returns the connection's new S<IxpConn> data
- *	structure.
+ *	Returns the connection's new IxpConn data structure.
  */
 IxpConn*
 ixp_listen(IxpServer *srv, int fd, void *aux,

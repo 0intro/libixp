@@ -9,6 +9,7 @@ typedef struct IxpRequestLink	IxpRequestLink;
 typedef IxpFileId* (*IxpLookupFn)(IxpFileId*, char*);
 
 struct IxpPendingLink {
+	/* Private members */
 	IxpPendingLink*	next;
 	IxpPendingLink*	prev;
 	IxpFid*		fid;
@@ -17,12 +18,14 @@ struct IxpPendingLink {
 };
 
 struct IxpRequestLink {
+	/* Private members */
 	IxpRequestLink*	next;
 	IxpRequestLink*	prev;
 	Ixp9Req*	req;
 };
 
 struct IxpPending {
+	/* Private members */
 	IxpRequestLink	req;
 	IxpPendingLink	fids;
 };
@@ -42,7 +45,7 @@ struct IxpFileId {
 	uint		id;
 	uint		index;
 	IxpDirtab	tab;
-	ushort		nref;
+	uint		nref;
 	uchar		volatil;
 };
 

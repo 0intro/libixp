@@ -6,6 +6,8 @@ ixp_srv_getfile, IxpFileId
 
 .SH SYNOPSIS
 .nf
+  #include <ixp_srvutil.h>
+  
   IxpFileId *ixp_srv_getfile(void);
   
   typedef struct IxpFileId        IxpFileId;
@@ -16,7 +18,7 @@ ixp_srv_getfile, IxpFileId
           uint            id;
           uint            index;
           IxpDirtab       tab;
-          ushort          nref;
+          uint            nref;
           uchar           volatil;
   }
 .fi

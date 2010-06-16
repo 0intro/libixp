@@ -1,0 +1,186 @@
+.TH "IXPFCALL" 3 "2010 Jun" "libixp Manual"
+
+.SH NAME
+.P
+IxpFcall, IxpFType, IxpFAttach, IxpFError, IxpFHdr, IxpFIO, IxpFRAuth, IxpFROpen, IxpFRStat, IxpFRWalk, IxpFTCreate, IxpFTFlush, IxpFTWStat, IxpFTWalk, IxpFVersion
+
+.SH SYNOPSIS
+.nf
+  #include <ixp.h>
+  
+  typedef struct IxpFcall IxpFcall;
+  typedef union IxpFcall  IxpFcall;
+  union IxpFcall {
+          IxpFHdr         hdr;
+          IxpFVersion     version;
+          IxpFVersion     tversion;
+          IxpFVersion     rversion;
+          IxpFTFlush      tflush;
+          IxpFROpen       ropen;
+          IxpFROpen       rcreate;
+          IxpFROpen       rattach;
+          IxpFError       error;
+          IxpFRAuth       rauth;
+          IxpFAttach      tattach;
+          IxpFAttach      tauth;
+          IxpFTCreate     tcreate;
+          IxpFTCreate     topen;
+          IxpFTWalk       twalk;
+          IxpFRWalk       rwalk;
+          IxpFTWStat      twstat;
+          IxpFRStat       rstat;
+          IxpFIO          twrite;
+          IxpFIO          rwrite;
+          IxpFIO          tread;
+          IxpFIO          rread;
+          IxpFIO          io;
+  }
+  
+  enum IxpFType {
+          P9_TVersion = 100,
+          P9_RVersion,
+          P9_TAuth = 102,
+          P9_RAuth,
+          P9_TAttach = 104,
+          P9_RAttach,
+          P9_TError = 106, /* illegal */
+          P9_RError,
+          P9_TFlush = 108,
+          P9_RFlush,
+          P9_TWalk = 110,
+          P9_RWalk,
+          P9_TOpen = 112,
+          P9_ROpen,
+          P9_TCreate = 114,
+          P9_RCreate,
+          P9_TRead = 116,
+          P9_RRead,
+          P9_TWrite = 118,
+          P9_RWrite,
+          P9_TClunk = 120,
+          P9_RClunk,
+          P9_TRemove = 122,
+          P9_RRemove,
+          P9_TStat = 124,
+          P9_RStat,
+          P9_TWStat = 126,
+          P9_RWStat,
+  }
+  
+  typedef struct IxpFAttach       IxpFAttach;
+  struct IxpFAttach {
+          IxpFHdr         hdr;
+          uint32_t        afid;
+          char*           uname;
+          char*           aname;
+  }
+  
+  typedef struct IxpFError        IxpFError;
+  struct IxpFError {
+          IxpFHdr         hdr;
+          char*           ename;
+  }
+  
+  typedef struct IxpFHdr          IxpFHdr;
+  struct IxpFHdr {
+          uint8_t         type;
+          uint16_t        tag;
+          uint32_t        fid;
+  }
+  
+  typedef struct IxpFIO           IxpFIO;
+  struct IxpFIO {
+          IxpFHdr         hdr;
+          uint64_t        offset; /* Tread, Twrite */
+          uint32_t        count; /* Tread, Twrite, Rread */
+          char*           data; /* Twrite, Rread */
+  }
+  
+  typedef struct IxpFRAuth        IxpFRAuth;
+  struct IxpFRAuth {
+          IxpFHdr         hdr;
+          IxpQid          aqid;
+  }
+  
+  typedef struct IxpFROpen        IxpFROpen;
+  struct IxpFROpen {
+          IxpFHdr         hdr;
+          IxpQid          qid; /* +Rattach */
+          uint32_t        iounit;
+  }
+  
+  typedef struct IxpFRStat        IxpFRStat;
+  struct IxpFRStat {
+          IxpFHdr         hdr;
+          uint16_t        nstat;
+          uchar*          stat;
+  }
+  
+  typedef struct IxpFRWalk        IxpFRWalk;
+  struct IxpFRWalk {
+          IxpFHdr         hdr;
+          uint16_t        nwqid;
+          IxpQid          wqid\fI[IXP_MAX_WELEM]\fR;
+  }
+  
+  typedef struct IxpFTCreate      IxpFTCreate;
+  struct IxpFTCreate {
+          IxpFHdr         hdr;
+          uint32_t        perm;
+          char*           name;
+          uint8_t         mode; /* +Topen */
+  }
+  
+  typedef struct IxpFTFlush       IxpFTFlush;
+  struct IxpFTFlush {
+          IxpFHdr         hdr;
+          uint16_t        oldtag;
+  }
+  
+  typedef struct IxpFTWStat       IxpFTWStat;
+  struct IxpFTWStat {
+          IxpFHdr         hdr;
+          IxpStat         stat;
+  }
+  
+  typedef struct IxpFTWalk        IxpFTWalk;
+  struct IxpFTWalk {
+          IxpFHdr hdr;
+          uint32_t        newfid;
+          uint16_t        nwname;
+          char*           wname\fI[IXP_MAX_WELEM]\fR;
+  }
+  
+  typedef struct IxpFVersion      IxpFVersion;
+  struct IxpFVersion {
+          IxpFHdr         hdr;
+          uint32_t        msize;
+          char*           version;
+  }
+.fi
+
+.SH DESCRIPTION
+.P
+The IxpFcall structure represents a 9P protocol message. The
+\fIhdr\fR element is common to all Fcall types, and may be used to
+determine the type and tag of the message. The IxpFcall type is
+used heavily in server applications, where it both presents a
+request to handler functions and returns a response to the
+client.
+
+.P
+Each member of the IxpFcall structure represents a certain
+message type, which can be discerned from the \fIhdr.type\fR field.
+This value corresponds to one of the IxpFType constants. Types
+with significant overlap use the same structures, thus TRead and
+RWrite are both represented by IxpFIO and can be accessed via the
+\fIio\fR member as well as \fItread\fR and \fIrwrite\fR respectively.
+
+.SH SEE ALSO
+.P
+Ixp9Srv(3), Ixp9Req(3)
+
+
+.\" man code generated by txt2tags 2.5 (http://txt2tags.sf.net)
+.\" cmdline: txt2tags -o- IxpFcall.man3
+

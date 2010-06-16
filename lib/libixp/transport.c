@@ -49,6 +49,27 @@ readn(int fd, IxpMsg *msg, uint count) {
 	return count - num;
 }
 
+/**
+ * Function: ixp_sendmsg
+ * Function: ixp_recvmsg
+ *
+ * These functions read and write messages to and from the given
+ * file descriptors.
+ *
+ * ixp_sendmsg writes the data at P<msg>->pos upto P<msg>->end.
+ * If the call returns non-zero, all data is assured to have
+ * been written.
+ *
+ * ixp_recvmsg first reads a 32 bit, little-endian length from
+ * P<fd> and then reads a message of that length (including the
+ * 4 byte size specifier) into the buffer at P<msg>->data, so
+ * long as the size is less than P<msg>->size.
+ *
+ * Returns:
+ *	These functions return the number of bytes read or
+ *	written, or 0 on error. Errors are stored in
+ *	F<ixp_errbuf>.
+ */
 uint
 ixp_sendmsg(int fd, IxpMsg *msg) {
 	int r;
@@ -70,7 +91,7 @@ ixp_sendmsg(int fd, IxpMsg *msg) {
 uint
 ixp_recvmsg(int fd, IxpMsg *msg) {
 	enum { SSize = 4 };
-	ulong msize, size;
+	uint32_t msize, size;
 
 	msg->mode = MsgUnpack;
 	msg->pos = msg->data;

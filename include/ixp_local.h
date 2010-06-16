@@ -3,6 +3,16 @@
 #include <ixp.h>
 #include <stdbool.h>
 
+#undef ulong
+#define ulong _ixpulong
+typedef unsigned long ulong;
+
+#ifdef CPROTO
+# undef bool
+typedef int bool;
+typedef char* va_list;
+#endif
+
 char *argv0;
 #define ARGBEGIN \
 		int _argtmp=0, _inargv=0; char *_argv=nil; \
@@ -66,20 +76,20 @@ struct IxpMap {
 };
 
 struct IxpTimer {
-	Timer*	link;
-	long	msec;
-	long	id;
-	void	(*fn)(long, void*);
-	void*	aux;
+	Timer*		link;
+	uint32_t	msec;
+	long		id;
+	void		(*fn)(long, void*);
+	void*		aux;
 };
 
 /* map.c */
-void	ixp_mapfree(Map*, void(*)(void*));
-void	ixp_mapexec(Map*, void(*)(void*, void*), void*);
-void	ixp_mapinit(Map*, MapEnt**, int);
-bool	ixp_mapinsert(Map*, ulong, void*, bool);
-void*	ixp_mapget(Map*, ulong);
-void*	ixp_maprm(Map*, ulong);
+void	ixp_mapfree(IxpMap*, void(*)(void*));
+void	ixp_mapexec(IxpMap*, void(*)(void*, void*), void*);
+void	ixp_mapinit(IxpMap*, MapEnt**, int);
+bool	ixp_mapinsert(IxpMap*, ulong, void*, bool);
+void*	ixp_mapget(IxpMap*, ulong);
+void*	ixp_maprm(IxpMap*, ulong);
 
 /* mux.c */
 void	muxfree(IxpClient*);

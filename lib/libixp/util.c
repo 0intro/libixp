@@ -11,6 +11,12 @@
 #include <pwd.h>
 #include "ixp_local.h"
 
+/**
+ * Function: ixp_smprint
+ *
+ * This function formats its arguments as F<printf> and returns
+ * a F<malloc> allocated string containing the result.
+ */
 char*
 ixp_smprint(const char *fmt, ...) {
 	va_list ap;
@@ -125,8 +131,14 @@ ixp_namespace(void) {
 	return namespace;
 }
 
+/**
+ * Function: ixp_eprint
+ *
+ * libixp calls this function on error. It formats its arguments
+ * as F<printf> and exits the program.
+ */
 void
-eprint(const char *fmt, ...) {
+ixp_eprint(const char *fmt, ...) {
 	va_list ap;
 	int err;
 
@@ -170,8 +182,19 @@ mfatal(char *name, uint size) {
 	exit(1);
 }
 
+/**
+ * Function: ixp_emalloc
+ * Function: ixp_emallocz
+ * Function: ixp_erealloc
+ * Function: ixp_estrdup
+ *
+ * These functions act like their stdlib counterparts, but print
+ * an error message and exit the program if allocation fails.
+ * ixp_emallocz acts like ixp_emalloc but additionally zeros the
+ * result of the allocation.
+ */
 void*
-emalloc(uint size) {
+ixp_emalloc(uint size) {
 	void *ret = malloc(size);
 	if(!ret)
 		mfatal("malloc", size);
@@ -179,14 +202,14 @@ emalloc(uint size) {
 }
 
 void*
-emallocz(uint size) {
+ixp_emallocz(uint size) {
 	void *ret = emalloc(size);
 	memset(ret, 0, size);
 	return ret;
 }
 
 void*
-erealloc(void *ptr, uint size) {
+ixp_erealloc(void *ptr, uint size) {
 	void *ret = realloc(ptr, size);
 	if(!ret)
 		mfatal("realloc", size);
@@ -194,7 +217,7 @@ erealloc(void *ptr, uint size) {
 }
 
 char*
-estrdup(const char *str) {
+ixp_estrdup(const char *str) {
 	void *ret = strdup(str);
 	if(!ret)
 		mfatal("strdup", strlen(str));
@@ -202,7 +225,7 @@ estrdup(const char *str) {
 }
 
 uint
-tokenize(char *res[], uint reslen, char *str, char delim) {
+ixp_tokenize(char *res[], uint reslen, char *str, char delim) {
 	char *s;
 	uint i;
 
@@ -220,7 +243,7 @@ tokenize(char *res[], uint reslen, char *str, char delim) {
 }
 
 uint
-strlcat(char *dst, const char *src, uint size) {
+ixp_strlcat(char *dst, const char *src, uint size) {
 	const char *s;
 	char *d;
 	int n, len;
