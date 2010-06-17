@@ -7,17 +7,49 @@
 #include <sys/types.h>
 #include <sys/select.h>
 
-#define IXP_API 127
+/**
+ * Macro: IXP_API
+ * Macro: IXP_NEEDAPI
+ * Macro: IXP_MAXAPI
+ * Macro: IXP_ASSERT_VERSION
+ *
+ * IXP_API contains the current libixp API revision number.
+ *
+ * IXP_NEEDAPI, if defined before ixp.h is included, directs the
+ * header to present an older version of the libixp API. This allows
+ * code written for older versions of libixp to compile against
+ * newer versions without modification. It does not, however, ensure
+ * that it will link against a different version of libixp than the
+ * ixp.h header belongs to.
+ *
+ * IXP_MAXAPI, if defined before ixp.h is included, prevents code
+ * from compiling with a newer version of libixp than specified.
+ *
+ * When inserted into any function, IXP_ASSERT_VERSION ensures that
+ * the resulting object will fail to link link against any version
+ * of libixp with a different API version than it was compiled
+ * against.
+ */
+#define IXP_API 129
+#ifndef IXP_NEEDAPI
+#define IXP_NEEDAPI IXP_API
+#endif
+#ifndef IXP_MAXAPI
+#define IXP_MAXAPI IXP_API
+#endif
+#define _IXP_ASSERT_VERSION ixp_version_##129##_required
+#define IXP_ASSERT_VERSION do _IXP_ASSERT_VERSION = 0; while(0)
+extern int _IXP_ASSERT_VERSION;
 
 /* Gunk */
-#if defined(IXP_NEEDAPI) && IXP_API < IXP_NEEDAPI
+#if IXP_API < IXP_NEEDAPI
 #  error A newer version of libixp is needed for this compilation.
 #endif
-#if defined(IXP_MAXAPI) && IXP_API > IXP_MAXAPI
+#if IXP_API > IXP_MAXAPI
 #  warning This version of libixp has a newer API than this compilation requires.
 #endif
 
-#if defined(IXP_NEEDAPI) && IXP_NEEDAPI < 127
+#if IXP_NEEDAPI < 127
 # undef	ushort
 # undef	ulong
 # undef	vlong
@@ -372,7 +404,7 @@ struct IxpFTWStat {
 	IxpFHdr		hdr;
 	IxpStat		stat;
 };
-#if defined(IXP_NEEDAPI) && IXP_NEEDAPI <= 89
+#if IXP_NEEDAPI <= 89
 /* from fcall(3) in plan9port */
 typedef struct IxpFcall IxpFcall; /* Deprecated */
 struct IxpFcall {		  /* Deprecated */
@@ -735,7 +767,7 @@ void	ixp_werrstr(const char*, ...);
 void ixp_respond(Ixp9Req*, const char *err);
 void ixp_serve9conn(IxpConn*);
 
-#if defined(IXP_NEEDAPI) && IXP_NEEDAPI < 127
+#if IXP_NEEDAPI < 127
 # define respond ixp_respond
 # define serve_9pcon ixp_serve9pconn
 #endif

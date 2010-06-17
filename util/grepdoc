@@ -56,6 +56,10 @@ for my $f(@h) {
         $headers{$1} = $f;
         push @{$protos{$1}}, $& unless $& =~ m{\Q/* Deprecated */};
     }
+    while(m/^\s*#\s*define\s+(\w+)((?:\(.*?\))?)/gm) {
+        $headers{$1} = $f;
+        push @{$protos{$1}}, "#define $1$2 ...";
+    }
     while(m/^(?:enum|struct|union)\s+(\w+).*?^\}/gsm) {
         $headers{$1} = $f;
         my $proto = \@{$protos{$1}};
@@ -89,7 +93,7 @@ while(m{(?<=/\*\*\n)(?:[^*]|\*[^/])+}g) {
 
     s{^(\w+:.*?)\n\n}{
         $header = $1;
-        $header =~ s{^(?:Function|Type|Variable): (\w+)}{
+        $header =~ s{^(?:Function|Type|Variable|Macro): (\w+)}{
             push @names, $1;
             join("\n", @{$protos{$1} or [$1]}) . "\n"
         }gem;

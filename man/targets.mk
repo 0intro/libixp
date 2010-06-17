@@ -1,4 +1,5 @@
 MANPAGES = \
+	'IXP_API.3 IXP_NEEDAPI.3 IXP_MAXAPI.3 IXP_ASSERT_VERSION.3' \
 	'IxpFcall.3 IxpFType.3 IxpFAttach.3 IxpFError.3 IxpFHdr.3 IxpFIO.3 IxpFRAuth.3 IxpFROpen.3 IxpFRStat.3 IxpFRWalk.3 IxpFTCreate.3 IxpFTFlush.3 IxpFTWStat.3 IxpFTWalk.3 IxpFVersion.3' \
 	'IxpFid.3' \
 	'IxpThread.3 IxpMutex.3 IxpRWLock.3 IxpRendez.3 ixp_thread.3' \

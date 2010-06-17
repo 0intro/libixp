@@ -6,6 +6,8 @@
 #include <string.h>
 #include "ixp_local.h"
 
+int _IXP_ASSERT_VERSION;
+
 enum {
 	SByte = 1,
 	SWord = 2,
