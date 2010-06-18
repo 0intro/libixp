@@ -10,9 +10,20 @@
 static IxpThread ixp_pthread;
 static pthread_key_t errstr_k;
 
+/**
+ * Function: ixp_pthread_init
+ *
+ * This function initializes libixp for use in multithreaded
+ * programs using the POSIX thread system. When using libixp in such
+ * programs, this function must be called before any other libixp
+ * functions. This function is part of libixp_pthread, which you
+ * must explicitly link against.
+ */
 int
 ixp_pthread_init() {
 	int ret;
+
+	IXP_ASSERT_VERSION;
 
 	ret = pthread_key_create(&errstr_k, free);
 	if(ret) {

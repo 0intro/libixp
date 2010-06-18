@@ -142,7 +142,7 @@ allocmsg(IxpClient *c, int n) {
  * Returns:
  *	A pointer to a new 9P client.
  * See also:
- *	F<ixp_unmount>
+ *	F<ixp_open>, F<ixp_create>, F<ixp_remove>, F<ixp_unmount>
  */
 
 IxpClient*
@@ -361,7 +361,8 @@ initfid(IxpCFid *f, IxpFcall *fcall) {
  *      opened file.
  *
  * See also:
- *	F<ixp_mount>, F<ixp_read>, F<ixp_write>, F<ixp_close>
+ *	F<ixp_mount>, F<ixp_read>, F<ixp_write>, F<ixp_print>,
+ *	F<ixp_fstat>, F<ixp_close>
  */
 
 IxpCFid*

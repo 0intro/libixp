@@ -1,0 +1,23 @@
+IXP_API
+libixp Manual
+2010 Jun
+
+%!includeconf: header.t2t
+
+= SYNPOSIS =
+```
+#include <ixp_srvutil.h>
+```
+= DESCRIPTION =
+
+Since a large part of libixp's purpose revolves around creating
+virtual filesystems, a small library of utility functions are
+provided towards furthering that end. They are mainly intended
+for applications providing simple, largely static virtual
+filesystems containing control files and event feeds, though
+they are easily adaptable to other ends.
+
+= SEE ALSO =
+F<ixp_srv_clonefiles>, F<ixp_srv_data2cstring>,
+F<ixp_srv_readbuf>, F<ixp_srv_walkandclone>, F<ixp_srv_writectl>
+

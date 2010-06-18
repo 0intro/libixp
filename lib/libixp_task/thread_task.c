@@ -8,6 +8,18 @@
 
 static IxpThread ixp_task;
 
+/**
+ * Function: ixp_taskinit
+ *
+ * This function initializes libixp for use in multithreaded
+ * programs using the libtask threading system. When using libixp in
+ * such programs, this function must be called before any other
+ * libixp functions.
+ *
+ * This function is part of libixp_task, which is part of the libixp
+ * distribution, but is not built by default unless enabled in
+ * config.mk.
+ */
 int
 ixp_taskinit() {
 	ixp_thread = &ixp_task;

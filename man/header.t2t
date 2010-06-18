@@ -1,9 +1,12 @@
 %!target: man
 %!encoding: UTF-8
 
+%# There's apparently no other way to do this.
+%!postproc(man): "^(.TH.*?) 1 "  "\1 3 "
+
 %!preproc: \bPROVISIONAL\b  **PROVISIONAL**
-%!preproc: [FSTV]<(.*?)>    **\1(3)**
-%!preproc: [P]<(.*?)>       //\1//
+%!preproc: [FMSTV]<(.*?)>    **\1(3)**
+%!postproc(man): [P]<(.*?)>       \fI\1\fR
 
 %!postproc(man): (\[.*?\])       \\fI\1\\fR
 %!postproc(man): \+$             \n.P

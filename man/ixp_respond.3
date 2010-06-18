@@ -14,11 +14,11 @@ ixp_respond
 .SH DESCRIPTION
 .P
 Sends a response to the given request. The response is
-constructed from the \fIofcall\fR member of the \fIreq\fR parameter, or
-from the \fIerror\fR parameter if it is non\-null. In the latter
+constructed from the IofcallR member of the IreqR parameter, or
+from the IerrorR parameter if it is non\-null. In the latter
 case, the response is of type RError, while in any other case it
-is of the same type as \fIreq\fR\->\fIofcall\fR, which must match the
-request type in \fIreq\fR\->\fIifcall\fR.
+is of the same type as IreqR\->IofcallR, which must match the
+request type in IreqR\->IifcallR.
 
 .SH SEE ALSO
 .P

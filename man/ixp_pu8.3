@@ -23,12 +23,12 @@ These functions pack or unpack an unsigned integer of the
 specified size.
 
 .P
-If \fImsg\fR\->mode is MsgPack, the value pointed to by \fIval\fR is
-packed into the buffer at \fImsg\fR\->pos. If \fImsg\fR\->mode is
-MsgUnpack, the packed value at \fImsg\fR\->pos is loaded into the
-location pointed to by \fIval\fR. In both cases, \fImsg\fR\->pos is
+If ImsgR\->mode is MsgPack, the value pointed to by IvalR is
+packed into the buffer at ImsgR\->pos. If ImsgR\->mode is
+MsgUnpack, the packed value at ImsgR\->pos is loaded into the
+location pointed to by IvalR. In both cases, ImsgR\->pos is
 advanced by the number of bytes read or written. If the call
-would advance \fImsg\fR\->pos beyond \fImsg\fR\->end, \fImsg\fR\->pos is
+would advance ImsgR\->pos beyond ImsgR\->end, ImsgR\->pos is
 advanced, but nothing is modified.
 
 .SH SEE ALSO

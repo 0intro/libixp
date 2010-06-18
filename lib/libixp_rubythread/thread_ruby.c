@@ -10,6 +10,19 @@
 static IxpThread ixp_rthread;
 static char RWLock[];
 
+/**
+ * Function: ixp_rubyinit
+ *
+ * This function initializes libixp for use in multithreaded
+ * programs embedded in the ruby interpreter. When using a pthread
+ * edition of ruby, ixp_pthread_init should be used instead. When
+ * using libixp in such programs, this function must be called
+ * before any other libixp functions.
+ *
+ * This function is part of libixp_rubythread, which is part of the
+ * libixp distribution, but is not built by default unless enabled
+ * in config.mk.
+ */
 int
 ixp_rubyinit(void) {
 	rb_require("thread.rb");

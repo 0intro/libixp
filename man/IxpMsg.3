@@ -30,19 +30,19 @@ IxpMsg, IxpMsgMode, ixp_message
 The IxpMsg struct represents a binary message, and is used
 extensively by libixp for converting messages to and from
 wire format. The location and size of a buffer are stored in
-\fIdata\fR and \fIsize\fR, respectively. \fIpos\fR points to the
+IdataR and IsizeR, respectively. IposR points to the
 location in the message currently being packed or unpacked,
-while \fIend\fR points to the end of the message. The packing
-functions advance \fIpos\fR as they go, always ensuring that
-they don't read or write past \fIend\fR.  When a message is
-entirely packed or unpacked, \fIpos\fR whould be less than or
-equal to \fIend\fR. Any other state indicates error.
+while IendR points to the end of the message. The packing
+functions advance IposR as they go, always ensuring that
+they don't read or write past IendR.  When a message is
+entirely packed or unpacked, IposR whould be less than or
+equal to IendR. Any other state indicates error.
 
 .P
 ixp_message is a convenience function to pack a construct an
-IxpMsg from a buffer of a given \fIlength\fR and a given
-\fImode\fR. \fIpos\fR and \fIdata\fR are set to \fIdata\fR and \fIend\fR is
-set to \fIdata\fR + \fIlength\fR.
+IxpMsg from a buffer of a given IlengthR and a given
+ImodeR. IposR and IdataR are set to IdataR and IendR is
+set to IdataR + IlengthR.
 
 .SH SEE ALSO
 .P

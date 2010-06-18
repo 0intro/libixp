@@ -26,16 +26,16 @@ The offset at which to write the data.
 
 .SH DESCRIPTION
 .P
-ixp_write and ixp_pwrite each write \fIcount\fR bytes of
-data stored in \fIbuf\fR to the file pointed to by C<fid>.
+ixp_write and ixp_pwrite each write IcountR bytes of
+data stored in IbufR to the file pointed to by C<fid>.
 ixp_write writes its data at its stored offset, and
-increments it by \fIcount\fR. ixp_pwrite writes its data a
-\fIoffset\fR and does not alter C<fid>'s stored offset.
+increments it by IcountR. ixp_pwrite writes its data a
+IoffsetR and does not alter C<fid>'s stored offset.
 
 .SH RETURN VALUE
 .P
 These functions return the number of bytes actually
-written. Any value less than \fIcount\fR must be considered
+written. Any value less than IcountR must be considered
 a failure.
 
 .SH SEE ALSO

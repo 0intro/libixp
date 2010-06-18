@@ -13,16 +13,16 @@ ixp_pdata
 
 .SH DESCRIPTION
 .P
-Packs or unpacks a raw character buffer of size \fIlen\fR.
+Packs or unpacks a raw character buffer of size IlenR.
 
 .P
-If \fImsg\fR\->mode is MsgPack, buffer pointed to by \fIdata\fR is
-packed into the buffer at \fImsg\fR\->pos. If \fImsg\fR\->mode is
-MsgUnpack, the address pointed to by \fIs\fR is loaded with a
+If ImsgR\->mode is MsgPack, buffer pointed to by IdataR is
+packed into the buffer at ImsgR\->pos. If ImsgR\->mode is
+MsgUnpack, the address pointed to by IsR is loaded with a
 malloc(3) allocated buffer with the contents of the buffer at
-\fImsg\fR\->pos.  In either case, \fImsg\fR\->pos is advanced by the
+ImsgR\->pos.  In either case, ImsgR\->pos is advanced by the
 number of bytes read or written. If the action would advance
-\fImsg\fR\->pos beyond \fImsg\fR\->end, \fImsg\fR\->pos is still advanced
+ImsgR\->pos beyond ImsgR\->end, ImsgR\->pos is still advanced
 but no other action is taken.
 
 .SH SEE ALSO

@@ -131,8 +131,6 @@ libixp Manual
 @{[strftime "%Y %b", localtime]}
 
 \%!includeconf: header.t2t
-\%# There's apparently no other way to do this.
-\%!postproc(man): "^(\.TH.*?) 1 "  "\\1 3 "
 
 EOF
 
@@ -146,7 +144,7 @@ EOF
     section 'DESCRIPTION', $_;
     section 'RETURN VALUE', $section{Returns} if exists $section{Returns};
     section 'BUGS', $section{Bugs} if exists $section{Bugs};
-    section 'SEE ALSO', subst {"$1(3)"} qr/\b[FSTV]<(.*?)>/, $section{'See also'}
+    section 'SEE ALSO', subst {"$1(3)"} qr/\b[FMSTV]<(.*?)>/, $section{'See also'}
         if exists $section{'See also'};
     open STDOUT, ">&", $stdout
 }

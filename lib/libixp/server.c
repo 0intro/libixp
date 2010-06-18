@@ -29,6 +29,9 @@
  *
  * Returns:
  *	Returns the connection's new IxpConn data structure.
+ *
+ * See also:
+ *	F<ixp_serverloop>, F<ixp_serve9conn>, F<ixp_hangup>
  */
 IxpConn*
 ixp_listen(IxpServer *srv, int fd, void *aux,
@@ -129,7 +132,7 @@ handle_conns(IxpServer *s) {
  *	it exits on error. V<errno> or the return value of
  *	F<ixp_errbuf> may be inspected.
  * See also:
- *	F<ixp_listen>
+ *	F<ixp_listen>, F<ixp_settimer>
  */
 
 int

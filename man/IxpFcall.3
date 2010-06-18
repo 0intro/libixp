@@ -162,7 +162,7 @@ IxpFcall, IxpFType, IxpFAttach, IxpFError, IxpFHdr, IxpFIO, IxpFRAuth, IxpFROpen
 .SH DESCRIPTION
 .P
 The IxpFcall structure represents a 9P protocol message. The
-\fIhdr\fR element is common to all Fcall types, and may be used to
+IhdrR element is common to all Fcall types, and may be used to
 determine the type and tag of the message. The IxpFcall type is
 used heavily in server applications, where it both presents a
 request to handler functions and returns a response to the
@@ -170,11 +170,11 @@ client.
 
 .P
 Each member of the IxpFcall structure represents a certain
-message type, which can be discerned from the \fIhdr.type\fR field.
+message type, which can be discerned from the Ihdr.typeR field.
 This value corresponds to one of the IxpFType constants. Types
 with significant overlap use the same structures, thus TRead and
 RWrite are both represented by IxpFIO and can be accessed via the
-\fIio\fR member as well as \fItread\fR and \fIrwrite\fR respectively.
+IioR member as well as ItreadR and IrwriteR respectively.
 
 .SH SEE ALSO
 .P

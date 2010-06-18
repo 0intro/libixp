@@ -45,8 +45,8 @@ Ixp9Srv, Ixp9Req, ixp_serve9conn
 .SH DESCRIPTION
 .P
 The ixp_serve9conn handles incoming 9P connections. It is
-ordinarily passed as the \fIread\fR member to \fBixp_listen(3)\fR with an
-Ixp9Srv structure passed as the \fIaux\fR member. The handlers
+ordinarily passed as the IreadR member to \fBixp_listen(3)\fR with an
+Ixp9Srv structure passed as the IauxR member. The handlers
 defined in the Ixp9Srv structure are called whenever a matching
 Fcall type is received. The handlers are expected to call
 \fBixp_respond(3)\fR at some point, whether before they return or at
@@ -58,7 +58,7 @@ structures.
 
 .P
 Whenever a file is closed and an \fBIxpFid(3)\fR is about to be freed,
-the \fIfreefid\fR member is called to perform any necessary cleanup
+the IfreefidR member is called to perform any necessary cleanup
 and to free any associated resources.
 
 .SH SEE ALSO

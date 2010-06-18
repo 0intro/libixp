@@ -16,16 +16,16 @@ ixp_srv_readbuf, ixp_srv_writebuf
 .SH DESCRIPTION
 .P
 Utility functions for handling TRead and TWrite requests for
-files backed by in\-memory buffers. For both functions, \fIbuf\fR
-points to a buffer and \fIlen\fR specifies the length of the
+files backed by in\-memory buffers. For both functions, IbufR
+points to a buffer and IlenR specifies the length of the
 buffer. In the case of ixp_srv_writebuf, these values add a
 level of pointer indirection, and updates the values if they
 change.
 
 .P
-If \fImax\fR has a value other than 0, ixp_srv_writebuf will
+If ImaxR has a value other than 0, ixp_srv_writebuf will
 truncate any writes to that point in the buffer. Otherwise,
-\fI*buf\fR is assumed to be malloc(3) allocated, and is
+I*bufR is assumed to be malloc(3) allocated, and is
 reallocated to fit the new data as necessary. The buffer is
 is always left nul\-terminated.
 

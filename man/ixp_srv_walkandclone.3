@@ -25,7 +25,7 @@ to simplify the process of walking, cloning, and returning
 directory listings. Given the \fBIxpFileId(3)\fR of a directory and a
 filename name should return a new IxpFileId (allocated via
 \fBixp_srv_getfile(3)\fR) for the matching directory entry, or null
-if there is no match. If the passed name is null, \fIlookup\fR
+if there is no match. If the passed name is null, IlookupR
 should return a linked list of IxpFileIds, one for each child
 directory entry.
 
@@ -39,7 +39,7 @@ request.
 ixp_srv_readdir should be called to handle read requests on
 directories. It prepares a stat for each child of the
 directory, taking into account the requested offset, and
-calls \fBixp_respond(3)\fR. The \fIdostat\fR parameter must be a
+calls \fBixp_respond(3)\fR. The IdostatR parameter must be a
 function which fills the passed \fBIxpStat(3)\fR pointer based on
 the contents of the passed IxpFileId.
 

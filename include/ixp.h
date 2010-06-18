@@ -680,6 +680,9 @@ struct Ixp9Srv {
  * only one accessor at a time. Rendezvous points are similar to
  * pthread condition types. P<errbuf> should return a
  * thread-local buffer or the size IXP_ERRMAX.
+ *
+ * See also:
+ *	F<ixp_pthread_init>, F<ixp_taskinit>, F<ixp_rubyinit>
  */
 struct IxpThread {
 	/* Read/write lock */

@@ -1,0 +1,25 @@
+IXP_API
+libixp Manual
+2010 Jun
+
+%!includeconf: header.t2t
+
+= SYNPOSIS =
+```
+#include <ixp.h>
+```
+= DESCRIPTION =
+
+libixp is a client and server library for interacting with the
+9P filesystem protocol. It includes a straightforward 9P
+filesystem client, a callback-based server library, portable
+utilities for opening and multiplexing sockets, a library of
+data marshalling functions, and utilities to ease the
+construction of simple virtual filesystem servers. Further,
+libixp is completely threadsafe and can be adapted to virtual
+any threading system.
+
+= SEE ALSO =
+M<IXP_API>, S<IxpThread>, S<IxpMsg>, F<ixp_mount>, F<ixp_dial>,
+F<ixp_serverloop>, F<ixp_listen>, F<ixp_settimer>,
+F<ixp_serve9conn>, ixp_srvutils(3)

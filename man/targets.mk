@@ -43,4 +43,7 @@ MANPAGES = \
 	'ixp_smprint.3' \
 	'ixp_namespace.3' \
 	'ixp_eprint.3' \
-	'ixp_emalloc.3 ixp_emallocz.3 ixp_erealloc.3 ixp_estrdup.3'
+	'ixp_emalloc.3 ixp_emallocz.3 ixp_erealloc.3 ixp_estrdup.3' \
+	'ixp_pthread_init.3' \
+	'ixp_rubyinit.3' \
+	'ixp_taskinit.3'

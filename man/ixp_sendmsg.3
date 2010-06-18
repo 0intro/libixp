@@ -19,15 +19,15 @@ These functions read and write messages to and from the given
 file descriptors.
 
 .P
-ixp_sendmsg writes the data at \fImsg\fR\->pos upto \fImsg\fR\->end.
+ixp_sendmsg writes the data at ImsgR\->pos upto ImsgR\->end.
 If the call returns non\-zero, all data is assured to have
 been written.
 
 .P
 ixp_recvmsg first reads a 32 bit, little\-endian length from
-\fIfd\fR and then reads a message of that length (including the
-4 byte size specifier) into the buffer at \fImsg\fR\->data, so
-long as the size is less than \fImsg\fR\->size.
+IfdR and then reads a message of that length (including the
+4 byte size specifier) into the buffer at ImsgR\->data, so
+long as the size is less than ImsgR\->size.
 
 .SH RETURN VALUE
 .P
