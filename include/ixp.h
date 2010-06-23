@@ -30,14 +30,17 @@
  * of libixp with a different API version than it was compiled
  * against.
  */
-#define IXP_API 129
+#define IXP_API 134
+#define _IXP_ASSERT_VERSION ixp_version_ ## 134 ## _required
+
 #ifndef IXP_NEEDAPI
 #define IXP_NEEDAPI IXP_API
 #endif
+
 #ifndef IXP_MAXAPI
 #define IXP_MAXAPI IXP_API
 #endif
-#define _IXP_ASSERT_VERSION ixp_version_##129##_required
+
 #define IXP_ASSERT_VERSION do _IXP_ASSERT_VERSION = 0; while(0)
 extern int _IXP_ASSERT_VERSION;
 
@@ -46,19 +49,22 @@ extern int _IXP_ASSERT_VERSION;
 #  error A newer version of libixp is needed for this compilation.
 #endif
 #if IXP_API > IXP_MAXAPI
-#  warning This version of libixp has a newer API than this compilation requires.
+#  warning This version of libixp has a newer API than this compilation requests.
 #endif
 
 #if IXP_NEEDAPI < 127
+# undef	uchar
 # undef	ushort
 # undef	ulong
 # undef	vlong
 # undef	uvlong
+# define	uchar		_ixpuchar
 # define	ushort	_ixpushort
 # define	ulong	_ixpulong
 # define	vlong	_ixpvlong
 # define	uvlong	_ixpuvlong
 
+typedef unsigned char	uchar;
 typedef uint16_t	ushort;
 typedef uint32_t	ulong;
 typedef uint64_t	uvlong;
@@ -66,11 +72,8 @@ typedef uint64_t	uvlong;
 typedef int64_t		vlong;
 #endif
 
-#undef	uchar
 #undef	uint
-#define	uchar		_ixpuchar
 #define	uint		_ixpuint
-typedef unsigned char	uchar;
 typedef unsigned int	uint;
 
 #ifdef KENC
@@ -398,7 +401,7 @@ struct IxpFIO {
 struct IxpFRStat {
 	IxpFHdr		hdr;
 	uint16_t	nstat;
-	uchar*		stat;
+	uint8_t*	stat;
 };
 struct IxpFTWStat {
 	IxpFHdr		hdr;
@@ -456,7 +459,7 @@ struct IxpFcall {		  /* Deprecated */
 		)
 		STRUCT ( /* Rstat */
 			uint16_t	nstat;
-			uchar	*stat;
+			char	*stat;
 		)
 		STRUCT ( /* Twstat */
 			IxpStat	st;
@@ -739,12 +742,12 @@ int	ixp_remove(IxpClient*, const char*);
 void	ixp_unmount(IxpClient*);
 int	ixp_vprint(IxpCFid*, const char*, va_list);
 long	ixp_write(IxpCFid*, const void*, long);
-IxpCFid*	ixp_create(IxpClient*, const char*, uint perm, uchar mode);
+IxpCFid*	ixp_create(IxpClient*, const char*, uint perm, int8_t mode);
 IxpStat*	ixp_fstat(IxpCFid*);
 IxpClient*	ixp_mount(const char*);
 IxpClient*	ixp_mountfd(int);
 IxpClient*	ixp_nsmount(const char*);
-IxpCFid*	ixp_open(IxpClient*, const char*, uchar);
+IxpCFid*	ixp_open(IxpClient*, const char*, uint8_t);
 IxpStat*	ixp_stat(IxpClient*, const char*);
 
 /* convert.c */

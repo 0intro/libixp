@@ -32,7 +32,7 @@ struct IxpPending {
 
 struct IxpDirtab {
 	char*	name;
-	uchar	qtype;
+	uint8_t	qtype;
 	uint	type;
 	uint	perm;
 	uint	flags;
@@ -46,7 +46,7 @@ struct IxpFileId {
 	uint		index;
 	IxpDirtab	tab;
 	uint		nref;
-	uchar		volatil;
+	char		volatil;
 };
 
 enum {
@@ -55,9 +55,11 @@ enum {
 
 bool	ixp_pending_clunk(Ixp9Req*);
 void	ixp_pending_flush(Ixp9Req*);
+int	ixp_pending_print(IxpPending*, const char*, ...);
 void	ixp_pending_pushfid(IxpPending*, IxpFid*);
 void	ixp_pending_respond(Ixp9Req*);
-void	ixp_pending_write(IxpPending*, char*, long);
+int	ixp_pending_vprint(IxpPending*, const char*, va_list ap);
+void	ixp_pending_write(IxpPending*, const char*, long);
 IxpFileId*	ixp_srv_clonefiles(IxpFileId*);
 void	ixp_srv_data2cstring(Ixp9Req*);
 void	ixp_srv_freefile(IxpFileId*);

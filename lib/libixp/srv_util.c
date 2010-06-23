@@ -239,6 +239,8 @@ ixp_srv_writectl(Ixp9Req *req, char* (*fn)(void*, IxpMsg*)) {
 
 /**
  * Function: ixp_pending_write
+ * Function: ixp_pending_print
+ * Function: ixp_pending_vprint
  * Function: ixp_pending_pushfid
  * Function: ixp_pending_clunk
  * Function: ixp_pending_flush
@@ -262,6 +264,9 @@ ixp_srv_writectl(Ixp9Req *req, char* (*fn)(void*, IxpMsg*)) {
  * ixp_pending_respond is called. Likewise, if there is data
  * queued when ixp_pending_respond is called, it is written
  * immediately, otherwise the request is queued.
+ *
+ * ixp_pending_print and ixp_pending_vprint call ixp_pending_write
+ * after formatting their arguments with V<ixp_vsmprint>.
  *
  * The IxpPending data structure is opaque and should be
  * initialized zeroed before using these functions for the first
@@ -307,7 +312,7 @@ ixp_pending_respond(Ixp9Req *req) {
 }
 
 void
-ixp_pending_write(IxpPending *pending, char *dat, long ndat) {
+ixp_pending_write(IxpPending *pending, const char *dat, long ndat) {
 	IxpRequestLink req_link;
 	IxpQueue **qp, *queue;
 	IxpPendingLink *pp;
@@ -346,6 +351,29 @@ ixp_pending_write(IxpPending *pending, char *dat, long ndat) {
 
 	while((rp = req_link.next) != &req_link)
 		ixp_pending_respond(rp->req);
+}
+
+int
+ixp_pending_vprint(IxpPending *pending, const char *fmt, va_list ap) {
+	char *dat;
+	int res;
+
+	dat = ixp_vsmprint(fmt, ap);
+	res = strlen(dat);
+	ixp_pending_write(pending, dat, res);
+	free(dat);
+	return res;
+}
+
+int
+ixp_pending_print(IxpPending *pending, const char *fmt, ...) {
+	va_list ap;
+	int res;
+
+	va_start(ap, fmt);
+	res = ixp_pending_vprint(pending, fmt, ap);
+	va_end(ap);
+	return res;
 }
 
 void

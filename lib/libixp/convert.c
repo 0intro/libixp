@@ -17,11 +17,11 @@ enum {
 
 static void
 ixp_puint(IxpMsg *msg, uint size, uint32_t *val) {
-	uchar *pos;
+	uint8_t *pos;
 	int v;
 
 	if(msg->pos + size <= msg->end) {
-		pos = (uchar*)msg->pos;
+		pos = (uint8_t*)msg->pos;
 		switch(msg->mode) {
 		case MsgPack:
 			v = *val;
@@ -74,16 +74,12 @@ ixp_puint(IxpMsg *msg, uint size, uint32_t *val) {
  *	T<IxpMsg>
  */
 void
-ixp_pu32(IxpMsg *msg, uint32_t *val) {
-	ixp_puint(msg, SDWord, val);
-}
-void
-ixp_pu8(IxpMsg *msg, uchar *val) {
+ixp_pu8(IxpMsg *msg, uint8_t *val) {
 	uint32_t v;
 
 	v = *val;
 	ixp_puint(msg, SByte, &v);
-	*val = (uchar)v;
+	*val = (uint8_t)v;
 }
 void
 ixp_pu16(IxpMsg *msg, uint16_t *val) {
@@ -92,6 +88,10 @@ ixp_pu16(IxpMsg *msg, uint16_t *val) {
 	v = *val;
 	ixp_puint(msg, SWord, &v);
 	*val = (uint16_t)v;
+}
+void
+ixp_pu32(IxpMsg *msg, uint32_t *val) {
+	ixp_puint(msg, SDWord, val);
 }
 void
 ixp_pu64(IxpMsg *msg, uint64_t *val) {
