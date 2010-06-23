@@ -1,0 +1,17 @@
+Source: libixp-hg
+Section: x11
+Priority: optional
+Maintainer: Kris Maglione <jg@suckless.org>
+Standards-Version: 3.7.2
+
+Package: libixp-hg
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Conflicts: libixp
+Replaces: libixp
+Provides: libixp
+Description: Simple 9P filesystem library.
+  This is a an extremly simple 9P stand-alone library. 9P is a virtual
+  filesystem from the Plan9 operating system. 
+ .
+  Homepage: <http://libs.suckless.org/libixp>

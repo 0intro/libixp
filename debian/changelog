@@ -1,0 +1,5 @@
+libixp-hg (hg132) unstable; urgency=low
+
+  * Add PKGBUILD. Fix some install problems.
+
+ -- Kris Maglione <jg@suckless.org>  Wed,  23 Jun 2010 11:24:47 -0400
