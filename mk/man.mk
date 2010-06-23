@@ -19,9 +19,9 @@ MANLOOP = \
 		done; \
 	done
 maninstall:
-	_() { echo LN $$1 $${2##*/}; ln -sf $$1 $$2; }; $(MANLOOP)
+	_() { echo LN $$1 $${2##*/}; ln -sf $$1 $(DESTDIR)$$2; }; $(MANLOOP)
 manuninstall:
-	_() { echo RM $${2##*/}; rm -f $$2; }; $(MANLOOP)
+	_() { echo RM $${2##*/}; rm -f $(DESTDIR)$$2; }; $(MANLOOP)
 
 printinstall:
 	echo 'Install directories:'

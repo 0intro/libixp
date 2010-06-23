@@ -98,6 +98,7 @@ INSTALL= _install() { set -e; \
 		 if [ ! -d $$d ]; then echo MKDIR $$3; mkdir -p $$d; fi; \
 		 echo INSTALL $$($(CLEANNAME) $(BASE)$$2); \
 		 [ -n "$(noisycc)" ] && set -x; \
+		 rm -f $$f; \
 		 if [ "$$dashb" = -b ]; \
 		 then cp -f $$2 $$f; \
 		 else $(FILTER) <$$2 >$$f; \
