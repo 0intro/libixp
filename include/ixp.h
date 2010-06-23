@@ -30,8 +30,8 @@
  * of libixp with a different API version than it was compiled
  * against.
  */
-#define IXP_API 134
-#define _IXP_ASSERT_VERSION ixp_version_ ## 134 ## _required
+#define IXP_API 135
+#define _IXP_ASSERT_VERSION ixp_version_ ## 135 ## _required
 
 #ifndef IXP_NEEDAPI
 #define IXP_NEEDAPI IXP_API
@@ -70,6 +70,9 @@ typedef uint32_t	ulong;
 typedef uint64_t	uvlong;
 
 typedef int64_t		vlong;
+
+# define respond ixp_respond
+# define serve_9pcon ixp_serve9pconn
 #endif
 
 #undef	uint
@@ -407,6 +410,7 @@ struct IxpFTWStat {
 	IxpFHdr		hdr;
 	IxpStat		stat;
 };
+
 #if IXP_NEEDAPI <= 89
 /* from fcall(3) in plan9port */
 typedef struct IxpFcall IxpFcall; /* Deprecated */
@@ -742,7 +746,7 @@ int	ixp_remove(IxpClient*, const char*);
 void	ixp_unmount(IxpClient*);
 int	ixp_vprint(IxpCFid*, const char*, va_list);
 long	ixp_write(IxpCFid*, const void*, long);
-IxpCFid*	ixp_create(IxpClient*, const char*, uint perm, int8_t mode);
+IxpCFid*	ixp_create(IxpClient*, const char*, uint perm, uint8_t mode);
 IxpStat*	ixp_fstat(IxpCFid*);
 IxpClient*	ixp_mount(const char*);
 IxpClient*	ixp_mountfd(int);
@@ -772,11 +776,6 @@ void	ixp_werrstr(const char*, ...);
 /* request.c */
 void ixp_respond(Ixp9Req*, const char *err);
 void ixp_serve9conn(IxpConn*);
-
-#if IXP_NEEDAPI < 127
-# define respond ixp_respond
-# define serve_9pcon ixp_serve9pconn
-#endif
 
 /* message.c */
 uint16_t	ixp_sizeof_stat(IxpStat*);

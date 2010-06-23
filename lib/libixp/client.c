@@ -366,7 +366,7 @@ initfid(IxpCFid *f, IxpFcall *fcall) {
  */
 
 IxpCFid*
-ixp_create(IxpClient *c, const char *path, uint perm, uchar mode) {
+ixp_create(IxpClient *c, const char *path, uint perm, uint8_t mode) {
 	IxpFcall fcall;
 	IxpCFid *f;
 	char *tpath;;
@@ -400,7 +400,7 @@ done:
 }
 
 IxpCFid*
-ixp_open(IxpClient *c, const char *path, uchar mode) {
+ixp_open(IxpClient *c, const char *path, uint8_t mode) {
 	IxpFcall fcall;
 	IxpCFid *f;
 
