@@ -1,5 +1,5 @@
-libixp-hg (hg132) unstable; urgency=low
+libixp-hg (136) unstable; urgency=low
 
-  * Add PKGBUILD. Fix some install problems.
+  * Add debhelper to debian build dependency list.
 
- -- Kris Maglione <jg@suckless.org>  Wed,  23 Jun 2010 11:24:47 -0400
+ -- Kris Maglione <jg@suckless.org>  Wed,  23 Jun 2010 14:29:13 -0400

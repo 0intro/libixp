@@ -10,6 +10,7 @@ makedepends=("mercurial")
 provides=("libixp")
 conflicts=("libixp")
 source=()
+options=(!strip)
 
 FORCE_VER=$(hg log -r . --template {rev})
 
