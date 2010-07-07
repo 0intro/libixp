@@ -3,7 +3,7 @@
 PACKAGE=$(shell awk 'NR == 1 { print $$2 }' debian/control)
 
 FLAGS = PREFIX=/usr \
-	DESTDIR=$(CURDIR)/debian/wmii-hg/
+	DESTDIR=$(CURDIR)/debian/$(PACKAGE)/
 
 %:
 	dh $@

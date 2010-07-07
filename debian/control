@@ -2,8 +2,9 @@ Source: libixp-hg
 Section: x11
 Priority: optional
 Maintainer: Kris Maglione <jg@suckless.org>
-Build-Depends: debhelper (>= 4.0)
-Standards-Version: 3.7.2
+Build-Depends: debhelper (>= 7.0)
+Standards-Version: 3.8.4
+Homepage: http://libs.suckless.org/libixp
 
 Package: libixp-hg
 Architecture: any
@@ -12,7 +13,5 @@ Conflicts: libixp
 Replaces: libixp
 Provides: libixp
 Description: Simple 9P filesystem library.
-  This is a an extremly simple 9P stand-alone library. 9P is a virtual
-  filesystem from the Plan9 operating system. 
- .
-  Homepage: <http://libs.suckless.org/libixp>
+ This is a an extremly simple 9P stand-alone library. 9P is a virtual
+ filesystem from the Plan9 operating system. 
