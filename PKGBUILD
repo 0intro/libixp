@@ -4,11 +4,11 @@ pkgver=131
 pkgrel=1
 pkgdesc="The latest hg pull of libixp, a simple 9P filesystem library"
 url="http://libs.suckless.org/libixp"
-license=("MIT")
-arch=("i686" "x86_64")
-makedepends=("mercurial")
-provides=("libixp")
-conflicts=("libixp")
+license=(MIT)
+arch=(i686 x86_64)
+makedepends=(mercurial)
+provides=(libixp)
+conflicts=(libixp)
 source=()
 options=(!strip)
 
