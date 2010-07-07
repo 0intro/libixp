@@ -1,5 +1,16 @@
 #!/usr/bin/make -f
 
+PACKAGE=$(shell awk 'NR == 1 { print $$2 }' debian/control)
+
+FLAGS = PREFIX=/usr \
+	DESTDIR=$(CURDIR)/debian/wmii-hg/
+
 %:
 	dh $@
+
+override_dh_auto_build:
+	$(MAKE) $(FLAGS) all
+
+override_dh_auto_install:
+	$(MAKE) $(FLAGS) install
 

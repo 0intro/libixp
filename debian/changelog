@@ -1,3 +1,9 @@
+libixp-hg (137) unstable; urgency=low
+
+  * [debian] Add 'deb' make target.
+
+ -- Kris Maglione <kris@suckless.org>  Tue, 06 Jul 2010 21:24:20 -0400
+
 libixp-hg (136) unstable; urgency=low
 
   * Add debhelper to debian build dependency list.
