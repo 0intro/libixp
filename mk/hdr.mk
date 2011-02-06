@@ -41,11 +41,11 @@ PACKAGES = 2>/dev/null
 # and this:
 # Try to find a sane shell. /bin/sh is a last resort, because it's
 # usually bash on Linux, which means it's painfully slow.
-BINSH := $(shell \
+BINSH:= $(shell \
 	   if [ -x /bin/dash ]; then echo /bin/dash; \
 	   elif [ -x /bin/ksh ]; then echo /bin/ksh; \
 	   else echo /bin/sh; fi)
-BINSH != echo /bin/sh
+BINSH!= echo /bin/sh
 
 include $(ROOT)/config.mk
 
