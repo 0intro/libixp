@@ -91,7 +91,7 @@ IxpFileId*
 ixp_srv_clonefiles(IxpFileId *fileid) {
 	IxpFileId *r;
 
-	r = emalloc(sizeof *r);
+	r = ixp_srv_getfile();
 	memcpy(r, fileid, sizeof *r);
 	r->tab.name = estrdup(r->tab.name);
 	r->nref = 1;
