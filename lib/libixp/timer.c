@@ -17,15 +17,13 @@ static long	lastid = 1;
  * Function: ixp_msec
  *
  * Returns the time since the Epoch in milliseconds.
- * Be aware that this may overflow.
  */
-long
+uint64_t
 ixp_msec(void) {
 	timeval tv;
 
-	if(gettimeofday(&tv, 0) < 0)
-		return -1;
-	return tv.tv_sec*1000 + tv.tv_usec/1000;
+	gettimeofday(&tv, 0);
+	return (uint64_t)tv.tv_sec*1000 + (uint64_t)tv.tv_usec/1000;
 }
 
 /**
@@ -51,22 +49,19 @@ long
 ixp_settimer(IxpServer *srv, long msec, void (*fn)(long, void*), void *aux) {
 	Timer **tp;
 	Timer *t;
-	uint32_t time;
+	uint64_t time;
 
-	time = ixp_msec();
-	if(time == -1)
-		return -1;
-	msec += time;
+	time = ixp_msec() + msec;
 
 	t = emallocz(sizeof *t);
 	thread->lock(&srv->lk);
 	t->id = lastid++;
-	t->msec = msec;
+	t->msec = time;
 	t->fn = fn;
 	t->aux = aux;
 
 	for(tp=&srv->timer; *tp; tp=&tp[0]->link)
-		if(tp[0]->msec < msec)
+		if(tp[0]->msec < time)
 			break;
 	t->link = *tp;
 	*tp = t;
@@ -121,7 +116,8 @@ ixp_unsettimer(IxpServer *srv, long id) {
 long
 ixp_nexttimer(IxpServer *srv) {
 	Timer *t;
-	uint32_t time, ret;
+	uint64_t time;
+	long ret;
 
 	SET(time);
 	thread->lock(&srv->lk);

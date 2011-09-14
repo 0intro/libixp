@@ -76,7 +76,7 @@ struct IxpMap {
 
 struct IxpTimer {
 	Timer*		link;
-	uint32_t	msec;
+	uint64_t	msec;
 	long		id;
 	void		(*fn)(long, void*);
 	void*		aux;

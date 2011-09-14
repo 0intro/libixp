@@ -802,7 +802,7 @@ uint ixp_sendmsg(int, IxpMsg*);
 uint ixp_recvmsg(int, IxpMsg*);
 
 /* timer.c */
-long	ixp_msec(void);
+uint64_t	ixp_msec(void);
 long	ixp_settimer(IxpServer*, long, void (*)(long, void*), void*);
 int	ixp_unsettimer(IxpServer*, long);
 
