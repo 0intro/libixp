@@ -28,7 +28,7 @@ usage(void) {
 static void
 write_data(IxpCFid *fid, char *name) {
 	void *buf;
-	uint len;
+	long len;
 
 	buf = emalloc(fid->iounit);;
 	do {
