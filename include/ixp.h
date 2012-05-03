@@ -72,7 +72,7 @@ typedef uint64_t	uvlong;
 typedef int64_t		vlong;
 
 # define respond ixp_respond
-# define serve_9pcon ixp_serve9pconn
+# define serve_9pcon ixp_serve9conn
 #endif
 
 #undef	uint
