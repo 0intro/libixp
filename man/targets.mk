@@ -34,7 +34,7 @@ MANPAGES = \
 	'ixp_srv_readbuf.3 ixp_srv_writebuf.3' \
 	'ixp_srv_data2cstring.3' \
 	'ixp_srv_writectl.3' \
-	'ixp_pending_write.3 ixp_pending_pushfid.3 ixp_pending_clunk.3 ixp_pending_flush.3 ixp_pending_respond.3 IxpPending.3' \
+	'ixp_pending_write.3 ixp_pending_print.3 ixp_pending_vprint.3 ixp_pending_pushfid.3 ixp_pending_clunk.3 ixp_pending_flush.3 ixp_pending_respond.3 IxpPending.3' \
 	'ixp_srv_walkandclone.3 ixp_srv_readdir.3 ixp_srv_verifyfile.3 IxpLookupFn.3' \
 	'ixp_msec.3' \
 	'ixp_settimer.3' \

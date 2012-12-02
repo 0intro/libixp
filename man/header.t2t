@@ -6,7 +6,7 @@
 
 %!preproc: \bPROVISIONAL\b  **PROVISIONAL**
 %!preproc: [FMSTV]<(.*?)>    **\1(3)**
-%!postproc(man): [P]<(.*?)>       \fI\1\fR
+%!postproc(man): [P]<(.*?)>       \\fI\1\\fR
 
 %!postproc(man): (\[.*?\])       \\fI\1\\fR
 %!postproc(man): \+$             \n.P
