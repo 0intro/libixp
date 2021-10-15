@@ -12,7 +12,7 @@ struct MapEnt {
 	MapEnt*		next;
 };
 
-MapEnt *NM;
+static MapEnt *NM;
 
 static void
 insert(MapEnt **e, ulong val, const char *key) {

@@ -10,6 +10,8 @@
 #include <unistd.h>
 #include <ixp_local.h>
 
+static char *argv0;
+
 /* Temporary */
 #define fatal(...) ixp_eprint("ixpc: fatal: " __VA_ARGS__); \
 
