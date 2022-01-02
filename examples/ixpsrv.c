@@ -29,6 +29,11 @@
 #include <time.h>
 #include <unistd.h>
 
+#define IXP_NEEDAPI 116
+#define IXP_P9_STRUCTS
+
+static char *argv0;
+
 #include <ixp_local.h>
 
 /* Temporary */
