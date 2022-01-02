@@ -4,7 +4,7 @@
 
 #undef ulong
 #define ulong _ixpulong
-typedef unsigned long ulong;
+typedef uint32_t ulong;
 
 #ifdef CPROTO
 # undef bool
