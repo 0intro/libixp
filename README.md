@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/0intro/libixp.svg?branch=master)](https://travis-ci.org/0intro/libixp)
+[![Build Status](https://github.com/0intro/libixp/workflows/C/badge.svg)](https://github.com/0intro/libixp/actions/workflows/c.yml)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/0intro-libixp/badge.svg)](https://scan.coverity.com/projects/0intro-libixp)
 
 libixp
