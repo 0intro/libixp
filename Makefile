@@ -8,7 +8,7 @@ DIRS =	lib	\
 	man
 
 doc:
-	perl $(ROOT)/util/grepdoc $$(hg manifest | egrep '^(lib|include)') \
+	perl $(ROOT)/util/grepdoc $$(hg manifest | grep -E '^(lib|include)') \
 		>$(ROOT)/man/targets.mk
 	$(MAKE) -Cman
 
