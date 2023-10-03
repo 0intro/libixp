@@ -49,12 +49,14 @@ static char
 	Enofile[] = "file not found",
 	Ebadvalue[] = "bad value";
 /* Macros */
-#define QID(t, i) ((vlong)(t))
+#define QID(t, i) ((int64_t)(t))
 
 /* Global Vars */
 static IxpServer server;
 static char *user;
 static int debuglevel = 0;
+
+static char *argv0;
 
 static void fs_open(Ixp9Req *r);
 static void fs_walk(Ixp9Req *r);
@@ -115,52 +117,8 @@ isdir(char *path) {
 	return S_ISDIR(buf.st_mode);
 }
 
-/* This should be moved to libixp */
 static void
-write_buf(Ixp9Req *r, char *buf, uint len) {
-
-	if(r->ifcall.tread.offset >= len)
-		return;
-
-	len -= r->ifcall.tread.offset;
-	if(len > r->ifcall.tread.count)
-		len = r->ifcall.tread.count;
-	r->ofcall.rread.data = ixp_emalloc(len);
-	memcpy(r->ofcall.rread.data, buf + r->ifcall.tread.offset, len);
-	r->ofcall.rread.count = len;
-}
-
-
-/* This should be moved to libixp */
-static void
-write_to_buf(Ixp9Req *r, void *buf, uint *len, uint max) {
-	uint offset, count;
-
-//	offset = (r->fid->omode&OAPPEND) ? *len : r->ifcall.tread.offset;
-	offset = r->ifcall.tread.offset;
-	if(offset > *len || r->ifcall.tread.count == 0) {
-		r->ofcall.rread.count = 0;
-		return;
-	}
-
-	count = r->ifcall.tread.count;
-	if(max && (count > max - offset))
-		count = max - offset;
-
-	*len = offset + count;
-
-	if(max == 0) {
-		*(void **)buf = ixp_erealloc(*(void **)buf, *len + 1);
-		buf = *(void **)buf;
-	}
-
-	memcpy((uchar*)buf + offset, r->ifcall.tread.data, count);
-	r->ofcall.rread.count = count;
-	((char *)buf)[offset+count] = '\0';
-}
-
-static void
-dostat(Stat *s, char *name, struct stat *buf) {
+dostat(IxpStat *s, char *name, struct stat *buf) {
 
 	s->type = 0;
 	s->dev = 0;
@@ -187,9 +145,9 @@ void
 rerrno(Ixp9Req *r, char *m) {
 /*
 	char errbuf[128];
-	respond(r, strerror_r(errno, errbuf, sizeof(errbuf)));
+	ixp_respond(r, strerror_r(errno, errbuf, sizeof(errbuf)));
  */
-	respond(r, m);
+	ixp_respond(r, m);
 }
 
 void
@@ -201,7 +159,7 @@ fs_attach(Ixp9Req *r) {
 	r->fid->qid.path = (uintptr_t)r->fid;
 	r->fid->aux = newfidaux("/");
 	r->ofcall.rattach.qid = r->fid->qid;
-	respond(r, nil);
+	ixp_respond(r, nil);
 }
 
 void
@@ -217,7 +175,7 @@ fs_walk(Ixp9Req *r) {
 	name = malloc(PATH_MAX);
 	strcpy(name, f->name);
 	if (stat(name, &buf) < 0){
-		respond(r, Enofile);
+		ixp_respond(r, Enofile);
 		return;
 	}
 
@@ -226,7 +184,7 @@ fs_walk(Ixp9Req *r) {
 		strcat(name, "/");
 		strcat(name, r->ifcall.twalk.wname[i]);
 		if (stat(name, &buf) < 0){
-			respond(r, Enofile);
+			ixp_respond(r, Enofile);
 			free(name);
 			return;
 		}
@@ -237,16 +195,16 @@ fs_walk(Ixp9Req *r) {
 	r->newfid->aux = newfidaux(name);
 	r->ofcall.rwalk.nwqid = i;
 	free(name);
-	respond(r, nil);
+	ixp_respond(r, nil);
 }
 
 void
 fs_stat(Ixp9Req *r) {
 	struct stat st;
-	Stat s;
+	IxpStat s;
 	IxpMsg m;
 	char *name;
-	uchar *buf;
+	char *buf;
 	FidAux *f;
 	int size;
 	
@@ -256,7 +214,7 @@ fs_stat(Ixp9Req *r) {
 
 	name = f->name;
 	if (stat(name, &st) < 0){
-		respond(r, Enofile);
+		ixp_respond(r, Enofile);
 		return;
 	}
 
@@ -270,7 +228,7 @@ fs_stat(Ixp9Req *r) {
 	ixp_pstat(&m, &s);
 
 	r->ofcall.rstat.stat = m.data;
-	respond(r, nil);
+	ixp_respond(r, nil);
 }
 
 void
@@ -285,13 +243,13 @@ fs_read(Ixp9Req *r) {
 	f = r->fid->aux;
 
 	if (f->dir) {
-		Stat s;
+		IxpStat s;
 		IxpMsg m;
 
 		offset = 0;
 		size = r->ifcall.tread.count;
 		buf = ixp_emallocz(size);
-		m = ixp_message((uchar*)buf, size, MsgPack);
+		m = ixp_message(buf, size, MsgPack);
 
 		/* note: we don't really handle lots of things well, so do one thing
 		 * at a time 
@@ -310,19 +268,19 @@ fs_read(Ixp9Req *r) {
 		}
 		r->ofcall.rread.count = n;
 		r->ofcall.rread.data = (char*)m.data;
-		respond(r, nil);
+		ixp_respond(r, nil);
 		return;
 	} else {
 		r->ofcall.rread.data = ixp_emallocz(r->ifcall.tread.count);
 		if (! r->ofcall.rread.data) {
-			respond(r, nil);
+			ixp_respond(r, nil);
 			return;
 		}
 		r->ofcall.rread.count = pread(f->fd, r->ofcall.rread.data, r->ifcall.tread.count, r->ifcall.tread.offset);
 		if (r->ofcall.rread.count < 0) 
 			rerrno(r, Enoperm);
 		else
-			respond(r, nil);
+			ixp_respond(r, nil);
 		return;
 	}
 
@@ -340,7 +298,7 @@ fs_write(Ixp9Req *r) {
 	debug("fs_write(%p)\n", r);
 
 	if(r->ifcall.twrite.count == 0) {
-		respond(r, nil);
+		ixp_respond(r, nil);
 		return;
 	}
 	f = r->fid->aux;
@@ -375,20 +333,20 @@ fs_open(Ixp9Req *r) {
 			return;
 		}
 	}
-	respond(r, nil);
+	ixp_respond(r, nil);
 }
 
 
 void
 fs_create(Ixp9Req *r) {
 	debug("fs_create(%p)\n", r);
-	respond(r, Enoperm);
+	ixp_respond(r, Enoperm);
 }
 
 void
 fs_remove(Ixp9Req *r) {
 	debug("fs_remove(%p)\n", r);
-	respond(r, Enoperm);
+	ixp_respond(r, Enoperm);
 
 }
 
@@ -409,17 +367,17 @@ fs_clunk(Ixp9Req *r) {
 		f->fd = -1;
 	}
 
-	respond(r, nil);
+	ixp_respond(r, nil);
 }
 
 void
 fs_flush(Ixp9Req *r) {
 	debug("fs_flush(%p)\n", r);
-	respond(r, nil);
+	ixp_respond(r, nil);
 }
 
 void
-fs_freefid(Fid *f) {
+fs_freefid(IxpFid *f) {
 	debug("fs_freefid(%p)\n", f);
 	free(f->aux);
 }
@@ -509,7 +467,7 @@ main(int argc, char *argv[]) {
 		fatal("%s\n", errstr);
 
 	/* set up a fake client so we can grap connects. */
-	acceptor = ixp_listen(&server, fd, &p9srv, serve_9pcon, NULL);
+	acceptor = ixp_listen(&server, fd, &p9srv, ixp_serve9conn, NULL);
 
 	/* we might need to mount ourselves. The bit of complexity is the need to fork so 
 	 * we can serve ourselves. We've done the listen so that's ok.
