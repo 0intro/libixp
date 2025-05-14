@@ -807,7 +807,6 @@ long	ixp_settimer(IxpServer*, long, void (*)(long, void*), void*);
 int	ixp_unsettimer(IxpServer*, long);
 
 /* util.c */
-void	ixp_cleanname(char*);
 void*	ixp_emalloc(uint);
 void*	ixp_emallocz(uint);
 void	ixp_eprint(const char*, ...);
