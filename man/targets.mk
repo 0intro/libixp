@@ -23,7 +23,7 @@ MANPAGES = \
 	'ixp_fcall2msg.3 ixp_msg2fcall.3' \
 	'ixp_printfcall.3' \
 	'ixp_respond.3' \
-	'Ixp9Srv.3 Ixp9Req.3 ixp_serve9conn.3' \
+	'Ixp9Srv.3 Ixp9Req.3 ixp_serve9conn_fd.3 ixp_serve9conn.3' \
 	'ixp_listen.3 IxpConn.3' \
 	'ixp_hangup.3 ixp_server_close.3' \
 	'ixp_serverloop.3 IxpServer.3' \

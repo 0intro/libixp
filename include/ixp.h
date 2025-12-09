@@ -776,6 +776,7 @@ void	ixp_werrstr(const char*, ...);
 /* request.c */
 void ixp_respond(Ixp9Req*, const char *err);
 void ixp_serve9conn(IxpConn*);
+void ixp_serve9conn_fd(IxpServer*, int fd, Ixp9Srv*);
 
 /* message.c */
 uint16_t	ixp_sizeof_stat(IxpStat*);
