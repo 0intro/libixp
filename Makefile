@@ -8,7 +8,9 @@ DIRS =	lib	\
 	man
 
 doc:
-	perl $(ROOT)/util/grepdoc $$(hg manifest | grep -E '^(lib|include)') \
+	@which cproto >/dev/null 2>&1 || { echo "Error: cproto not found."; exit 1; }
+	@which txt2tags >/dev/null 2>&1 || { echo "Error: txt2tags not found."; exit 1; }
+	perl $(ROOT)/util/grepdoc $$(git ls-files | grep -E '^(lib|include)') \
 		>$(ROOT)/man/targets.mk
 	$(MAKE) -Cman
 
