@@ -79,8 +79,9 @@ str_of_mode(uint mode) {
 static char *
 str_of_time(uint val) {
 	static char buf[32];
+	time_t t = val;
 
-	ctime_r((time_t*)&val, buf);
+	ctime_r(&t, buf);
 	buf[strlen(buf) - 1] = '\0';
 	return buf;
 }
