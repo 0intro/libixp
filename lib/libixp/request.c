@@ -549,13 +549,21 @@ cleanupconn(IxpConn *c) {
 /**
  * Type: Ixp9Srv
  * Type: Ixp9Req
+ * Function: ixp_serve9conn_fd
  * Function: ixp_serve9conn
  *
- * The ixp_serve9conn handles incoming 9P connections. It is
- * ordinarily passed as the P<read> member to F<ixp_listen> with an
- * Ixp9Srv structure passed as the P<aux> member. The handlers
- * defined in the Ixp9Srv structure are called whenever a matching
- * Fcall type is received. The handlers are expected to call
+ * These functions set up 9P service on a file descriptor.
+ *
+ * ixp_serve9conn_fd serves 9P directly on an already-connected file
+ * descriptor. This is useful for serving 9P over pipes, stdin/stdout,
+ * serial devices, or pre-connected sockets.
+ *
+ * ixp_serve9conn handles incoming connections on a listening socket.
+ * It is ordinarily passed as the P<read> member to F<ixp_listen> with
+ * an Ixp9Srv structure passed as the P<aux> member.
+ *
+ * The handlers defined in the Ixp9Srv structure are called whenever
+ * a matching Fcall type is received. The handlers are expected to call
  * F<ixp_respond> at some point, whether before they return or at
  * some undefined point in the future. Whenever a client
  * disconnects, libixp generates whatever flush and clunk events are
@@ -572,17 +580,12 @@ cleanupconn(IxpConn *c) {
  *	F<IxpFcall>, F<IxpFid>
  */
 void
-ixp_serve9conn(IxpConn *c) {
+ixp_serve9conn_fd(IxpServer *srv, int fd, Ixp9Srv *p9srv) {
 	Ixp9Conn *p9conn;
-	int fd;
-
-	fd = accept(c->fd, nil, nil);
-	if(fd < 0)
-		return;
 
 	p9conn = emallocz(sizeof *p9conn);
 	p9conn->ref++;
-	p9conn->srv = c->aux;
+	p9conn->srv = p9srv;
 	p9conn->rmsg.size = 1024;
 	p9conn->wmsg.size = 1024;
 	p9conn->rmsg.data = emalloc(p9conn->rmsg.size);
@@ -593,5 +596,16 @@ ixp_serve9conn(IxpConn *c) {
 	thread->initmutex(&p9conn->rlock);
 	thread->initmutex(&p9conn->wlock);
 
-	ixp_listen(c->srv, fd, p9conn, handlefcall, cleanupconn);
+	ixp_listen(srv, fd, p9conn, handlefcall, cleanupconn);
+}
+
+void
+ixp_serve9conn(IxpConn *c) {
+	int fd;
+
+	fd = accept(c->fd, nil, nil);
+	if(fd < 0)
+		return;
+
+	ixp_serve9conn_fd(c->srv, fd, c->aux);
 }
