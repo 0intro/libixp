@@ -172,7 +172,8 @@ ixp_mountfd(int fd) {
 
 	if(!strcmp(fcall.version.version, "9P2000.u")) {
 		c->version = IXP_V9P2000U;
-	} else if(!strcmp(fcall.version.version, "9P2000")) {
+	} else if(!strcmp(fcall.version.version, "9P2000")
+	       || !strcmp(fcall.version.version, "9P")) {
 		c->version = IXP_V9P2000;
 	} else {
 		werrstr("bad 9P version response");
