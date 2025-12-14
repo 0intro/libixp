@@ -325,15 +325,15 @@ handlereq(Ixp9Req *r) {
 			ixp_respond(r, Enofid);
 			return;
 		}
-		if(~r->ifcall.twstat.stat.type) {
+		if(r->ifcall.twstat.stat.type != (uint16_t)~0) {
 			ixp_respond(r, "wstat of type");
 			return;
 		}
-		if(~r->ifcall.twstat.stat.dev) {
+		if(r->ifcall.twstat.stat.dev != (uint32_t)~0) {
 			ixp_respond(r, "wstat of dev");
 			return;
 		}
-		if(~r->ifcall.twstat.stat.qid.type || (ulong)~r->ifcall.twstat.stat.qid.version || ~r->ifcall.twstat.stat.qid.path) {
+		if(r->ifcall.twstat.stat.qid.type != (uint8_t)~0 || r->ifcall.twstat.stat.qid.version != (uint32_t)~0 || r->ifcall.twstat.stat.qid.path != (uint64_t)~0) {
 			ixp_respond(r, "wstat of qid");
 			return;
 		}
@@ -341,7 +341,7 @@ handlereq(Ixp9Req *r) {
 			ixp_respond(r, "wstat of muid");
 			return;
 		}
-		if(~r->ifcall.twstat.stat.mode && ((r->ifcall.twstat.stat.mode&DMDIR)>>24) != r->fid->qid.type&QTDIR) {
+		if(r->ifcall.twstat.stat.mode != (uint32_t)~0 && ((r->ifcall.twstat.stat.mode&DMDIR)>>24) != (r->fid->qid.type&QTDIR)) {
 			ixp_respond(r, "wstat on DMDIR bit");
 			return;
 		}
