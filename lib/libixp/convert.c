@@ -287,9 +287,10 @@ ixp_pstat(IxpMsg *msg, IxpStat *stat) {
 	uint16_t size;
 
 	if(msg->mode == MsgPack)
-		size = ixp_sizeof_stat(stat) - 2;
+		size = ixp_sizeof_stat(stat, msg->version) - 2;
 
 	ixp_pu16(msg, &size);
+
 	ixp_pu16(msg, &stat->type);
 	ixp_pu32(msg, &stat->dev);
 	ixp_pqid(msg, &stat->qid);
@@ -301,4 +302,11 @@ ixp_pstat(IxpMsg *msg, IxpStat *stat) {
 	ixp_pstring(msg, &stat->uid);
 	ixp_pstring(msg, &stat->gid);
 	ixp_pstring(msg, &stat->muid);
+
+	if(msg->version == IXP_V9P2000U) {
+		ixp_pstring(msg, &stat->extension);
+		ixp_pu32(msg, &stat->n_uid);
+		ixp_pu32(msg, &stat->n_gid);
+		ixp_pu32(msg, &stat->n_muid);
+	}
 }
