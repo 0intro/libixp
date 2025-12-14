@@ -591,6 +591,7 @@ struct IxpClient {
 	int	fd;
 	uint	msize;
 	uint	lastfid;
+	uint	version;
 
 	/* Private members */
 	uint		nwait;
