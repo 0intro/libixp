@@ -30,8 +30,8 @@
  * of libixp with a different API version than it was compiled
  * against.
  */
-#define IXP_API 135
-#define _IXP_ASSERT_VERSION ixp_version_ ## 135 ## _required
+#define IXP_API 136
+#define _IXP_ASSERT_VERSION ixp_version_ ## 136 ## _required
 
 #ifndef IXP_NEEDAPI
 #define IXP_NEEDAPI IXP_API
