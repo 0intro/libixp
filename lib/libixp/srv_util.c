@@ -537,7 +537,7 @@ ixp_srv_readdir(Ixp9Req *req, IxpLookupFn lookup, void (*dostat)(IxpStat*, IxpFi
 	offset = 0;
 	for(file=file->next; file; file=file->next) {
 		dostat(&stat, file);
-		n = ixp_sizeof_stat(&stat);
+		n = ixp_sizeof_stat(&stat, ixp_req_getversion(req));
 		if(offset >= req->ifcall.io.offset) {
 			if(size < n)
 				break;
