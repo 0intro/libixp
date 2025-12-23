@@ -163,16 +163,26 @@ ixp_mountfd(int fd) {
 
 	fcall.hdr.type = TVersion;
 	fcall.version.msize = IXP_MAX_MSG;
-	fcall.version.version = IXP_VERSION;
+	fcall.version.version = "9P2000.u";
 
 	if(dofcall(c, &fcall) == 0) {
 		ixp_unmount(c);
 		return nil;
 	}
 
-	if(strcmp(fcall.version.version, IXP_VERSION)
-	|| fcall.version.msize > IXP_MAX_MSG) {
+	if(!strcmp(fcall.version.version, "9P2000.u")) {
+		c->version = IXP_V9P2000U;
+	} else if(!strcmp(fcall.version.version, "9P2000")
+	       || !strcmp(fcall.version.version, "9P")) {
+		c->version = IXP_V9P2000;
+	} else {
 		werrstr("bad 9P version response");
+		ixp_unmount(c);
+		return nil;
+	}
+
+	if(fcall.version.msize > IXP_MAX_MSG) {
+		werrstr("server msize too large");
 		ixp_unmount(c);
 		return nil;
 	}
@@ -182,6 +192,8 @@ ixp_mountfd(int fd) {
 	c->msize = fcall.version.msize;
 
 	allocmsg(c, fcall.version.msize);
+	c->rmsg.version = c->version;
+	c->wmsg.version = c->version;
 	ixp_freefcall(&fcall);
 
 	fcall.hdr.type = TAttach;
@@ -453,6 +465,7 @@ _stat(IxpClient *c, ulong fid) {
 		return nil;
 
 	msg = ixp_message((char*)fcall.rstat.stat, fcall.rstat.nstat, MsgUnpack);
+	msg.version = c->version;
 
 	stat = emalloc(sizeof *stat);
 	ixp_pstat(&msg, stat);

@@ -72,7 +72,8 @@ ixp_freestat(IxpStat *s) {
 	free(s->uid);
 	free(s->gid);
 	free(s->muid);
-	s->name = s->uid = s->gid = s->muid = nil;
+	free(s->extension);
+	s->name = s->uid = s->gid = s->muid = s->extension = nil;
 }
 
 void
@@ -98,8 +99,8 @@ ixp_freefcall(IxpFcall *fcall) {
 }
 
 uint16_t
-ixp_sizeof_stat(IxpStat *stat) {
-	return SWord /* size */
+ixp_sizeof_stat(IxpStat *stat, uint version) {
+	uint16_t size = SWord /* size */
 		+ SWord /* type */
 		+ SDWord /* dev */
 		+ SQid /* qid */
@@ -109,6 +110,12 @@ ixp_sizeof_stat(IxpStat *stat) {
 		+ SString(stat->uid)
 		+ SString(stat->gid)
 		+ SString(stat->muid);
+
+	if(version == IXP_V9P2000U) {
+		size += SString(stat->extension)
+			+ 3 * SDWord; /* n_uid, n_gid, n_muid */
+	}
+	return size;
 }
 
 void
@@ -126,6 +133,8 @@ ixp_pfcall(IxpMsg *msg, IxpFcall *fcall) {
 		ixp_pu32(msg, &fcall->tauth.afid);
 		ixp_pstring(msg, &fcall->tauth.uname);
 		ixp_pstring(msg, &fcall->tauth.aname);
+		if(msg->version == IXP_V9P2000U)
+			ixp_pu32(msg, &fcall->tauth.n_uname);
 		break;
 	case RAuth:
 		ixp_pqid(msg, &fcall->rauth.aqid);
@@ -138,9 +147,13 @@ ixp_pfcall(IxpMsg *msg, IxpFcall *fcall) {
 		ixp_pu32(msg, &fcall->tattach.afid);
 		ixp_pstring(msg, &fcall->tattach.uname);
 		ixp_pstring(msg, &fcall->tattach.aname);
+		if(msg->version == IXP_V9P2000U)
+			ixp_pu32(msg, &fcall->tattach.n_uname);
 		break;
 	case RError:
 		ixp_pstring(msg, &fcall->error.ename);
+		if(msg->version == IXP_V9P2000U)
+			ixp_pu32(msg, &fcall->error.uerrno);
 		break;
 	case TFlush:
 		ixp_pu16(msg, &fcall->tflush.oldtag);
@@ -167,6 +180,8 @@ ixp_pfcall(IxpMsg *msg, IxpFcall *fcall) {
 		ixp_pstring(msg, &fcall->tcreate.name);
 		ixp_pu32(msg, &fcall->tcreate.perm);
 		ixp_pu8(msg, &fcall->tcreate.mode);
+		if(msg->version == IXP_V9P2000U)
+			ixp_pstring(msg, &fcall->tcreate.extension);
 		break;
 	case TRead:
 		ixp_pu32(msg, &fcall->hdr.fid);
