@@ -519,8 +519,10 @@ _pread(IxpCFid *f, char *buf, long count, int64_t offset) {
 		fcall.tread.count = n;
 		if(dofcall(f->client, &fcall) == 0)
 			return -1;
-		if(fcall.rread.count > n)
+		if(fcall.rread.count > n) {
+			ixp_freefcall(&fcall);
 			return -1;
+		}
 
 		memcpy(buf+len, fcall.rread.data, fcall.rread.count);
 		offset += fcall.rread.count;
