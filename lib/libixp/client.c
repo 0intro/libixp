@@ -247,7 +247,8 @@ walk(IxpClient *c, const char *path) {
 		goto fail;
 	}
 
-	f->qid = fcall.rwalk.wqid[n-1];
+	if(n > 0)
+		f->qid = fcall.rwalk.wqid[n-1];
 
 	ixp_freefcall(&fcall);
 	free(p);
