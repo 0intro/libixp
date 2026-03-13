@@ -173,6 +173,7 @@ ixp_mountfd(int fd) {
 	if(strcmp(fcall.version.version, IXP_VERSION)
 	|| fcall.version.msize > IXP_MAX_MSG) {
 		werrstr("bad 9P version response");
+		ixp_freefcall(&fcall);
 		ixp_unmount(c);
 		return nil;
 	}
