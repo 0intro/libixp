@@ -95,8 +95,10 @@ ixp_srv_clonefiles(IxpFileId *fileid) {
 	memcpy(r, fileid, sizeof *r);
 	r->tab.name = estrdup(r->tab.name);
 	r->nref = 1;
-	for(fileid=fileid->next; fileid; fileid=fileid->next)
-		assert(fileid->nref++);
+	for(fileid=fileid->next; fileid; fileid=fileid->next) {
+		fileid->nref++;
+		assert(fileid->nref);
+	}
 	return r;
 }
 
