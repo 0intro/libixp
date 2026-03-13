@@ -81,7 +81,7 @@ dofcall(IxpClient *c, IxpFcall *fcall) {
 	free(ret);
 	return 1;
 fail:
-	ixp_freefcall(fcall);
+	ixp_freefcall(ret);
 	free(ret);
 	return 0;
 }
