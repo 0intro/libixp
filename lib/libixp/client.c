@@ -81,7 +81,7 @@ dofcall(IxpClient *c, IxpFcall *fcall) {
 	free(ret);
 	return 1;
 fail:
-	ixp_freefcall(fcall);
+	ixp_freefcall(ret);
 	free(ret);
 	return 0;
 }
@@ -177,6 +177,7 @@ ixp_mountfd(int fd) {
 		c->version = IXP_V9P2000;
 	} else {
 		werrstr("bad 9P version response");
+		ixp_freefcall(&fcall);
 		ixp_unmount(c);
 		return nil;
 	}
@@ -258,7 +259,8 @@ walk(IxpClient *c, const char *path) {
 		goto fail;
 	}
 
-	f->qid = fcall.rwalk.wqid[n-1];
+	if(n > 0)
+		f->qid = fcall.rwalk.wqid[n-1];
 
 	ixp_freefcall(&fcall);
 	free(p);
@@ -532,8 +534,10 @@ _pread(IxpCFid *f, char *buf, long count, int64_t offset) {
 		fcall.tread.count = n;
 		if(dofcall(f->client, &fcall) == 0)
 			return -1;
-		if(fcall.rread.count > n)
+		if(fcall.rread.count > n) {
+			ixp_freefcall(&fcall);
 			return -1;
+		}
 
 		memcpy(buf+len, fcall.rread.data, fcall.rread.count);
 		offset += fcall.rread.count;

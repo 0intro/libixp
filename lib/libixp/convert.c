@@ -35,6 +35,7 @@ ixp_puint(IxpMsg *msg, uint size, uint32_t *val) {
 				pos[0] = v;
 				break;
 			}
+			break;
 		case MsgUnpack:
 			v = 0;
 			switch(size) {

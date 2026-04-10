@@ -40,7 +40,7 @@ readn(int fd, IxpMsg *msg, uint count) {
 		r = mread(fd, msg, num);
 		if(r == -1 && errno == EINTR)
 			continue;
-		if(r == 0) {
+		if(r <= 0) {
 			werrstr("broken pipe: %s", ixp_errbuf());
 			return count - num;
 		}

@@ -63,6 +63,7 @@ void	ixp_pending_write(IxpPending*, const char*, long);
 IxpFileId*	ixp_srv_clonefiles(IxpFileId*);
 void	ixp_srv_data2cstring(Ixp9Req*);
 void	ixp_srv_freefile(IxpFileId*);
+void	ixp_srv_freefilepool(void);
 void	ixp_srv_readbuf(Ixp9Req*, char*, uint);
 void	ixp_srv_readdir(Ixp9Req*, IxpLookupFn, void (*)(IxpStat*, IxpFileId*));
 bool	ixp_srv_verifyfile(IxpFileId*, IxpLookupFn);

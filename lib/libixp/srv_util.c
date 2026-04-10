@@ -28,6 +28,16 @@ struct IxpQueue {
 
 static IxpFileId*	free_fileid;
 
+#define POOL_CHUNK	15
+
+typedef struct IxpFileIdPool IxpFileIdPool;
+struct IxpFileIdPool {
+	IxpFileIdPool*	next;
+	IxpFileId	files[POOL_CHUNK];
+};
+
+static IxpFileIdPool*	pool_list;
+
 /**
  * Function: ixp_srv_getfile
  * Type: IxpFileId
@@ -35,19 +45,22 @@ static IxpFileId*	free_fileid;
  * Obtain an empty, reference counted IxpFileId struct.
  *
  * See also:
- *	F<ixp_srv_clonefiles>, F<ixp_srv_freefile>
+ *	F<ixp_srv_clonefiles>, F<ixp_srv_freefile>,
+ *	F<ixp_srv_freefilepool>
  */
 IxpFileId*
 ixp_srv_getfile(void) {
+	IxpFileIdPool *pool;
 	IxpFileId *file;
 	int i;
 
 	if(!free_fileid) {
-		i = 15;
-		file = emallocz(i * sizeof *file);
-		for(; i; i--) {
-			file->next = free_fileid;
-			free_fileid = file++;
+		pool = emallocz(sizeof *pool);
+		pool->next = pool_list;
+		pool_list = pool;
+		for(i = 0; i < POOL_CHUNK; i++) {
+			pool->files[i].next = free_fileid;
+			free_fileid = &pool->files[i];
 		}
 	}
 	file = free_fileid;
@@ -58,6 +71,28 @@ ixp_srv_getfile(void) {
 	file->next = nil;
 	file->pending = false;
 	return file;
+}
+
+/**
+ * Function: ixp_srv_freefilepool
+ *
+ * Free all IxpFileId pool blocks and reset the free list.
+ * Should be called during server shutdown after all file
+ * references have been released.
+ *
+ * See also:
+ *	F<ixp_srv_getfile>, F<ixp_srv_freefile>
+ */
+void
+ixp_srv_freefilepool(void) {
+	IxpFileIdPool *pool, *next;
+
+	for(pool = pool_list; pool; pool = next) {
+		next = pool->next;
+		free(pool);
+	}
+	pool_list = nil;
+	free_fileid = nil;
 }
 
 /**
@@ -95,8 +130,10 @@ ixp_srv_clonefiles(IxpFileId *fileid) {
 	memcpy(r, fileid, sizeof *r);
 	r->tab.name = estrdup(r->tab.name);
 	r->nref = 1;
-	for(fileid=fileid->next; fileid; fileid=fileid->next)
-		assert(fileid->nref++);
+	for(fileid=fileid->next; fileid; fileid=fileid->next) {
+		fileid->nref++;
+		assert(fileid->nref);
+	}
 	return r;
 }
 
