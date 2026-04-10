@@ -30,8 +30,8 @@
  * of libixp with a different API version than it was compiled
  * against.
  */
-#define IXP_API 135
-#define _IXP_ASSERT_VERSION ixp_version_ ## 135 ## _required
+#define IXP_API 136
+#define _IXP_ASSERT_VERSION ixp_version_ ## 136 ## _required
 
 #ifndef IXP_NEEDAPI
 #define IXP_NEEDAPI IXP_API
@@ -290,12 +290,17 @@ enum IxpMsgMode {
 	MsgPack,
 	MsgUnpack,
 };
+enum IxpVersion {
+	IXP_V9P2000,
+	IXP_V9P2000U,
+};
 struct IxpMsg {
 	char*	data; /* Begining of buffer. */
 	char*	pos;  /* Current position in buffer. */
-	char*	end;  /* End of message. */ 
+	char*	end;  /* End of message. */
 	uint	size; /* Size of buffer. */
 	uint	mode; /* MsgPack or MsgUnpack. */
+	uint	version; /* IXP_V9P2000 or IXP_V9P2000U. */
 };
 
 struct IxpQid {
@@ -319,6 +324,11 @@ struct IxpStat {
 	char*	uid;
 	char*	gid;
 	char*	muid;
+	/* 9P2000.u */
+	char*	extension;	/* symlink target or device spec */
+	uint32_t	n_uid;		/* numeric uid (~0 = unset) */
+	uint32_t	n_gid;		/* numeric gid (~0 = unset) */
+	uint32_t	n_muid;		/* numeric muid (~0 = unset) */
 };
 
 typedef struct IxpFHdr		IxpFHdr;
@@ -362,6 +372,7 @@ struct IxpFTFlush {
 struct IxpFError {
 	IxpFHdr		hdr;
 	char*		ename;
+	uint32_t	uerrno;		/* 9P2000.u: numeric errno */
 };
 struct IxpFROpen {
 	IxpFHdr		hdr;
@@ -377,12 +388,14 @@ struct IxpFAttach {
 	uint32_t	afid;
 	char*		uname;
 	char*		aname;
+	uint32_t	n_uname;	/* 9P2000.u: numeric uid */
 };
 struct IxpFTCreate {
 	IxpFHdr		hdr;
 	uint32_t	perm;
 	char*		name;
 	uint8_t		mode; /* +Topen */
+	char*		extension;	/* 9P2000.u: symlink target */
 };
 struct IxpFTWalk {
 	IxpFHdr	hdr;
@@ -578,6 +591,7 @@ struct IxpClient {
 	int	fd;
 	uint	msize;
 	uint	lastfid;
+	uint	version;
 
 	/* Private members */
 	uint		nwait;
@@ -777,9 +791,10 @@ void	ixp_werrstr(const char*, ...);
 void ixp_respond(Ixp9Req*, const char *err);
 void ixp_serve9conn(IxpConn*);
 void ixp_serve9conn_fd(IxpServer*, int fd, Ixp9Srv*);
+uint ixp_req_getversion(Ixp9Req*);
 
 /* message.c */
-uint16_t	ixp_sizeof_stat(IxpStat*);
+uint16_t	ixp_sizeof_stat(IxpStat*, uint version);
 IxpMsg	ixp_message(char*, uint len, uint mode);
 void	ixp_freestat(IxpStat*);
 void	ixp_freefcall(IxpFcall*);
