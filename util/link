@@ -21,7 +21,7 @@ do
 	esac
 done
 
-xtmp=/tmp/ld.$$.$USER.out
+xtmp=${TMPDIR-/tmp}/cc.$$.$USER.out
 
 echo LD "$($bin/cleanname ${BASE}$outfile)"
 [ -n "$noisycc" ] && echo $LD -o $outfile $ofiles $LDFLAGS $args
