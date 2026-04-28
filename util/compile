@@ -8,7 +8,7 @@ bin="$(echo $0 | sed 's,/[^/]*$,,')"
 
 # Derived from Russ Cox's 9c in plan9port.
 
-xtmp=/tmp/cc.$$.$USER.out
+xtmp=${TMPDIR-/tmp}/cc.$$.$USER.out
 
 echo CC $($bin/cleanname ${BASE}$outfile)
 [ -n "$noisycc" ] && echo $CC -o $outfile $CFLAGS $@
