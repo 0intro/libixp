@@ -12,6 +12,9 @@ PREFIX = /usr/local
   LIBDIR = $(PREFIX)/lib
   INCLUDE = $(PREFIX)/include
 
+# termux/bionic
+# PREFIX = /data/data/com.termux/files/usr/local
+
 # Includes and libs
 INCLUDES = -I. -I$(ROOT)/include -I$(INCLUDE) -I/usr/include
 LIBS = -L/usr/lib -lc
