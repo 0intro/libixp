@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <unistd.h>
 #include "ixp_local.h"
 
@@ -559,17 +558,10 @@ cleanupconn(IxpConn *c) {
  * Type: Ixp9Srv
  * Type: Ixp9Req
  * Function: ixp_serve9conn_fd
- * Function: ixp_serve9conn
- *
- * These functions set up 9P service on a file descriptor.
  *
  * ixp_serve9conn_fd serves 9P directly on an already-connected file
  * descriptor. This is useful for serving 9P over pipes, stdin/stdout,
  * serial devices, or pre-connected sockets.
- *
- * ixp_serve9conn handles incoming connections on a listening socket.
- * It is ordinarily passed as the P<read> member to F<ixp_listen> with
- * an Ixp9Srv structure passed as the P<aux> member.
  *
  * The handlers defined in the Ixp9Srv structure are called whenever
  * a matching Fcall type is received. The handlers are expected to call
@@ -586,7 +578,7 @@ cleanupconn(IxpConn *c) {
  *
  * See also:
  *	F<ixp_listen>, F<ixp_respond>, F<ixp_printfcall>,
- *	F<IxpFcall>, F<IxpFid>
+ *	F<ixp_serve9conn>, F<IxpFcall>, F<IxpFid>
  */
 void
 ixp_serve9conn_fd(IxpServer *srv, int fd, Ixp9Srv *p9srv) {
@@ -609,15 +601,4 @@ ixp_serve9conn_fd(IxpServer *srv, int fd, Ixp9Srv *p9srv) {
 		close(fd);
 		decref_p9conn(p9conn);
 	}
-}
-
-void
-ixp_serve9conn(IxpConn *c) {
-	int fd;
-
-	fd = accept(c->fd, nil, nil);
-	if(fd < 0)
-		return;
-
-	ixp_serve9conn_fd(c->srv, fd, c->aux);
 }

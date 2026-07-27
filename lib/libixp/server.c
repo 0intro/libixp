@@ -6,7 +6,6 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <unistd.h>
 #include "ixp_local.h"
 
@@ -85,8 +84,6 @@ ixp_hangup(IxpConn *c) {
 	c->closed = 1;
 	if(c->close)
 		c->close(c);
-	else
-		shutdown(c->fd, SHUT_RDWR);
 
 	close(c->fd);
 	free(c);
