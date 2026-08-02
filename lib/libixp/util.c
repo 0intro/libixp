@@ -30,8 +30,8 @@ ixp_smprint(const char *fmt, ...) {
 	return s;
 }
 
-static char*
-_user(void) {
+char*
+ixp_getuser(void) {
 	static char *user;
 	struct passwd *pw;
 
@@ -84,7 +84,7 @@ ns_display(void) {
 	if(path > disp && !strcmp(path, ".0"))
 		*path = '\0';
 
-	path = ixp_smprint("/tmp/ns.%s.%s", _user(), disp);
+	path = ixp_smprint("/tmp/ns.%s.%s", ixp_getuser(), disp);
 	free(disp);
 
 	if(!rmkdir(path, 0700))
@@ -263,4 +263,3 @@ ixp_strlcat(char *dst, const char *src, uint size) {
 		*d = '\0';
 	return size - n - 1;
 }
-
