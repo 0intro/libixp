@@ -97,3 +97,5 @@ IxpFcall*	muxrpc(IxpClient*, IxpFcall*);
 /* timer.c */
 long	ixp_nexttimer(IxpServer*);
 
+/* util.c */
+char*	ixp_getuser(void);
