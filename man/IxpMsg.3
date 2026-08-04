@@ -18,11 +18,17 @@ struct IxpMsg {
         char*   end;  /* End of message. */ 
         uint    size; /* Size of buffer. */
         uint    mode; /* MsgPack or MsgUnpack. */
+        uint    version; /* IXP_V9P2000 or IXP_V9P2000U. */
 }
 
 enum IxpMsgMode {
         MsgPack,
         MsgUnpack,
+}
+
+enum IxpVersion {
+        IXP_V9P2000,
+        IXP_V9P2000U,
 }
 
 IxpMsg ixp_message(char *data, uint length, uint mode);

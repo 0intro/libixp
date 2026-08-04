@@ -28,6 +28,11 @@ struct IxpStat {
         char*   uid;
         char*   gid;
         char*   muid;
+        /* 9P2000.u */
+        char*   extension;      /* symlink target or device spec */
+        uint32_t        n_uid;          /* numeric uid (~0 = unset) */
+        uint32_t        n_gid;          /* numeric gid (~0 = unset) */
+        uint32_t        n_muid;         /* numeric muid (~0 = unset) */
 }
 
 typedef struct IxpQid IxpQid;
