@@ -97,6 +97,7 @@ createfid(Map *map, int fid, Ixp9Conn *p9conn) {
 	if(ixp_mapinsert(map, fid, f, false))
 		return f;
 	free(f);
+	decref_p9conn(p9conn);
 	return nil;
 }
 
@@ -396,7 +397,7 @@ ixp_respond(Ixp9Req *req, const char *error) {
 		req->ofcall.version.msize = msize;
 		break;
 	case TAttach:
-		if(error)
+		if(error && req->fid)
 			destroyfid(p9conn, req->fid->fid);
 		free(req->ifcall.tattach.uname);
 		free(req->ifcall.tattach.aname);
