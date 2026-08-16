@@ -46,6 +46,8 @@ static char
 enum {
 	TAG_BUCKETS = 61,
 	FID_BUCKETS = 61,
+	IOHDRSZ = 24,
+	MIN_MSIZE = IOHDRSZ + 1,
 };
 
 struct Ixp9Conn {
@@ -130,6 +132,10 @@ handlefcall(IxpConn *c) {
 		goto Fail;
 	if(ixp_msg2fcall(&p9conn->rmsg, &fcall) == 0)
 		goto Fail;
+	if(fcall.hdr.type == TVersion && fcall.version.msize < MIN_MSIZE) {
+		free(fcall.version.version);
+		goto Fail;
+	}
 	thread->unlock(&p9conn->rlock);
 
 	req = emallocz(sizeof *req);
@@ -405,7 +411,7 @@ ixp_respond(Ixp9Req *req, const char *error) {
 	case TOpen:
 	case TCreate:
 		if(!error) {
-			req->ofcall.ropen.iounit = p9conn->rmsg.size - 24;
+			req->ofcall.ropen.iounit = p9conn->rmsg.size - IOHDRSZ;
 			req->fid->iounit = req->ofcall.ropen.iounit;
 			req->fid->omode = req->ifcall.topen.mode;
 			req->fid->qid = req->ofcall.ropen.qid;
@@ -467,7 +473,8 @@ ixp_respond(Ixp9Req *req, const char *error) {
 	if(p9conn->conn) {
 		thread->lock(&p9conn->wlock);
 		msize = ixp_fcall2msg(&p9conn->wmsg, &req->ofcall);
-		if(ixp_sendmsg(p9conn->conn->fd, &p9conn->wmsg) != msize)
+		if(msize == 0 ||
+		   ixp_sendmsg(p9conn->conn->fd, &p9conn->wmsg) != msize)
 			ixp_hangup(p9conn->conn);
 		thread->unlock(&p9conn->wlock);
 	}
