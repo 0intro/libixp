@@ -468,6 +468,8 @@ main(int argc, char *argv[]) {
 
 	/* set up a fake client so we can grap connects. */
 	acceptor = ixp_listen(&server, fd, &p9srv, ixp_serve9conn, NULL);
+	if(acceptor == nil)
+		fatal("Can't listen: %s\n", ixp_errbuf());
 
 	/* we might need to mount ourselves. The bit of complexity is the need to fork so 
 	 * we can serve ourselves. We've done the listen so that's ok.
@@ -496,4 +498,3 @@ main(int argc, char *argv[]) {
 	printf("msg %s\n", ixp_errbuf());
 	return ret;
 }
-
