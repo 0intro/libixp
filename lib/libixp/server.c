@@ -99,6 +99,11 @@ ixp_server_close(IxpServer *s) {
 	}
 }
 
+static int
+selectable(int fd) {
+	return fd >= 0 && fd < FD_SETSIZE;
+}
+
 static void
 prepare_select(IxpServer *s) {
 	IxpConn *c;
@@ -106,7 +111,7 @@ prepare_select(IxpServer *s) {
 	FD_ZERO(&s->rd);
 	s->maxfd = -1;
 	for(c = s->conn; c; c = c->next)
-		if(c->read) {
+		if(c->read && selectable(c->fd)) {
 			if(s->maxfd < c->fd)
 				s->maxfd = c->fd;
 			FD_SET(c->fd, &s->rd);
@@ -118,7 +123,7 @@ handle_conns(IxpServer *s) {
 	IxpConn *c, *n;
 	for(c = s->conn; c; c = n) {
 		n = c->next;
-		if(FD_ISSET(c->fd, &s->rd))
+		if(selectable(c->fd) && FD_ISSET(c->fd, &s->rd))
 			c->read(c);
 	}
 }
