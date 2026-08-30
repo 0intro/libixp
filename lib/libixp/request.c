@@ -23,8 +23,8 @@ static void handlereq(Ixp9Req *r);
  */
 void (*ixp_printfcall)(IxpFcall*);
 
-static int
-min(int a, int b) {
+static uint
+min(uint a, uint b) {
 	if(a < b)
 		return a;
 	return b;
@@ -378,7 +378,7 @@ handlereq(Ixp9Req *r) {
 void
 ixp_respond(Ixp9Req *req, const char *error) {
 	Ixp9Conn *p9conn;
-	int msize;
+	uint msize;
 
 	p9conn = req->conn;
 
@@ -393,7 +393,7 @@ ixp_respond(Ixp9Req *req, const char *error) {
 
 		thread->lock(&p9conn->rlock);
 		thread->lock(&p9conn->wlock);
-		msize = min(req->ofcall.version.msize, IXP_MAX_MSG);
+		msize = min(req->ofcall.version.msize, (uint)IXP_MAX_MSG);
 		p9conn->rmsg.data = erealloc(p9conn->rmsg.data, msize);
 		p9conn->wmsg.data = erealloc(p9conn->wmsg.data, msize);
 		p9conn->rmsg.size = msize;
