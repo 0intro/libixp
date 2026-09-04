@@ -94,12 +94,12 @@ canrlock(IxpRWLock *rw) {
 
 static void
 wlock(IxpRWLock *rw) {
-	pthread_rwlock_rdlock(rw->aux);
+	pthread_rwlock_wrlock(rw->aux);
 }
 
 static int
 canwlock(IxpRWLock *rw) {
-	return !pthread_rwlock_tryrdlock(rw->aux);
+	return !pthread_rwlock_trywrlock(rw->aux);
 }
 
 static void
@@ -192,4 +192,3 @@ static IxpThread ixp_pthread = {
 	.write = write,
 	.select = select,
 };
-
