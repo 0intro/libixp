@@ -30,6 +30,27 @@ typedef struct sockaddr sockaddr;
 typedef struct sockaddr_un sockaddr_un;
 typedef struct sockaddr_in sockaddr_in;
 
+/**
+ * Function: ixp_serve9conn
+ *
+ * ixp_serve9conn handles incoming connections on a listening socket.
+ * It is ordinarily passed as the P<read> member to F<ixp_listen> with
+ * an Ixp9Srv structure passed as the P<aux> member.
+ *
+ * See also:
+ *	F<ixp_serve9conn_fd>, F<ixp_listen>
+ */
+void
+ixp_serve9conn(IxpConn *c) {
+	int fd;
+
+	fd = accept(c->fd, nil, nil);
+	if(fd < 0)
+		return;
+
+	ixp_serve9conn_fd(c->srv, fd, c->aux);
+}
+
 static char*
 get_port(char *addr) {
 	char *s;
@@ -276,4 +297,3 @@ int
 ixp_announce(const char *address) {
 	return lookup(address, atab);
 }
-

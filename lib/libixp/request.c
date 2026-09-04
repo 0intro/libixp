@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/socket.h>
+#include <unistd.h>
 #include "ixp_local.h"
 
 static void handlereq(Ixp9Req *r);
@@ -23,8 +23,8 @@ static void handlereq(Ixp9Req *r);
  */
 void (*ixp_printfcall)(IxpFcall*);
 
-static int
-min(int a, int b) {
+static uint
+min(uint a, uint b) {
 	if(a < b)
 		return a;
 	return b;
@@ -46,6 +46,8 @@ static char
 enum {
 	TAG_BUCKETS = 61,
 	FID_BUCKETS = 61,
+	IOHDRSZ = 24,
+	MIN_MSIZE = IOHDRSZ + 1,
 };
 
 struct Ixp9Conn {
@@ -98,6 +100,7 @@ createfid(Map *map, int fid, Ixp9Conn *p9conn) {
 	if(ixp_mapinsert(map, fid, f, false))
 		return f;
 	free(f);
+	decref_p9conn(p9conn);
 	return nil;
 }
 
@@ -131,6 +134,10 @@ handlefcall(IxpConn *c) {
 	p9conn->rmsg.version = p9conn->version;
 	if(ixp_msg2fcall(&p9conn->rmsg, &fcall) == 0)
 		goto Fail;
+	if(fcall.hdr.type == TVersion && fcall.version.msize < MIN_MSIZE) {
+		free(fcall.version.version);
+		goto Fail;
+	}
 	thread->unlock(&p9conn->rlock);
 
 	req = emallocz(sizeof *req);
@@ -380,7 +387,7 @@ handlereq(Ixp9Req *r) {
 void
 ixp_respond(Ixp9Req *req, const char *error) {
 	Ixp9Conn *p9conn;
-	int msize;
+	uint msize;
 
 	p9conn = req->conn;
 
@@ -395,7 +402,7 @@ ixp_respond(Ixp9Req *req, const char *error) {
 
 		thread->lock(&p9conn->rlock);
 		thread->lock(&p9conn->wlock);
-		msize = min(req->ofcall.version.msize, IXP_MAX_MSG);
+		msize = min(req->ofcall.version.msize, (uint)IXP_MAX_MSG);
 		p9conn->rmsg.data = erealloc(p9conn->rmsg.data, msize);
 		p9conn->wmsg.data = erealloc(p9conn->wmsg.data, msize);
 		p9conn->rmsg.size = msize;
@@ -405,7 +412,7 @@ ixp_respond(Ixp9Req *req, const char *error) {
 		req->ofcall.version.msize = msize;
 		break;
 	case TAttach:
-		if(error)
+		if(error && req->fid)
 			destroyfid(p9conn, req->fid->fid);
 		free(req->ifcall.tattach.uname);
 		free(req->ifcall.tattach.aname);
@@ -420,7 +427,7 @@ ixp_respond(Ixp9Req *req, const char *error) {
 		break;
 	case TCreate:
 		if(!error) {
-			req->ofcall.ropen.iounit = p9conn->rmsg.size - 24;
+			req->ofcall.ropen.iounit = p9conn->rmsg.size - IOHDRSZ;
 			req->fid->iounit = req->ofcall.ropen.iounit;
 			req->fid->omode = req->ifcall.topen.mode;
 			req->fid->qid = req->ofcall.ropen.qid;
@@ -484,7 +491,8 @@ ixp_respond(Ixp9Req *req, const char *error) {
 		thread->lock(&p9conn->wlock);
 		p9conn->wmsg.version = p9conn->version;
 		msize = ixp_fcall2msg(&p9conn->wmsg, &req->ofcall);
-		if(ixp_sendmsg(p9conn->conn->fd, &p9conn->wmsg) != msize)
+		if(msize == 0 ||
+		   ixp_sendmsg(p9conn->conn->fd, &p9conn->wmsg) != msize)
 			ixp_hangup(p9conn->conn);
 		thread->unlock(&p9conn->wlock);
 	}
@@ -573,17 +581,10 @@ cleanupconn(IxpConn *c) {
  * Type: Ixp9Srv
  * Type: Ixp9Req
  * Function: ixp_serve9conn_fd
- * Function: ixp_serve9conn
- *
- * These functions set up 9P service on a file descriptor.
  *
  * ixp_serve9conn_fd serves 9P directly on an already-connected file
  * descriptor. This is useful for serving 9P over pipes, stdin/stdout,
  * serial devices, or pre-connected sockets.
- *
- * ixp_serve9conn handles incoming connections on a listening socket.
- * It is ordinarily passed as the P<read> member to F<ixp_listen> with
- * an Ixp9Srv structure passed as the P<aux> member.
  *
  * The handlers defined in the Ixp9Srv structure are called whenever
  * a matching Fcall type is received. The handlers are expected to call
@@ -600,7 +601,7 @@ cleanupconn(IxpConn *c) {
  *
  * See also:
  *	F<ixp_listen>, F<ixp_respond>, F<ixp_printfcall>,
- *	F<IxpFcall>, F<IxpFid>
+ *	F<ixp_serve9conn>, F<IxpFcall>, F<IxpFid>
  */
 void
 ixp_serve9conn_fd(IxpServer *srv, int fd, Ixp9Srv *p9srv) {
@@ -619,16 +620,8 @@ ixp_serve9conn_fd(IxpServer *srv, int fd, Ixp9Srv *p9srv) {
 	thread->initmutex(&p9conn->rlock);
 	thread->initmutex(&p9conn->wlock);
 
-	ixp_listen(srv, fd, p9conn, handlefcall, cleanupconn);
-}
-
-void
-ixp_serve9conn(IxpConn *c) {
-	int fd;
-
-	fd = accept(c->fd, nil, nil);
-	if(fd < 0)
-		return;
-
-	ixp_serve9conn_fd(c->srv, fd, c->aux);
+	if(ixp_listen(srv, fd, p9conn, handlefcall, cleanupconn) == nil) {
+		close(fd);
+		decref_p9conn(p9conn);
+	}
 }

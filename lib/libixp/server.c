@@ -6,7 +6,6 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <unistd.h>
 #include "ixp_local.h"
 
@@ -28,7 +27,8 @@
  * structure for the connection as their sole argument.
  *
  * Returns:
- *	Returns the connection's new IxpConn data structure.
+ *	Returns the connection's new IxpConn data structure, or nil if the
+ *	descriptor cannot be represented by select(2).
  *
  * See also:
  *	F<ixp_serverloop>, F<ixp_serve9conn>, F<ixp_hangup>
@@ -39,6 +39,11 @@ ixp_listen(IxpServer *srv, int fd, void *aux,
 		void (*close)(IxpConn*)
 		) {
 	IxpConn *c;
+
+	if(fd < 0 || fd >= FD_SETSIZE) {
+		werrstr("file descriptor outside select range");
+		return nil;
+	}
 
 	c = emallocz(sizeof *c);
 	c->fd = fd;
@@ -79,8 +84,6 @@ ixp_hangup(IxpConn *c) {
 	c->closed = 1;
 	if(c->close)
 		c->close(c);
-	else
-		shutdown(c->fd, SHUT_RDWR);
 
 	close(c->fd);
 	free(c);
@@ -96,13 +99,19 @@ ixp_server_close(IxpServer *s) {
 	}
 }
 
+static int
+selectable(int fd) {
+	return fd >= 0 && fd < FD_SETSIZE;
+}
+
 static void
 prepare_select(IxpServer *s) {
 	IxpConn *c;
 
 	FD_ZERO(&s->rd);
+	s->maxfd = -1;
 	for(c = s->conn; c; c = c->next)
-		if(c->read) {
+		if(c->read && selectable(c->fd)) {
 			if(s->maxfd < c->fd)
 				s->maxfd = c->fd;
 			FD_SET(c->fd, &s->rd);
@@ -114,7 +123,7 @@ handle_conns(IxpServer *s) {
 	IxpConn *c, *n;
 	for(c = s->conn; c; c = n) {
 		n = c->next;
-		if(FD_ISSET(c->fd, &s->rd))
+		if(selectable(c->fd) && FD_ISSET(c->fd, &s->rd))
 			c->read(c);
 	}
 }
@@ -170,4 +179,3 @@ ixp_serverloop(IxpServer *srv) {
 	}
 	return 0;
 }
-

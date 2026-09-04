@@ -201,7 +201,7 @@ ixp_mountfd(int fd) {
 	fcall.hdr.type = TAttach;
 	fcall.hdr.fid = RootFid;
 	fcall.tattach.afid = IXP_NOFID;
-	fcall.tattach.uname = getenv("USER");
+	fcall.tattach.uname = ixp_getuser();
 	fcall.tattach.aname = "";
 	if(dofcall(c, &fcall) == 0) {
 		ixp_unmount(c);
@@ -719,4 +719,3 @@ ixp_print(IxpCFid *fid, const char *fmt, ...) {
 
 	return n;
 }
-
