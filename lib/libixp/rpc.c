@@ -62,6 +62,10 @@ sendrpc(IxpRpc *r, IxpFcall *f)
 	/* assign the tag, add selves to response queue */
 	thread->lock(&mux->lk);
 	r->tag = gettag(mux, r);
+	if(r->tag < 0) {
+		thread->unlock(&mux->lk);
+		return -1;
+	}
 	f->hdr.tag = r->tag;
 	enqueue(mux, r);
 	thread->unlock(&mux->lk);
@@ -90,6 +94,7 @@ muxrecv(IxpClient *mux)
 		goto fail;
 	f = emallocz(sizeof *f);
 	if(ixp_msg2fcall(&mux->rmsg, f) == 0) {
+		ixp_freefcall(f);
 		free(f);
 		f = nil;
 	}
@@ -259,4 +264,3 @@ puttag(IxpClient *mux, IxpRpc *r)
 	thread->wake(&mux->tagrend);
 	freemuxrpc(r);
 }
-

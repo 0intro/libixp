@@ -15,12 +15,25 @@ enum {
 	SQWord = 8,
 };
 
+static int
+available(IxpMsg *msg, uint size) {
+	return msg->pos <= msg->end && size <= (uint)(msg->end - msg->pos);
+}
+
+static void
+skip(IxpMsg *msg, uint size) {
+	if(available(msg, size))
+		msg->pos += size;
+	else
+		msg->pos = msg->end + 1;
+}
+
 static void
 ixp_puint(IxpMsg *msg, uint size, uint32_t *val) {
 	uint8_t *pos;
 	int v;
 
-	if(msg->pos + size <= msg->end) {
+	if(available(msg, size)) {
 		pos = (uint8_t*)msg->pos;
 		switch(msg->mode) {
 		case MsgPack:
@@ -51,7 +64,7 @@ ixp_puint(IxpMsg *msg, uint size, uint32_t *val) {
 			*val = v;
 		}
 	}
-	msg->pos += size;
+	skip(msg, size);
 }
 
 /**
@@ -127,13 +140,15 @@ ixp_pu64(IxpMsg *msg, uint64_t *val) {
  */
 void
 ixp_pstring(IxpMsg *msg, char **s) {
-	uint16_t len;
+	uint16_t len = 0;
 
 	if(msg->mode == MsgPack)
 		len = strlen(*s);
 	ixp_pu16(msg, &len);
+	if(msg->pos > msg->end)
+		return;
 
-	if(msg->pos + len <= msg->end) {
+	if(available(msg, len)) {
 		if(msg->mode == MsgUnpack) {
 			*s = emalloc(len + 1);
 			memcpy(*s, msg->pos, len);
@@ -141,7 +156,7 @@ ixp_pstring(IxpMsg *msg, char **s) {
 		}else
 			memcpy(msg->pos, *s, len);
 	}
-	msg->pos += len;
+	skip(msg, len);
 }
 
 /**
@@ -175,6 +190,8 @@ ixp_pstrings(IxpMsg *msg, uint16_t *num, char *strings[], uint max) {
 	uint16_t len;
 
 	ixp_pu16(msg, num);
+	if(msg->pos > msg->end)
+		return;
 	if(*num > max) {
 		msg->pos = msg->end+1;
 		return;
@@ -185,8 +202,9 @@ ixp_pstrings(IxpMsg *msg, uint16_t *num, char *strings[], uint max) {
 		s = msg->pos;
 		size = 0;
 		for(i=0; i < *num; i++) {
+			len = 0;
 			ixp_pu16(msg, &len);
-			msg->pos += len;
+			skip(msg, len);
 			size += len;
 			if(msg->pos > msg->end)
 				return;
@@ -231,14 +249,14 @@ ixp_pstrings(IxpMsg *msg, uint16_t *num, char *strings[], uint max) {
  */
 void
 ixp_pdata(IxpMsg *msg, char **data, uint len) {
-	if(msg->pos + len <= msg->end) {
+	if(available(msg, len)) {
 		if(msg->mode == MsgUnpack) {
 			*data = emalloc(len);
 			memcpy(*data, msg->pos, len);
 		}else
 			memcpy(msg->pos, *data, len);
 		}
-	msg->pos += len;
+	skip(msg, len);
 }
 
 /**
@@ -274,6 +292,8 @@ ixp_pqids(IxpMsg *msg, uint16_t *num, IxpQid qid[], uint max) {
 	int i;
 
 	ixp_pu16(msg, num);
+	if(msg->pos > msg->end)
+		return;
 	if(*num > max) {
 		msg->pos = msg->end+1;
 		return;
@@ -285,7 +305,7 @@ ixp_pqids(IxpMsg *msg, uint16_t *num, IxpQid qid[], uint max) {
 
 void
 ixp_pstat(IxpMsg *msg, IxpStat *stat) {
-	uint16_t size;
+	uint16_t size = 0;
 
 	if(msg->mode == MsgPack)
 		size = ixp_sizeof_stat(stat) - 2;

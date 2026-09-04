@@ -133,7 +133,6 @@ handlefcall(IxpConn *c) {
 	if(ixp_msg2fcall(&p9conn->rmsg, &fcall) == 0)
 		goto Fail;
 	if(fcall.hdr.type == TVersion && fcall.version.msize < MIN_MSIZE) {
-		free(fcall.version.version);
 		goto Fail;
 	}
 	thread->unlock(&p9conn->rlock);
@@ -154,6 +153,7 @@ handlefcall(IxpConn *c) {
 	return;
 
 Fail:
+	ixp_freefcall(&fcall);
 	thread->unlock(&p9conn->rlock);
 	ixp_hangup(c);
 	return;
@@ -402,6 +402,9 @@ ixp_respond(Ixp9Req *req, const char *error) {
 		thread->unlock(&p9conn->rlock);
 		req->ofcall.version.msize = msize;
 		break;
+	case TAuth:
+		ixp_freefcall(&req->ifcall);
+		break;
 	case TAttach:
 		if(error && req->fid)
 			destroyfid(p9conn, req->fid->fid);
@@ -409,6 +412,13 @@ ixp_respond(Ixp9Req *req, const char *error) {
 		free(req->ifcall.tattach.aname);
 		break;
 	case TOpen:
+		if(!error) {
+			req->ofcall.ropen.iounit = p9conn->rmsg.size - IOHDRSZ;
+			req->fid->iounit = req->ofcall.ropen.iounit;
+			req->fid->omode = req->ifcall.topen.mode;
+			req->fid->qid = req->ofcall.ropen.qid;
+		}
+		break;
 	case TCreate:
 		if(!error) {
 			req->ofcall.ropen.iounit = p9conn->rmsg.size - IOHDRSZ;

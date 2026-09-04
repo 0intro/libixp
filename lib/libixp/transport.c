@@ -102,8 +102,12 @@ ixp_recvmsg(int fd, IxpMsg *msg) {
 	msg->pos = msg->data;
 	ixp_pu32(msg, &msize);
 
+	if(msize < SSize) {
+		werrstr("message too small");
+		return 0;
+	}
 	size = msize - SSize;
-	if(size >= msg->end - msg->pos) {
+	if(size > (uint)(msg->end - msg->pos)) {
 		werrstr("message too large");
 		return 0;
 	}
@@ -115,4 +119,3 @@ ixp_recvmsg(int fd, IxpMsg *msg) {
 	msg->end = msg->pos;
 	return msize;
 }
-
