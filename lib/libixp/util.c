@@ -72,6 +72,7 @@ static char*
 ns_display(void) {
 	char *path, *disp;
 	struct stat st;
+	size_t length;
 
 	disp = getenv("DISPLAY");
 	if(disp == nil || disp[0] == '\0') {
@@ -80,8 +81,9 @@ ns_display(void) {
 	}
 
 	disp = estrdup(disp);
-	path = &disp[strlen(disp) - 2];
-	if(path > disp && !strcmp(path, ".0"))
+	length = strlen(disp);
+	path = length >= 2 ? &disp[length - 2] : disp;
+	if(length >= 2 && !strcmp(path, ".0"))
 		*path = '\0';
 
 	path = ixp_smprint("/tmp/ns.%s.%s", ixp_getuser(), disp);

@@ -181,6 +181,10 @@ ixp_srv_writebuf(Ixp9Req *req, char **buf, uint *len, uint max) {
 
 	file = req->fid->aux;
 
+	if(req->ifcall.io.offset > (uint64_t)~(uint)0) {
+		req->ofcall.io.count = 0;
+		return;
+	}
 	offset = req->ifcall.io.offset;
 	if(file->tab.perm & DMAPPEND)
 		offset = *len;
@@ -191,8 +195,14 @@ ixp_srv_writebuf(Ixp9Req *req, char **buf, uint *len, uint max) {
 	}
 
 	count = req->ifcall.io.count;
-	if(max && (offset + count > max))
+	if(max && offset >= max)
+		count = 0;
+	else if(max && count > max - offset)
 		count = max - offset;
+	else if(!max && count > (uint)~0 - offset - 1) {
+		req->ofcall.io.count = 0;
+		return;
+	}
 
 	*len = offset + count;
 	if(max == 0)
@@ -640,4 +650,3 @@ ixp_srv_walkandclone(Ixp9Req *req, IxpLookupFn lookup) {
 	req->ofcall.rwalk.nwqid = i;
 	ixp_respond(req, nil);
 }
-

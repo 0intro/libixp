@@ -72,11 +72,17 @@ get_port(char *addr) {
 static int
 sock_unix(char *address, sockaddr_un *sa, socklen_t *salen) {
 	int fd;
+	size_t length;
 
 	memset(sa, 0, sizeof *sa);
+	length = strlen(address);
+	if(length >= sizeof sa->sun_path) {
+		werrstr("unix socket path too long");
+		return -1;
+	}
 
 	sa->sun_family = AF_UNIX;
-	strncpy(sa->sun_path, address, sizeof sa->sun_path);
+	memcpy(sa->sun_path, address, length + 1);
 	*salen = SUN_LEN(sa);
 
 	fd = socket(AF_UNIX, SOCK_STREAM, 0);
