@@ -417,7 +417,6 @@ ixp_respond(Ixp9Req *req, const char *error) {
 			req->fid->omode = req->ifcall.topen.mode;
 			req->fid->qid = req->ofcall.ropen.qid;
 		}
-		free(req->ifcall.tcreate.name);
 		break;
 	case TCreate:
 		if(!error) {
